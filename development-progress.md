@@ -89,45 +89,51 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ## 5. Core API Endpoints
 
 ### 5.1 Sessions API
-- [ ] `GET /api/sessions` - Aktif oturumları listele
-- [ ] `POST /api/sessions` - Oturum oluştur
-- [ ] `POST /api/sessions/:id/join` - Oturuma katıl
-- [ ] `POST /api/sessions/:id/leave` - Oturumdan ayrıl
-- [ ] `POST /api/sessions/:id/video` - Video ayarla
+- [✅] `GET /api/sessions` - Aktif oturumları listele
+- [✅] `POST /api/sessions` - Oturum oluştur
+- [✅] `GET /api/sessions/:id` - Belirli oturumu getir
+- [✅] `POST /api/sessions/:id/join` - Oturuma katıl
+- [🔄] `POST /api/sessions/:id/leave` - Kaldırıldı (WebSocket leave event kullanılıyor)
+- [✅] `POST /api/sessions/:id/video` - Video ayarla
+- [🔄] `GET /api/sessions/:id/participants` - Gereksiz (WebSocket ile yapılıyor)
 
 ### 5.2 Input Validation
-- [ ] Request schema validasyonu
-- [ ] Error handling middleware
-- [ ] Response standardizasyonu
+- [✅] Request body validation
+- [✅] Error handling implementation
+- [✅] Response standardization with ApiResponse type
 
 ### 5.3 API Test
-- [ ] Postman/İnsomnia ile endpoint test
-- [ ] Error scenario testleri
+- [✅] API endpoint'lerinin manuel test edilmesi
+- [✅] Session CRUD operasyonları test
+- [✅] Participant management test
+- [✅] Video setting test
+- [✅] Error handling test
 
 ---
 
 ## 6. WebSocket Implementasyonu
 
 ### 6.1 WebSocket Gateway
-- [ ] Fastify WebSocket plugin kurulumu
-- [ ] Connection handling
-- [ ] Room/Session yönetimi
-- [ ] Participant tracking
+- [✅] Fastify WebSocket plugin kurulumu
+- [✅] Connection handling
+- [✅] Room/Session yönetimi
+- [✅] Participant tracking
 
 ### 6.2 WebSocket Events
-- [ ] `video_action` (client → server)
-- [ ] `chat` (client → server)
-- [ ] `leave` (client → server)
-- [ ] `video_sync` (server → client)
-- [ ] `chat` (server → client)
-- [ ] `participants` (server → client)
-- [ ] `video_update` (server → client)
-- [ ] `session_ended` (server → client)
+- [✅] `video_action` (client → server)
+- [✅] `chat` (client → server)
+- [✅] `leave` (client → server) - Manual session leave
+- [✅] `ping/pong` (client ↔ server)
+- [✅] `video_sync` (server → client)
+- [✅] `chat` (server → client)
+- [✅] `participants` (server → client)
+- [✅] `video_update` (server → client)
+- [✅] `error` (server → client)
 
 ### 6.3 WebSocket Test
-- [ ] Connection test
-- [ ] Message broadcasting test
-- [ ] Disconnection handling test
+- [✅] Connection test
+- [✅] Message broadcasting test
+- [✅] Disconnection handling test
 
 ---
 
@@ -279,5 +285,5 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 5.1 - Sessions API
-**Tamamlanan adımlar:** 4/13 ana kategori 
+**Aktif adım:** 7.1 - Vue 3 + Vite Setup
+**Tamamlanan adımlar:** 6. WebSocket Implementasyonu tamamen tamamlandı! Sırada Frontend geliştirme var. 

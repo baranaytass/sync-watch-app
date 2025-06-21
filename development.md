@@ -56,8 +56,14 @@ interface SessionParticipant {
 | GET   | /api/sessions             | Aktif oturumları listele |
 | POST  | /api/sessions             | Oturum oluştur           |
 | POST  | /api/sessions/\:id/join   | Oturuma katıl            |
-| POST  | /api/sessions/\:id/leave  | Oturumdan ayrıl          |
+
 | POST  | /api/sessions/\:id/video  | Oturum videosunu ayarla  |
+
+### WebSocket Endpoints
+
+| Method | Endpoint | Açıklama |
+|--------|----------|----------|
+| WebSocket | `/ws/session/:sessionId` | Session'a özel WebSocket bağlantısı |
 
 ---
 
@@ -71,19 +77,22 @@ interface SessionParticipant {
 
 // Yanıt (201)
 {
-  "id": "session_123",
-  "title": "Movie Night",
-  "hostId": "user_123",
-  "videoProvider": null,
-  "videoId": null,
-  "videoTitle": null,
-  "videoDuration": 0,
-  "lastAction": "pause",
-  "lastActionTimeAsSecond": 0,
-  "lastActionTimestamp": "2025-06-21T10:00:00Z",
-  "isActive": true,
-  "createdAt": "2025-06-21T10:00:00Z",
-  "updatedAt": "2025-06-21T10:00:00Z"
+  "success": true,
+  "data": {
+    "id": "session_123",
+    "title": "Movie Night",
+    "hostId": "user_123",
+    "videoProvider": null,
+    "videoId": null,
+    "videoTitle": null,
+    "videoDuration": 0,
+    "lastAction": "pause",
+    "lastActionTimeAsSecond": 0,
+    "lastActionTimestamp": "2025-06-21T10:00:00Z",
+    "isActive": true,
+    "createdAt": "2025-06-21T10:00:00Z",
+    "updatedAt": "2025-06-21T10:00:00Z"
+  }
 }
 ```
 
@@ -95,7 +104,7 @@ interface SessionParticipant {
 | --- | --------------- | ------------------------------------------------------------ | ------- | ------------------------ |
 | C→S | `video_action`  | \`action: 'play'                                             | 'pause' | 'seek'`, `time: number\` |
 | C→S | `chat`          | `message: string`                                            |         |                          |
-| C→S | `leave`         | –                                                            |         |                          |
+| C→S | `leave`         | – (tarayıcı kapatma veya manuel ayrılma)                   |         |                          |
 | S→C | `video_sync`    | `action`, `time`, `timestamp`                                |         |                          |
 | S→C | `chat`          | `id`, `userId`, `message`, `timestamp`                       |         |                          |
 | S→C | `participants`  | `participants: { userId, name, avatar }[]` (yalnızca userId) |         |                          |
@@ -242,13 +251,15 @@ docker-compose down
 ## 8. Ortam Değişkenleri
 
 ```
-DATABASE_URL=postgresql://videosync_user:videosync_pass@localhost:5432/videosync
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-JWT_SECRET=...
-YOUTUBE_API_KEY=...
-FRONTEND_URL=http://localhost:5173
+NODE_ENV=development
 PORT=3000
+HOST=0.0.0.0
+DATABASE_URL=postgresql://videosync_user:videosync_pass@localhost:5432/videosync
+JWT_SECRET=your-jwt-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+YOUTUBE_API_KEY=your-youtube-api-key
+FRONTEND_URL=http://localhost:5173
 ```
 
 ---
@@ -257,9 +268,14 @@ PORT=3000
 
 | HTTP Kodu | `error`             | `message`                                     |
 | --------- | ------------------- | --------------------------------------------- |
-| 400       | invalid\_video\_id  | YouTube video not found or private            |
-| 403       | not\_session\_host  | Only session host can perform this action     |
-| 404       | session\_not\_found | Session does not exist or is no longer active |
+| 400       | `invalid_video_id`  | YouTube video not found or private            |
+| 400       | `invalid_input`     | Required fields missing or invalid format     |
+| 403       | `not_session_host`  | Only session host can perform this action     |
+| 403       | `unauthorized`      | User not authorized for this action           |
+| 404       | `session_not_found` | Session does not exist or is no longer active |
+| 404       | `user_not_found`    | User does not exist                           |
+| 500       | `session_create_error` | Failed to create session                   |
+| 500       | `session_join_error`   | Failed to join session                     |
 
 ---
 

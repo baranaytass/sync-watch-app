@@ -3,6 +3,8 @@ import { EnvSchema } from './config/env';
 import { DatabaseConfig } from './config/database';
 import { authenticateJWT } from './utils/auth';
 import authRoutes from './routes/auth';
+import sessionRoutes from './routes/sessions';
+import websocketRoutes from './routes/websocket';
 
 const server = Fastify({
   logger: {
@@ -35,12 +37,15 @@ async function start(): Promise<void> {
     await server.register(require('@fastify/jwt'), {
       secret: server.config.JWT_SECRET,
     });
+    await server.register(require('@fastify/websocket'));
 
     // Register authentication middleware
     server.decorate('authenticate', authenticateJWT);
 
     // Register routes
     await server.register(authRoutes, { prefix: '/api/auth' });
+    await server.register(sessionRoutes, { prefix: '/api/sessions' });
+    await server.register(websocketRoutes);
 
     // Health check endpoint
     server.get('/health', async () => ({
