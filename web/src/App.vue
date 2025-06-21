@@ -5,7 +5,19 @@
 </template>
 
 <script setup lang="ts">
-// Ana uygulama bileşeni
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+// Initialize auth when app mounts
+onMounted(() => {
+  // Auth store is already initialized with localStorage data
+  // Try to refresh user data from server if we have a stored user
+  if (authStore.user) {
+    authStore.fetchUser()
+  }
+})
 </script>
 
 <style scoped>

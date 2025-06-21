@@ -9,22 +9,32 @@ export class AuthController {
 
   async googleAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
+      console.log('🔵 Starting Google OAuth flow...');
+      
       const { token } = await this.fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
+      console.log('🔵 Got access token:', token ? 'SUCCESS' : 'FAILED');
       
       // Get user info from Google
+      console.log('🔵 Fetching Google user info...');
       const googleUserInfo = await this.authService.getGoogleUserInfo(token.access_token);
+      console.log('🔵 Google user info:', googleUserInfo);
       
       // Find or create user in our database
+      console.log('🔵 Finding or creating user in database...');
       const user = await this.authService.findOrCreateUser(googleUserInfo);
+      console.log('🔵 User in database:', user);
       
       // Generate JWT token
+      console.log('🔵 Generating JWT token...');
       const jwtToken = this.fastify.jwt.sign(
         { userId: user.id, email: user.email },
         { expiresIn: '7d' }
       );
+      console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
       
-      // Set HTTP-only cookie
-      await reply.setCookie('token', jwtToken, {
+      // Set HTTP-only cookie and redirect
+      console.log('🔵 Setting cookie and redirecting...');
+      reply.setCookie('token', jwtToken, {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -33,18 +43,31 @@ export class AuthController {
       });
       
       // Redirect to frontend
-      await reply.redirect(`${this.fastify.config.FRONTEND_URL}/dashboard`);
+      console.log('🔵 Redirecting to frontend...');
+      return reply.redirect(`${this.fastify.config.FRONTEND_URL}/`);
     } catch (error) {
+      console.error('🔴 Google OAuth error step by step:', error);
+      console.error('🔴 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        name: error instanceof Error ? error.name : 'Unknown'
+      });
       this.fastify.log.error('Google OAuth error:', error);
       await reply.redirect(`${this.fastify.config.FRONTEND_URL}/login?error=oauth_failed`);
     }
   }
 
   async logout(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    await reply.clearCookie('token', {
+    console.log('🔵 Logging out user...');
+    
+    reply.clearCookie('token', {
       path: '/',
+      httpOnly: true,
+      secure: this.fastify.config.NODE_ENV === 'production',
+      sameSite: 'lax'
     });
     
+    console.log('🔵 Cookie cleared, logout successful');
     return reply.send({ success: true, message: 'Logged out successfully' });
   }
 

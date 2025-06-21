@@ -12,6 +12,11 @@ export interface User {
   updatedAt: Date
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+// Configure axios defaults
+axios.defaults.withCredentials = true
+
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
@@ -21,20 +26,34 @@ export const useAuthStore = defineStore('auth', () => {
   // Getters
   const isAuthenticated = computed(() => !!user.value)
 
+  // Initialize user from localStorage on store creation
+  const initializeAuth = () => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      try {
+        user.value = JSON.parse(storedUser)
+      } catch (e) {
+        console.error('Error parsing stored user:', e)
+        localStorage.removeItem('user')
+      }
+    }
+  }
+
   // Actions
   const loginWithGoogle = () => {
     loading.value = true
+    error.value = null
     // Redirect to backend Google OAuth
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`
+    window.location.href = `${API_BASE_URL}/api/auth/google`
   }
 
   const logout = async () => {
     try {
       loading.value = true
-      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/logout`, {}, {
-        withCredentials: true
-      })
+      error.value = null
+      await axios.post(`${API_BASE_URL}/api/auth/logout`)
       user.value = null
+      localStorage.removeItem('user')
     } catch (err) {
       error.value = 'Logout failed'
       console.error('Logout error:', err)
@@ -46,13 +65,18 @@ export const useAuthStore = defineStore('auth', () => {
   const fetchUser = async () => {
     try {
       loading.value = true
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/me`, {
-        withCredentials: true
-      })
-      user.value = response.data.data
-    } catch (err) {
+      error.value = null
+      const response = await axios.get(`${API_BASE_URL}/api/auth/me`)
+      if (response.data.success && response.data.data) {
+        user.value = response.data.data
+        localStorage.setItem('user', JSON.stringify(response.data.data))
+      }
+    } catch (err: any) {
       user.value = null
-      console.error('Fetch user error:', err)
+      localStorage.removeItem('user')
+      if (err.response?.status !== 401) {
+        console.error('Fetch user error:', err)
+      }
     } finally {
       loading.value = false
     }
@@ -60,11 +84,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setUser = (userData: User) => {
     user.value = userData
+    localStorage.setItem('user', JSON.stringify(userData))
   }
 
   const clearError = () => {
     error.value = null
   }
+
+  // Initialize auth on store creation
+  initializeAuth()
 
   return {
     // State
@@ -78,6 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchUser,
     setUser,
-    clearError
+    clearError,
+    initializeAuth
   }
 }) 

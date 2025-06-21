@@ -163,20 +163,20 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ## 8. Frontend Authentication
 
 ### 8.1 Auth Components
-- [ ] Login sayfası
-- [ ] Google OAuth button
-- [ ] Auth layout component
-- [ ] Route protection
+- [✅] Login sayfası
+- [✅] Google OAuth button
+- [✅] Auth layout component
+- [✅] Route protection
 
 ### 8.2 Auth Store Integration
-- [ ] Login flow
-- [ ] Token management
-- [ ] User state persistence
-- [ ] Logout functionality
+- [✅] Login flow
+- [✅] Token management
+- [✅] User state persistence
+- [✅] Logout functionality
 
 ### 8.3 Auth Test
-- [ ] Login/logout test
-- [ ] Protected route test
+- [✅] Login/logout test
+- [✅] Protected route test
 
 ---
 
@@ -285,5 +285,5 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 8.1 - Auth Components
-**Tamamlanan adımlar:** 7. Frontend Temel Kurulum tamamen tamamlandı! Vue 3 + Vite + TypeScript + Tailwind CSS + Pinia stores hazır. Sırada Authentication sistemi var. 
+**Aktif adım:** 9.1 - Sessions List
+**Tamamlanan adımlar:** 8. Frontend Authentication tamamen tamamlandı! Google OAuth integration, login/logout flow, protected routes, user state persistence - her şey çalışıyor. Backend ve frontend sunucuları çalışır durumda. Sırada Sessions Management var. 
