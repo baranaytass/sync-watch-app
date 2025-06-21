@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sync-watch-postgres
+    environment:
+      POSTGRES_DB: videosync
+      POSTGRES_USER: videosync_user
+      POSTGRES_PASSWORD: videosync_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U videosync_user -d videosync"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data: 

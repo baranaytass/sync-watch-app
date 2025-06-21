@@ -29,16 +29,16 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ## 2. Docker ve Veritabanı Kurulumu
 
 ### 2.1 Docker Compose
-- [ ] `docker-compose.yml` dosyası oluştur
-- [ ] PostgreSQL servis konfigürasyonu
-- [ ] Volume ve network ayarları
+- [✅] `docker-compose.yml` dosyası oluştur
+- [✅] PostgreSQL servis konfigürasyonu
+- [✅] Volume ve network ayarları
 
 ### 2.2 Database Schema
-- [ ] `backend/database/init.sql` dosyası oluştur
-- [ ] Users tablosu oluştur
-- [ ] Sessions tablosu oluştur
-- [ ] Session_participants tablosu oluştur
-- [ ] Docker ile veritabanı test et
+- [✅] `backend/database/init.sql` dosyası oluştur
+- [✅] Users tablosu oluştur
+- [✅] Sessions tablosu oluştur
+- [✅] Session_participants tablosu oluştur
+- [✅] Docker ile veritabanı test et
 
 ---
 
@@ -277,5 +277,5 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 2.1 - Docker Compose Kurulumu
-**Tamamlanan adımlar:** 1/13 ana kategori 
+**Aktif adım:** 3.1 - Backend Package Kurulumu
+**Tamamlanan adımlar:** 2/13 ana kategori 
