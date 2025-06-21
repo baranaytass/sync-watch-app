@@ -45,21 +45,21 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ## 3. Backend Temel Kurulum
 
 ### 3.1 Package Kurulumu
-- [ ] `backend/package.json` oluştur
-- [ ] Fastify ve gerekli bağımlılıklar
-- [ ] TypeScript konfigürasyonu
-- [ ] ESLint ve Prettier kurulumu
+- [✅] `backend/package.json` oluştur
+- [✅] Fastify ve gerekli bağımlılıklar
+- [✅] TypeScript konfigürasyonu
+- [✅] ESLint ve Prettier kurulumu
 
 ### 3.2 Proje Yapısı
-- [ ] `src/` klasör yapısını oluştur
-- [ ] `config/`, `controllers/`, `routes/`, `services/`, `models/`, `websocket/`, `utils/` klasörler
-- [ ] `server.ts` ana dosya
-- [ ] Build scripti konfigürasyonu
+- [✅] `src/` klasör yapısını oluştur
+- [✅] `config/`, `controllers/`, `routes/`, `services/`, `models/`, `websocket/`, `utils/` klasörler
+- [✅] `server.ts` ana dosya
+- [✅] Build scripti konfigürasyonu
 
 ### 3.3 Database Bağlantısı
-- [ ] PostgreSQL connection pool kurulumu
-- [ ] Database helper fonksiyonları
-- [ ] Connection test
+- [✅] PostgreSQL connection pool kurulumu
+- [✅] Database helper fonksiyonları
+- [✅] Connection test
 
 ---
 
@@ -277,5 +277,5 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 3.1 - Backend Package Kurulumu
-**Tamamlanan adımlar:** 2/13 ana kategori 
+**Aktif adım:** 4.1 - Google OAuth Setup
+**Tamamlanan adımlar:** 3/13 ana kategori 
