@@ -183,23 +183,23 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ## 9. Sessions Management
 
 ### 9.1 Sessions List
-- [ ] Sessions list page
-- [ ] Session card component
-- [ ] Create session modal
-- [ ] Join session functionality
+- [✅] Sessions list page
+- [✅] Session card component
+- [✅] Create session modal
+- [✅] Join session functionality
 
 ### 9.2 Session Room
-- [ ] Session room layout
-- [ ] Participants list
-- [ ] Session info display
-- [ ] Leave session functionality
+- [✅] Session room layout
+- [✅] Participants list
+- [✅] Session info display
+- [✅] Leave session functionality
 
 ---
 
 ## 10. Video Synchronization
 
 ### 10.1 YouTube Integration
-- [ ] YouTube API kurulumu
+- [🚧] YouTube API kurulumu
 - [ ] Video embed component
 - [ ] Video metadata fetching
 - [ ] Video validation
@@ -285,5 +285,5 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 9.1 - Sessions List
-**Tamamlanan adımlar:** 8. Frontend Authentication tamamen tamamlandı! Google OAuth integration, login/logout flow, protected routes, user state persistence - her şey çalışıyor. Backend ve frontend sunucuları çalışır durumda. Sırada Sessions Management var. 
+**Aktif adım:** 10.1 - YouTube Integration
+**Tamamlanan adımlar:** 9.2 Session Room Layout tamamlandı! Modern session room UI, participants list component, session info panel, WebSocket bağlantısı, video URL ayarlama (host), leave session fonksiyonu - hepsi çalışıyor. SessionRoomPage, ParticipantsList, SessionInfo component'leri ve useWebSocket composable oluşturuldu. Build başarılı ve test edilebilir durumda. Şimdi YouTube Integration'a geçebiliriz. 
