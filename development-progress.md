@@ -2,6 +2,8 @@
 
 Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her adımın tamamlanma durumunu içerir.
 
+> **Önemli Not**: `development.md` dosyasında projeye dair tüm teknik detaylar yer almaktadır. herhangi bir implementasyonun yapısı hakkındaki bilgileri bulmak için bu dökümanı incelemelisin.
+
 ## Durumlar
 - [ ] Yapılmadı
 - [🚧] Devam ediyor
@@ -66,21 +68,21 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ## 4. Authentication Sistemi
 
 ### 4.1 Google OAuth Setup
-- [ ] Google Cloud Console konfigürasyonu
-- [ ] OAuth credentials alma
-- [ ] Environment variables ayarlama
+- [✅] Google Cloud Console konfigürasyonu
+- [✅] OAuth credentials alma
+- [✅] Environment variables ayarlama
 
 ### 4.2 Auth Routes
-- [ ] `/api/auth/google` route
-- [ ] `/api/auth/google/callback` route
-- [ ] `/api/auth/logout` route
-- [ ] `/api/auth/me` route
-- [ ] JWT token handling
+- [✅] `/api/auth/google` route
+- [✅] `/api/auth/google/callback` route
+- [✅] `/api/auth/logout` route
+- [✅] `/api/auth/me` route
+- [✅] JWT token handling
 
 ### 4.3 Auth Middleware
-- [ ] JWT doğrulama middleware
-- [ ] User session yönetimi
-- [ ] Auth test
+- [✅] JWT doğrulama middleware
+- [✅] User session yönetimi
+- [✅] Auth test
 
 ---
 
@@ -277,5 +279,5 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 4.1 - Google OAuth Setup
-**Tamamlanan adımlar:** 3/13 ana kategori 
+**Aktif adım:** 5.1 - Sessions API
+**Tamamlanan adımlar:** 4/13 ana kategori 

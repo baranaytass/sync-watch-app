@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import { EnvSchema } from './config/env';
 import { DatabaseConfig } from './config/database';
+import { authenticateJWT } from './utils/auth';
+import authRoutes from './routes/auth';
 
 const server = Fastify({
   logger: {
@@ -19,6 +21,9 @@ async function start(): Promise<void> {
     // Initialize database
     const db = new DatabaseConfig(server.config);
     await db.testConnection();
+    
+    // Add database to server instance
+    server.decorate('pg', db.getPool());
 
     // Register plugins
     await server.register(require('@fastify/cors'), {
@@ -30,6 +35,12 @@ async function start(): Promise<void> {
     await server.register(require('@fastify/jwt'), {
       secret: server.config.JWT_SECRET,
     });
+
+    // Register authentication middleware
+    server.decorate('authenticate', authenticateJWT);
+
+    // Register routes
+    await server.register(authRoutes, { prefix: '/api/auth' });
 
     // Health check endpoint
     server.get('/health', async () => ({

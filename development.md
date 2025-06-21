@@ -291,3 +291,4 @@ web/                            # Vue 3 + Vite SPA (Shadcn UI tasarım kiti)
 ```
 
 > **Not**: `packages/` dizini isteğe bağlıdır ancak uzun vadede paylaşılan kodu tek yerde toplamak (örn. tipler, lint kuralları) monorepo bakımını kolaylaştırır.
+
