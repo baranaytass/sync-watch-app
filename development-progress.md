@@ -13,16 +13,16 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ## 1. Proje Başlangıç Kurulumu
 
 ### 1.1 Git Repository İnisiyal
-- [ ] Local git repository oluştur
-- [ ] .gitignore dosyası oluştur
-- [ ] İlk commit
+- [✅] Local git repository oluştur
+- [✅] .gitignore dosyası oluştur
+- [✅] İlk commit
 
 ### 1.2 Monorepo Klasör Yapısı
-- [ ] `backend/` klasörü oluştur
-- [ ] `web/` klasörü oluştur
-- [ ] `packages/shared-types/` klasörü oluştur
-- [ ] Root seviye `package.json` oluştur
-- [ ] Monorepo workspace konfigürasyonu
+- [✅] `backend/` klasörü oluştur
+- [✅] `web/` klasörü oluştur
+- [✅] `packages/shared-types/` klasörü oluştur
+- [✅] Root seviye `package.json` oluştur
+- [✅] Monorepo workspace konfigürasyonu
 
 ---
 
@@ -277,5 +277,5 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 1.1 - Git Repository İnisiyal
-**Tamamlanan adımlar:** 0/13 ana kategori 
+**Aktif adım:** 2.1 - Docker Compose Kurulumu
+**Tamamlanan adımlar:** 1/13 ana kategori 

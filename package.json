@@ -1,0 +1,39 @@
+{
+  "name": "sync-watch-app",
+  "version": "1.0.0",
+  "description": "Realtime Video Sync Chat App - YouTube videolarını senkronize oynatma ve gerçek zamanlı sohbet uygulaması",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:web": "npm run dev --workspace=web", 
+    "build": "npm run build --workspaces",
+    "build:backend": "npm run build --workspace=backend",
+    "build:web": "npm run build --workspace=web",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "docker:db:up": "docker-compose up -d postgres",
+    "docker:db:down": "docker-compose down",
+    "docker:db:logs": "docker-compose logs -f postgres"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "author": "Sync Watch App Team",
+  "license": "MIT"
+} 
