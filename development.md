@@ -1,6 +1,6 @@
 # Realtime Video Sync Chat App – Teknik Tasarım Dokümanı (güncel 21 Haz 2025)
 
-**Özet:** Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında aynı anda senkronize oynatmayı ve gerçek zamanlı sohbet etmeyi amaçlayan bir web uygulamasıdır. Kullanıcılar Google hesabıyla oturum açar, bir oturum (session) oluşturur veya mevcut bir oturuma katılır. Sunucu, Fastify tabanlı REST API ve WebSocket üzerinden oynatma eylemlerini ve mesajları dağıtır. Ön yüz Vue 3 + Pinia + Vite ile geliştirilmiş olup, **Shadcn UI** bileşen kütüphanesi kullanılarak modern ve erişilebilir bir tasarım sunar.
+**Özet:** Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında aynı anda senkronize oynatmayı ve gerçek zamanlı sohbet etmeyi amaçlayan bir web uygulamasıdır. Kullanıcılar Google hesabıyla oturum açar, bir oturum (session) oluşturur veya mevcut bir oturuma katılır. Sunucu, Fastify tabanlı REST API ve WebSocket üzerinden oynatma eylemlerini ve mesajları dağıtır. Ön yüz Vue 3 + Pinia + Vite ile geliştirilmiş olup, **Shadcn UI** bileşen kütüphanesi kullanılarak modern ve erişilebilir bir tasarım sunar.
 
 ---
 
@@ -17,12 +17,22 @@ interface User {
   updatedAt: Date;
 }
 
+interface SessionParticipant {
+  sessionId: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  joinedAt: Date;
+  isOnline: boolean;
+  lastSeen: Date;
+}
+
 interface Session {
   id: string;
   title: string;
   description?: string;
   hostId: string;
-  videoProvider: 'youtube';
+  videoProvider: 'youtube' | null;
   videoId: string | null;
   videoTitle: string | null;
   videoDuration: number;
@@ -30,16 +40,9 @@ interface Session {
   lastActionTimeAsSecond: number;
   lastActionTimestamp: Date;
   isActive: boolean;
+  participants: SessionParticipant[];
   createdAt: Date;
   updatedAt: Date;
-}
-
-interface SessionParticipant {
-  sessionId: string;
-  userId: string;
-  joinedAt: Date;
-  isOnline: boolean;
-  lastSeen: Date;
 }
 ```
 
@@ -55,8 +58,8 @@ interface SessionParticipant {
 | GET   | /api/auth/me              | Oturum bilgisini getir   |
 | GET   | /api/sessions             | Aktif oturumları listele |
 | POST  | /api/sessions             | Oturum oluştur           |
+| GET   | /api/sessions/\:id        | Belirli oturumu getir    |
 | POST  | /api/sessions/\:id/join   | Oturuma katıl            |
-
 | POST  | /api/sessions/\:id/video  | Oturum videosunu ayarla  |
 
 ### WebSocket Endpoints
@@ -90,6 +93,17 @@ interface SessionParticipant {
     "lastActionTimeAsSecond": 0,
     "lastActionTimestamp": "2025-06-21T10:00:00Z",
     "isActive": true,
+    "participants": [
+      {
+        "sessionId": "session_123",
+        "userId": "user_123",
+        "name": "John Doe",
+        "avatar": "https://example.com/avatar.jpg",
+        "joinedAt": "2025-06-21T10:00:00Z",
+        "isOnline": true,
+        "lastSeen": "2025-06-21T10:00:00Z"
+      }
+    ],
     "createdAt": "2025-06-21T10:00:00Z",
     "updatedAt": "2025-06-21T10:00:00Z"
   }
@@ -109,15 +123,15 @@ interface SessionParticipant {
 | S→C | `chat`          | `id`, `userId`, `message`, `timestamp`                       |         |                          |
 | S→C | `participants`  | `participants: { userId, name, avatar }[]` (yalnızca userId) |         |                          |
 | S→C | `video_update`  | `videoProvider`, `videoId`, `videoTitle`, `videoDuration`    |         |                          |
-| S→C | `session_ended` | –                                                            |         |                          |
 
 ---
 
 ## 5. Veritabanı Şeması (PostgreSQL)
 
 ```sql
--- users\CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- users (kalıcı veri)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   google_id VARCHAR(255) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -126,12 +140,12 @@ interface SessionParticipant {
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- sessions
-CREATE TABLE sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- sessions (cache data - UNLOGGED)
+CREATE UNLOGGED TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  host_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  host_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
   video_provider VARCHAR(50),
   video_id VARCHAR(255),
   video_title VARCHAR(500),
@@ -144,16 +158,23 @@ CREATE TABLE sessions (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- session_participants (unlogged)
+-- session_participants (cache data - UNLOGGED)
 CREATE UNLOGGED TABLE session_participants (
-  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
+  user_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
   joined_at TIMESTAMP DEFAULT NOW(),
   is_online BOOLEAN DEFAULT TRUE,
   last_seen TIMESTAMP DEFAULT NOW(),
   PRIMARY KEY (session_id, user_id)
 );
 ```
+
+**Önemli Notlar:**
+- `sessions` ve `session_participants` tabloları **UNLOGGED** olarak tanımlandı çünkü bunlar cache verisidir
+- UNLOGGED tablolar foreign key constraint'leri desteklemediği için direkt referanslar kaldırıldı
+- Participants bilgisi Session modelinde otomatik olarak dahil edilir
+- Leave session işleminde participant sayısı 0'a düştüğünde session otomatik deaktif edilir
+- Host ayrıldığında ve başka participants varsa ilk participant yeni host olur
 
 ---
 
@@ -179,7 +200,7 @@ export const useSessionsStore = defineStore('sessions', {
   state: () => ({
     sessions: [] as Session[],
     currentSession: null as Session | null,
-    participants: [] as User[],
+    participants: [] as SessionParticipant[],
     isHost: false,
     loading: false
   }),
@@ -193,7 +214,7 @@ export const useSessionsStore = defineStore('sessions', {
   }
 });
 
-// stores/videoSync.ts  (isHost alanı kaldırıldı)
+// stores/videoSync.ts
 export const useVideoSyncStore = defineStore('videoSync', {
   state: () => ({
     currentAction: 'pause' as VideoAction,
@@ -293,7 +314,8 @@ backend/                        # Node.js Fastify API & WebSocket sunucusu
    ├─ services/                 # Use‑case / iş kuralları mantığı
    ├─ models/                   # Domain modelleri & ORM (Prisma/TypeORM) şemaları
    ├─ websocket/                # WebSocket gateway ve event handler'ları
-   └─ utils/                    # Ortak yardımcı fonksiyonlar
+   ├─ utils/                    # Ortak yardımcı fonksiyonlar
+   └─ types/                    # Backend'e özel tip tanımları
 
 web/                            # Vue 3 + Vite SPA (Shadcn UI tasarım kiti)
 └─ src/
@@ -303,8 +325,8 @@ web/                            # Vue 3 + Vite SPA (Shadcn UI tasarım kiti)
    ├─ stores/                   # Pinia global state tanımları
    ├─ views/                    # Route'a bağlı sayfa bileşenleri
    ├─ router/                   # Vue Router konfigürasyonu
-   └─ utils/                    # Front‑end yardımcı fonksiyonlar
+   ├─ utils/                    # Front‑end yardımcı fonksiyonlar
+   └─ types/                    # Frontend'e özel tip tanımları
 ```
 
 > **Not**: `packages/` dizini isteğe bağlıdır ancak uzun vadede paylaşılan kodu tek yerde toplamak (örn. tipler, lint kuralları) monorepo bakımını kolaylaştırır.
-

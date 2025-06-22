@@ -1,9 +1,12 @@
 import { Pool } from 'pg';
-import { Session } from '@sync-watch-app/shared-types';
+import { Session, SessionParticipant } from '@sync-watch-app/shared-types';
 
 export class SessionModel {
   constructor(private db: Pool) {}
 
+  /**
+   * Create new session (without participants initially)
+   */
   async create(sessionData: {
     title: string;
     description?: string;
@@ -27,46 +30,63 @@ export class SessionModel {
       sessionData.hostId,
     ]);
     
-    return result.rows[0];
+    return {
+      ...result.rows[0],
+      participants: []
+    };
   }
 
+  /**
+   * Find session by ID with participants
+   */
   async findById(id: string): Promise<Session | null> {
     const query = `
       SELECT 
-        id, title, description, host_id as "hostId", 
-        video_provider as "videoProvider", video_id as "videoId", 
-        video_title as "videoTitle", video_duration as "videoDuration",
-        last_action as "lastAction", last_action_time_as_second as "lastActionTimeAsSecond",
-        last_action_timestamp as "lastActionTimestamp", is_active as "isActive",
-        created_at as "createdAt", updated_at as "updatedAt"
-      FROM sessions 
-      WHERE id = $1
-    `;
-    
-    const result = await this.db.query(query, [id]);
-    return result.rows[0] || null;
-  }
-
-  async findActiveSessionsByUserId(userId: string): Promise<Session[]> {
-    const query = `
-      SELECT DISTINCT 
         s.id, s.title, s.description, s.host_id as "hostId", 
         s.video_provider as "videoProvider", s.video_id as "videoId", 
         s.video_title as "videoTitle", s.video_duration as "videoDuration",
         s.last_action as "lastAction", s.last_action_time_as_second as "lastActionTimeAsSecond",
         s.last_action_timestamp as "lastActionTimestamp", s.is_active as "isActive",
-        s.created_at as "createdAt", s.updated_at as "updatedAt"
+        s.created_at as "createdAt", s.updated_at as "updatedAt",
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'sessionId', sp.session_id,
+              'userId', sp.user_id,
+              'name', u.name,
+              'avatar', u.avatar,
+              'joinedAt', sp.joined_at,
+              'isOnline', sp.is_online,
+              'lastSeen', sp.last_seen
+            ) ORDER BY sp.joined_at
+          ) FILTER (WHERE sp.user_id IS NOT NULL AND sp.is_online = true), 
+          '[]'
+        ) as participants
       FROM sessions s
       LEFT JOIN session_participants sp ON s.id = sp.session_id
-      WHERE s.is_active = true 
-        AND (s.host_id = $1 OR (sp.user_id = $1 AND sp.is_online = true))
-      ORDER BY s.updated_at DESC
+      LEFT JOIN users u ON sp.user_id = u.id
+      WHERE s.id = $1
+      GROUP BY s.id, s.title, s.description, s.host_id, s.video_provider, s.video_id, 
+               s.video_title, s.video_duration, s.last_action, s.last_action_time_as_second, 
+               s.last_action_timestamp, s.is_active, s.created_at, s.updated_at
     `;
     
-    const result = await this.db.query(query, [userId]);
-    return result.rows;
+    const result = await this.db.query(query, [id]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const row = result.rows[0];
+    return {
+      ...row,
+      participants: Array.isArray(row.participants) ? row.participants : []
+    };
   }
 
+  /**
+   * Find all active sessions without participants (for public listing)
+   */
   async findActiveSessions(): Promise<Session[]> {
     const query = `
       SELECT 
@@ -78,20 +98,27 @@ export class SessionModel {
         created_at as "createdAt", updated_at as "updatedAt"
       FROM sessions 
       WHERE is_active = true
-      ORDER BY updated_at DESC
+      ORDER BY created_at DESC
     `;
     
     const result = await this.db.query(query);
-    return result.rows;
+    
+    return result.rows.map(session => ({
+      ...session,
+      participants: []
+    }));
   }
 
+  /**
+   * Update session video and return updated session with participants
+   */
   async updateVideo(id: string, videoData: {
     videoProvider: 'youtube';
     videoId: string;
     videoTitle: string;
     videoDuration: number;
   }): Promise<Session | null> {
-    const query = `
+    const updateQuery = `
       UPDATE sessions 
       SET 
         video_provider = $2,
@@ -100,18 +127,12 @@ export class SessionModel {
         video_duration = $5,
         last_action = 'pause',
         last_action_time_as_second = 0,
-        last_action_timestamp = NOW()
+        last_action_timestamp = NOW(),
+        updated_at = NOW()
       WHERE id = $1 AND is_active = true
-      RETURNING 
-        id, title, description, host_id as "hostId", 
-        video_provider as "videoProvider", video_id as "videoId", 
-        video_title as "videoTitle", video_duration as "videoDuration",
-        last_action as "lastAction", last_action_time_as_second as "lastActionTimeAsSecond",
-        last_action_timestamp as "lastActionTimestamp", is_active as "isActive",
-        created_at as "createdAt", updated_at as "updatedAt"
     `;
     
-    const result = await this.db.query(query, [
+    const result = await this.db.query(updateQuery, [
       id,
       videoData.videoProvider,
       videoData.videoId,
@@ -119,10 +140,18 @@ export class SessionModel {
       videoData.videoDuration,
     ]);
     
-    return result.rows[0] || null;
+    if (result.rowCount === 0) {
+      return null;
+    }
+    
+    // Return updated session with participants
+    return this.findById(id);
   }
 
-  async addParticipant(sessionId: string, userId: string): Promise<void> {
+  /**
+   * Add participant to session and return updated session
+   */
+  async addParticipant(sessionId: string, userId: string): Promise<Session> {
     const query = `
       INSERT INTO session_participants (session_id, user_id)
       VALUES ($1, $2)
@@ -133,32 +162,45 @@ export class SessionModel {
     `;
     
     await this.db.query(query, [sessionId, userId]);
+    
+    // Return updated session with participants
+    const updatedSession = await this.findById(sessionId);
+    if (!updatedSession) {
+      throw new Error('Failed to get updated session after adding participant');
+    }
+    
+    return updatedSession;
   }
 
+  /**
+   * Remove participant from session
+   */
   async removeParticipant(sessionId: string, userId: string): Promise<void> {
+    console.log(`👤 SessionModel: Removing participant ${userId} from session ${sessionId}`);
     const query = `
       UPDATE session_participants 
       SET is_online = false, last_seen = NOW()
       WHERE session_id = $1 AND user_id = $2
     `;
     
-    await this.db.query(query, [sessionId, userId]);
+    const result = await this.db.query(query, [sessionId, userId]);
+    console.log(`👤 SessionModel: Participant removal affected ${result.rowCount} rows`);
   }
 
-  async getParticipants(sessionId: string): Promise<Array<{
-    userId: string;
-    name: string;
-    avatar: string;
-    joinedAt: Date;
-    isOnline: boolean;
-  }>> {
+  /**
+   * Get participants list for session (used for host assignment)
+   */
+  async getParticipants(sessionId: string): Promise<SessionParticipant[]> {
+    console.log(`👥 SessionModel: Getting participants for session ${sessionId}`);
     const query = `
       SELECT 
+        sp.session_id as "sessionId",
         sp.user_id as "userId",
         u.name,
         u.avatar,
         sp.joined_at as "joinedAt",
-        sp.is_online as "isOnline"
+        sp.is_online as "isOnline",
+        sp.last_seen as "lastSeen"
       FROM session_participants sp
       JOIN users u ON sp.user_id = u.id
       WHERE sp.session_id = $1 AND sp.is_online = true
@@ -166,9 +208,13 @@ export class SessionModel {
     `;
     
     const result = await this.db.query(query, [sessionId]);
+    console.log(`👥 SessionModel: Found ${result.rows.length} online participants for session ${sessionId}`);
     return result.rows;
   }
 
+  /**
+   * Check if user is participant in session
+   */
   async isUserParticipant(sessionId: string, userId: string): Promise<boolean> {
     const query = `
       SELECT 1 FROM sessions s
@@ -180,15 +226,5 @@ export class SessionModel {
     
     const result = await this.db.query(query, [sessionId, userId]);
     return result.rows.length > 0;
-  }
-
-  async deactivate(id: string): Promise<void> {
-    const query = `
-      UPDATE sessions 
-      SET is_active = false
-      WHERE id = $1
-    `;
-    
-    await this.db.query(query, [id]);
   }
 } 

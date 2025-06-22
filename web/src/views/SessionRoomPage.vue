@@ -81,17 +81,16 @@
         <!-- Left Side - Video and Session Info -->
         <div class="flex-1 flex flex-col">
           <!-- Video Area -->
-          <div class="flex-1 bg-black">
-            <div v-if="currentSession.videoId" class="h-full flex items-center justify-center">
-              <div class="text-center text-white">
-                <svg class="h-16 w-16 mx-auto mb-4 text-white opacity-50" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
-                  <path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="black"/>
-                </svg>
-                <p class="text-lg font-medium">{{ currentSession.videoTitle }}</p>
-                <p class="text-sm opacity-75">Video player will be here</p>
-              </div>
-            </div>
+          <div class="flex-1 bg-black relative min-h-[400px]">
+            <VideoPlayer
+              v-if="currentSession.videoId"
+              :video-id="currentSession.videoId"
+              :is-host="isHost"
+              :show-controls="true"
+              @video-action="handleVideoAction"
+              @video-ready="handleVideoReady"
+              @video-error="handleVideoError"
+            />
             <div v-else class="h-full flex items-center justify-center">
               <div class="text-center text-white">
                 <svg class="h-16 w-16 mx-auto mb-4 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,8 +137,10 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionsStore } from '@/stores/sessions'
 import { useAuthStore } from '@/stores/auth'
+import { useVideoSyncStore } from '@/stores/videoSync'
 import ParticipantsList from '@/components/ParticipantsList.vue'
 import SessionInfo from '@/components/SessionInfo.vue'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 
 interface Props {
@@ -150,6 +151,7 @@ const props = defineProps<Props>()
 const router = useRouter()
 const sessionsStore = useSessionsStore()
 const authStore = useAuthStore()
+const videoSyncStore = useVideoSyncStore()
 
 // Reactive state
 const loading = ref(true)
@@ -158,16 +160,17 @@ const error = ref<string | null>(null)
 // WebSocket composable
 const { 
   connected: websocketConnected, 
-  participants, 
+  participants: wsParticipants, 
   connect, 
-  disconnect 
+  disconnect,
+  sendVideoAction,
+  leaveSession: leaveSessionWS
 } = useWebSocket(props.id)
 
 // Computed properties
 const currentSession = computed(() => sessionsStore.currentSession)
-const isHost = computed(() => 
-  currentSession.value && authStore.user?.id === currentSession.value.hostId
-)
+const isHost = computed(() => sessionsStore.isHost)
+const participants = computed(() => sessionsStore.participants)
 
 // Methods
 const loadSession = async () => {
@@ -175,14 +178,18 @@ const loadSession = async () => {
     loading.value = true
     error.value = null
     
+    console.log(`📋 SessionRoom: Loading session ${props.id}`)
+    
     // Join session via API
     await sessionsStore.joinSession(props.id)
     
     // Connect to WebSocket
     await connect()
     
+    console.log(`✅ SessionRoom: Session ${props.id} loaded successfully`)
+    
   } catch (err: any) {
-    console.error('Failed to load session:', err)
+    console.error('❌ SessionRoom: Failed to load session:', err)
     error.value = err.response?.data?.message || 'Oturum yüklenemedi'
   } finally {
     loading.value = false
@@ -191,18 +198,20 @@ const loadSession = async () => {
 
 const handleLeaveSession = async () => {
   try {
-    // Disconnect from WebSocket
-    disconnect()
+    console.log(`🚪 SessionRoom: Leaving session ${props.id}`)
     
-    // Leave session
+    // Send leave message via WebSocket before disconnecting
+    leaveSessionWS()
+    
+    // Clean up store state
     sessionsStore.leaveSession()
     
     // Navigate back to sessions
-    router.push('/sessions')
+    await router.push('/sessions')
+    
+    console.log(`✅ SessionRoom: Successfully left session ${props.id}`)
   } catch (err) {
-    console.error('Failed to leave session:', err)
-    // Still navigate away even if there's an error
-    router.push('/sessions')
+    console.error('❌ SessionRoom: Error leaving session:', err)
   }
 }
 
@@ -217,6 +226,25 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
   } catch (error) {
     console.error('Failed to set video:', error)
   }
+}
+
+const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
+  if (isHost.value) {
+    // Host'un video action'ları WebSocket üzerinden diğer kullanıcılara gönderilir
+    sendVideoAction(action, time)
+    
+    // Video sync store'u güncelle
+    videoSyncStore.setAction(action)
+    videoSyncStore.setCurrentTime(time)
+  }
+}
+
+const handleVideoReady = () => {
+  console.log('Video player is ready')
+}
+
+const handleVideoError = (error: string) => {
+  console.error('Video player error:', error)
 }
 
 // Lifecycle

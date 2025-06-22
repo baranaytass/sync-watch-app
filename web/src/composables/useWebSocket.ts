@@ -1,13 +1,8 @@
 import { ref, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-
-interface Participant {
-  userId: string
-  name: string
-  avatar: string
-  isOnline: boolean
-  joinedAt: Date
-}
+import { useVideoSyncStore } from '@/stores/videoSync'
+import { useSessionsStore } from '@/stores/sessions'
+import type { SessionParticipant } from '@sync-watch-app/shared-types'
 
 interface WebSocketMessage {
   type: string
@@ -16,10 +11,12 @@ interface WebSocketMessage {
 
 export const useWebSocket = (sessionId: string) => {
   const authStore = useAuthStore()
+  const videoSyncStore = useVideoSyncStore()
+  const sessionsStore = useSessionsStore()
   
   // Reactive state
   const connected = ref(false)
-  const participants = ref<Participant[]>([])
+  const participants = ref<SessionParticipant[]>([])
   const error = ref<string | null>(null)
   
   // WebSocket instance
@@ -33,6 +30,7 @@ export const useWebSocket = (sessionId: string) => {
     return new Promise((resolve, reject) => {
       try {
         error.value = null
+        console.log(`🔌 WebSocket: Connecting to session ${sessionId}`)
         
         // WebSocket URL - using HTTP host but WS protocol
         const wsUrl = `ws://localhost:3000/ws/session/${sessionId}`
@@ -40,12 +38,13 @@ export const useWebSocket = (sessionId: string) => {
         ws = new WebSocket(wsUrl)
         
         ws.onopen = () => {
-          console.log(`WebSocket connected to session ${sessionId}`)
+          console.log(`✅ WebSocket: Connected to session ${sessionId}`)
           connected.value = true
           reconnectAttempts = 0
           
           // Send authentication if available
           if (authStore.user) {
+            console.log(`🔐 WebSocket: Sending auth for user ${authStore.user.id}`)
             sendMessage('auth', { userId: authStore.user.id })
           }
           
@@ -57,18 +56,18 @@ export const useWebSocket = (sessionId: string) => {
             const message: WebSocketMessage = JSON.parse(event.data)
             handleMessage(message)
           } catch (err) {
-            console.error('Failed to parse WebSocket message:', err)
+            console.error('❌ WebSocket: Failed to parse message:', err)
           }
         }
         
         ws.onclose = (event) => {
-          console.log('WebSocket disconnected:', event.code, event.reason)
+          console.log(`🔌 WebSocket: Disconnected from session ${sessionId}:`, event.code, event.reason)
           connected.value = false
           
           // Auto-reconnect if not a normal closure
           if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
             reconnectAttempts++
-            console.log(`Reconnecting... Attempt ${reconnectAttempts}/${maxReconnectAttempts}`)
+            console.log(`🔄 WebSocket: Reconnecting... Attempt ${reconnectAttempts}/${maxReconnectAttempts}`)
             
             reconnectTimeout = setTimeout(() => {
               connect().catch(console.error)
@@ -77,13 +76,13 @@ export const useWebSocket = (sessionId: string) => {
         }
         
         ws.onerror = (event) => {
-          console.error('WebSocket error:', event)
+          console.error('❌ WebSocket: Connection error:', event)
           error.value = 'WebSocket bağlantı hatası'
           reject(new Error('WebSocket connection failed'))
         }
         
       } catch (err) {
-        console.error('Failed to create WebSocket:', err)
+        console.error('❌ WebSocket: Failed to create connection:', err)
         error.value = 'WebSocket bağlantısı oluşturulamadı'
         reject(err)
       }
@@ -91,6 +90,8 @@ export const useWebSocket = (sessionId: string) => {
   }
   
   const disconnect = () => {
+    console.log(`🔌 WebSocket: Disconnecting from session ${sessionId}`)
+    
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout)
       reconnectTimeout = null
@@ -108,92 +109,149 @@ export const useWebSocket = (sessionId: string) => {
   // Message handling
   const sendMessage = (type: string, data: any) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
+      console.log(`📤 WebSocket: Sending ${type} message:`, data)
       ws.send(JSON.stringify({ type, data }))
     } else {
-      console.warn('WebSocket is not connected')
+      console.warn('⚠️ WebSocket: Cannot send message, not connected')
     }
   }
   
   const handleMessage = (message: WebSocketMessage) => {
+    console.log(`📥 WebSocket: Received ${message.type} message:`, message.data)
+    
     switch (message.type) {
       case 'participants':
-        participants.value = message.data.participants.map((p: any) => ({
-          ...p,
-          joinedAt: new Date(p.joinedAt),
-          isOnline: true // All participants in the message are online
+        // Update participants list from server
+        const participantsList: SessionParticipant[] = message.data.participants.map((p: any) => ({
+          sessionId: sessionId,
+          userId: p.userId,
+          name: p.name,
+          avatar: p.avatar,
+          joinedAt: new Date(), // Will be updated with real data from backend
+          isOnline: true,
+          lastSeen: new Date()
         }))
+        
+        participants.value = participantsList
+        sessionsStore.updateParticipants(participantsList)
+        console.log(`👥 WebSocket: Updated participants list: ${participantsList.length} participants`)
         break
         
       case 'user_joined':
-        const newParticipant = {
-          ...message.data,
-          joinedAt: new Date(message.data.joinedAt),
-          isOnline: true
+        // Handle new user joining
+        const newParticipant: SessionParticipant = {
+          sessionId: sessionId,
+          userId: message.data.userId,
+          name: message.data.name,
+          avatar: message.data.avatar,
+          joinedAt: new Date(),
+          isOnline: true,
+          lastSeen: new Date()
         }
         
         // Add if not already in list
         if (!participants.value.some(p => p.userId === newParticipant.userId)) {
           participants.value.push(newParticipant)
+          sessionsStore.updateParticipants(participants.value)
+          console.log(`👤 WebSocket: User joined: ${newParticipant.name}`)
         }
         break
         
       case 'user_left':
+        // Handle user leaving
         participants.value = participants.value.filter(
           p => p.userId !== message.data.userId
         )
+        sessionsStore.updateParticipants(participants.value)
+        console.log(`👤 WebSocket: User left: ${message.data.userId}`)
         break
         
       case 'video_sync':
-        // This will be handled by video sync store later
-        console.log('Video sync event:', message.data)
+        // Handle video synchronization
+        console.log(`🎥 WebSocket: Video sync - ${message.data.action} at ${message.data.time}s`)
+        videoSyncStore.syncVideo({
+          action: message.data.action,
+          time: message.data.time,
+          timestamp: new Date(message.data.timestamp)
+        })
         break
         
       case 'video_update':
-        // This will be handled by session store
-        console.log('Video update event:', message.data)
+        // Handle video metadata update
+        console.log(`🎥 WebSocket: Video updated: ${message.data.videoTitle}`)
+        if (sessionsStore.currentSession) {
+          sessionsStore.updateCurrentSession({
+            videoProvider: message.data.videoProvider,
+            videoId: message.data.videoId,
+            videoTitle: message.data.videoTitle,
+            videoDuration: message.data.videoDuration
+          })
+        }
+        break
+        
+      case 'session_update':
+        // Handle session info update (host change, etc.)
+        console.log(`👑 WebSocket: Session updated - new host: ${message.data.hostId}`)
+        if (sessionsStore.currentSession) {
+          sessionsStore.updateCurrentSession({
+            hostId: message.data.hostId
+          })
+        }
+        break
+        
+      case 'session_ended':
+        // Handle session termination
+        console.log(`❌ WebSocket: Session ${sessionId} ended`)
+        disconnect()
+        // Navigate back to sessions list or show message
         break
         
       case 'chat':
         // This will be handled by chat store later
-        console.log('Chat message:', message.data)
+        console.log('💬 WebSocket: Chat message:', message.data)
         break
         
       case 'error':
-        console.error('WebSocket error message:', message.data)
-        error.value = message.data.message || 'WebSocket hatası'
+        console.error('❌ WebSocket: Server error:', message.data)
+        error.value = message.data.message || 'Sunucu hatası'
         break
         
       case 'pong':
-        // Keep-alive response
+        // Handle ping response
+        console.log('🏓 WebSocket: Pong received')
         break
         
       default:
-        console.log('Unknown WebSocket message type:', message.type)
+        console.warn(`⚠️ WebSocket: Unknown message type: ${message.type}`)
     }
   }
   
-  // Public API
+  // Actions
   const sendVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
+    console.log(`🎥 WebSocket: Sending video action: ${action} at ${time}s`)
     sendMessage('video_action', { action, time })
   }
   
   const sendChatMessage = (message: string) => {
+    console.log(`💬 WebSocket: Sending chat message`)
     sendMessage('chat', { message })
   }
   
   const leaveSession = () => {
+    console.log(`🚪 WebSocket: Leaving session ${sessionId}`)
     sendMessage('leave', {})
+    disconnect()
   }
   
-  // Ping to keep connection alive
   const startPing = () => {
+    // Send ping every 30 seconds to keep connection alive
     const pingInterval = setInterval(() => {
       if (connected.value) {
-        sendMessage('ping', {})
+        sendMessage('ping', { timestamp: new Date() })
       } else {
         clearInterval(pingInterval)
       }
-    }, 30000) // Every 30 seconds
+    }, 30000)
     
     return pingInterval
   }
@@ -209,11 +267,12 @@ export const useWebSocket = (sessionId: string) => {
     participants,
     error,
     
-    // Methods
+    // Actions
     connect,
     disconnect,
     sendVideoAction,
     sendChatMessage,
-    leaveSession
+    leaveSession,
+    startPing
   }
 } 

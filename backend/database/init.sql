@@ -1,7 +1,7 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create users table
+-- Create users table (kalıcı veri)
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   google_id VARCHAR(255) UNIQUE NOT NULL,
@@ -12,12 +12,12 @@ CREATE TABLE users (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create sessions table
-CREATE TABLE sessions (
+-- Create sessions table (cache data - UNLOGGED)
+CREATE UNLOGGED TABLE sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  host_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  host_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
   video_provider VARCHAR(50),
   video_id VARCHAR(255),
   video_title VARCHAR(500),
@@ -30,10 +30,10 @@ CREATE TABLE sessions (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create session_participants table (unlogged for performance)
+-- Create session_participants table (cache data - UNLOGGED)
 CREATE UNLOGGED TABLE session_participants (
-  session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  session_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
+  user_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
   joined_at TIMESTAMP DEFAULT NOW(),
   is_online BOOLEAN DEFAULT TRUE,
   last_seen TIMESTAMP DEFAULT NOW(),

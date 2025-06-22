@@ -9,13 +9,24 @@ export interface User {
   updatedAt: Date;
 }
 
-// Session Model
+// Session Participant Model
+export interface SessionParticipant {
+  sessionId: string;
+  userId: string;
+  name: string;
+  avatar: string;
+  joinedAt: Date;
+  isOnline: boolean;
+  lastSeen: Date;
+}
+
+// Session Model (participants artık dahil)
 export interface Session {
   id: string;
   title: string;
   description?: string;
   hostId: string;
-  videoProvider: 'youtube';
+  videoProvider: 'youtube' | null;
   videoId: string | null;
   videoTitle: string | null;
   videoDuration: number;
@@ -23,17 +34,9 @@ export interface Session {
   lastActionTimeAsSecond: number;
   lastActionTimestamp: Date;
   isActive: boolean;
+  participants: SessionParticipant[]; // Participants list eklendi
   createdAt: Date;
   updatedAt: Date;
-}
-
-// Session Participant Model
-export interface SessionParticipant {
-  sessionId: string;
-  userId: string;
-  joinedAt: Date;
-  isOnline: boolean;
-  lastSeen: Date;
 }
 
 // Video Actions
@@ -61,6 +64,7 @@ export interface ServerToClientEvents {
   chat: {
     id: string;
     userId: string;
+    userName: string;
     message: string;
     timestamp: Date;
   };
@@ -72,12 +76,11 @@ export interface ServerToClientEvents {
     }>;
   };
   video_update: {
-    videoProvider: 'youtube';
-    videoId: string;
-    videoTitle: string;
+    videoProvider: 'youtube' | null;
+    videoId: string | null;
+    videoTitle: string | null;
     videoDuration: number;
   };
-  session_ended: Record<string, never>;
 }
 
 // API Request/Response Types

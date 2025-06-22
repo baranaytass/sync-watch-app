@@ -7,9 +7,7 @@ import sessionRoutes from './routes/sessions';
 import websocketRoutes from './routes/websocket';
 
 const server = Fastify({
-  logger: {
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  },
+  logger: false,
 });
 
 async function start(): Promise<void> {

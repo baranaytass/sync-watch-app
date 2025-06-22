@@ -12,37 +12,57 @@ export class SessionService {
     this.userModel = new UserModel(db);
   }
 
+  /**
+   * Create a new session and add creator as host participant
+   */
   async createSession(sessionData: {
     title: string;
     description?: string;
     hostId: string;
   }): Promise<Session> {
+    console.log(`🆕 SessionService: Creating session "${sessionData.title}" for host ${sessionData.hostId}`);
+    
     // Validate host exists
     const host = await this.userModel.findById(sessionData.hostId);
     if (!host) {
       throw new Error('Host user not found');
     }
 
+    console.log(`✅ SessionService: Host user validated: ${host.name} (${host.email})`);
+
     // Create session
     const session = await this.sessionModel.create(sessionData);
+    console.log(`🆕 SessionService: Session created with ID: ${session.id}`);
     
-    // Add host as participant
-    await this.sessionModel.addParticipant(session.id, sessionData.hostId);
+    // Add host as participant and get updated session
+    const sessionWithParticipants = await this.sessionModel.addParticipant(session.id, sessionData.hostId);
+    console.log(`👤 SessionService: Host added as participant to session ${session.id}`);
 
-    return session;
+    console.log(`✅ SessionService: Session creation completed: ${sessionWithParticipants.id} with ${sessionWithParticipants.participants.length} participants`);
+    return sessionWithParticipants;
   }
 
-  async getActiveSessionsForUser(userId: string): Promise<Session[]> {
-    return this.sessionModel.findActiveSessionsByUserId(userId);
-  }
-
+  /**
+   * Get all active sessions (public listing without participants)
+   */
   async getAllActiveSessions(): Promise<Session[]> {
-    return this.sessionModel.findActiveSessions();
+    console.log('📋 SessionService: Fetching all active sessions for public listing');
+    
+    const sessions = await this.sessionModel.findActiveSessions();
+    
+    console.log(`📋 SessionService: Found ${sessions.length} active sessions for public listing`);
+    return sessions;
   }
 
+  /**
+   * Get session by ID with access control and participants
+   */
   async getSessionById(sessionId: string, userId?: string): Promise<Session | null> {
+    console.log(`📋 SessionService: Fetching session ${sessionId} for user ${userId || 'anonymous'}`);
+    
     const session = await this.sessionModel.findById(sessionId);
     if (!session || !session.isActive) {
+      console.log(`❌ SessionService: Session ${sessionId} not found or not active`);
       return null;
     }
 
@@ -50,63 +70,70 @@ export class SessionService {
     if (userId) {
       const hasAccess = await this.sessionModel.isUserParticipant(sessionId, userId);
       if (!hasAccess) {
+        console.log(`🚫 SessionService: User ${userId} does not have access to session ${sessionId}`);
         throw new Error('You do not have access to this session');
       }
+      console.log(`✅ SessionService: User ${userId} has access to session ${sessionId}`);
     }
 
+    console.log(`📋 SessionService: Session ${sessionId} retrieved with ${session.participants.length} participants`);
     return session;
   }
 
-  async joinSession(sessionId: string, userId: string): Promise<{
-    session: Session;
-    participants: Array<{
-      userId: string;
-      name: string;
-      avatar: string;
-      joinedAt: Date;
-      isOnline: boolean;
-    }>;
-  }> {
+  /**
+   * Join a session as participant
+   */
+  async joinSession(sessionId: string, userId: string): Promise<Session> {
+    console.log(`🚪 SessionService: User ${userId} attempting to join session ${sessionId}`);
+    
     // Check if session exists and is active
     const session = await this.sessionModel.findById(sessionId);
     if (!session || !session.isActive) {
+      console.log(`❌ SessionService: Session ${sessionId} not found or not active`);
       throw new Error('Session not found or not active');
     }
 
     // Check if user exists
     const user = await this.userModel.findById(userId);
     if (!user) {
+      console.log(`❌ SessionService: User ${userId} not found`);
       throw new Error('User not found');
     }
 
-    // Add user as participant
-    await this.sessionModel.addParticipant(sessionId, userId);
+    console.log(`✅ SessionService: User validated: ${user.name} (${user.email})`);
 
-    // Get updated participants list
-    const participants = await this.sessionModel.getParticipants(sessionId);
+    // Add user as participant and get updated session
+    const updatedSession = await this.sessionModel.addParticipant(sessionId, userId);
+    console.log(`👤 SessionService: User ${userId} added as participant to session ${sessionId}`);
 
-    return { session, participants };
+    console.log(`✅ SessionService: Join completed - Session ${sessionId} now has ${updatedSession.participants.length} participants`);
+
+    return updatedSession;
   }
 
+  /**
+   * Leave a session (simple participant removal)
+   */
   async leaveSession(sessionId: string, userId: string): Promise<void> {
+    console.log(`🚪 SessionService: User ${userId} leaving session ${sessionId}`);
+    
     // Check if session exists
     const session = await this.sessionModel.findById(sessionId);
     if (!session) {
+      console.log(`❌ SessionService: Session ${sessionId} not found`);
       throw new Error('Session not found');
     }
 
+    console.log(`📊 SessionService: Session ${sessionId} found, current participants: ${session.participants.length}`);
+
     // Remove user from participants
     await this.sessionModel.removeParticipant(sessionId, userId);
-
-    // If user is the host and no other participants, deactivate session
-    if (session.hostId === userId) {
-      const participants = await this.sessionModel.getParticipants(sessionId);
-      if (participants.length === 0) {
-        await this.sessionModel.deactivate(sessionId);
-      }
-    }
+    console.log(`👤 SessionService: User ${userId} removed from session ${sessionId}`);
   }
 
+  /**
+   * Set video for a session (host only)
+   */
   async setSessionVideo(
     sessionId: string, 
     userId: string, 
@@ -116,16 +143,22 @@ export class SessionService {
       videoDuration: number;
     }
   ): Promise<Session> {
+    console.log(`🎥 SessionService: User ${userId} setting video for session ${sessionId}: "${videoData.videoTitle}"`);
+    
     // Check if session exists
     const session = await this.sessionModel.findById(sessionId);
     if (!session || !session.isActive) {
+      console.log(`❌ SessionService: Session ${sessionId} not found or not active`);
       throw new Error('Session not found or not active');
     }
 
     // Check if user is the host
     if (session.hostId !== userId) {
+      console.log(`🚫 SessionService: User ${userId} is not the host of session ${sessionId} (host: ${session.hostId})`);
       throw new Error('Only the host can set the video');
     }
+
+    console.log(`✅ SessionService: User ${userId} is host, proceeding with video update`);
 
     // Update session video
     const updatedSession = await this.sessionModel.updateVideo(sessionId, {
@@ -137,34 +170,26 @@ export class SessionService {
       throw new Error('Failed to update session video');
     }
 
+    console.log(`✅ SessionService: Video updated for session ${sessionId}: "${videoData.videoTitle}" (${videoData.videoDuration}s)`);
     return updatedSession;
   }
 
-  // Internal method for WebSocket usage
-  async getSessionParticipants(sessionId: string, userId?: string): Promise<Array<{
-    userId: string;
-    name: string;
-    avatar: string;
-    joinedAt: Date;
-    isOnline: boolean;
-  }>> {
-    // If userId provided, check if user has access to this session
-    if (userId) {
-      const hasAccess = await this.sessionModel.isUserParticipant(sessionId, userId);
-      if (!hasAccess) {
-        throw new Error('You do not have access to this session');
-      }
-    }
-
-    return this.sessionModel.getParticipants(sessionId);
-  }
-
+  /**
+   * Check if user is session host
+   */
   async isUserSessionHost(sessionId: string, userId: string): Promise<boolean> {
     const session = await this.sessionModel.findById(sessionId);
-    return session?.hostId === userId;
+    const isHost = session?.hostId === userId;
+    console.log(`👑 SessionService: User ${userId} is ${isHost ? '' : 'not '}host of session ${sessionId}`);
+    return isHost;
   }
 
+  /**
+   * Validate user access to session
+   */
   async validateUserSessionAccess(sessionId: string, userId: string): Promise<boolean> {
-    return this.sessionModel.isUserParticipant(sessionId, userId);
+    const hasAccess = await this.sessionModel.isUserParticipant(sessionId, userId);
+    console.log(`🔐 SessionService: User ${userId} ${hasAccess ? 'has' : 'does not have'} access to session ${sessionId}`);
+    return hasAccess;
   }
 } 

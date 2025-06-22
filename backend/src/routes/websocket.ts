@@ -75,19 +75,21 @@ export default async function websocketRoutes(
         // Leave session in database
         await sessionService.leaveSession(sessionId, userId);
 
-        // Broadcast updated participants
+        // Broadcast updated participants if there are still connections
         if (sessionSockets && sessionSockets.length > 0) {
-          const participants = await sessionService.getSessionParticipants(sessionId, userId);
-          broadcastToSession(sessionId, 'participants', {
-            participants: participants.map(p => ({
-              userId: p.userId,
-              name: p.name,
-              avatar: p.avatar,
-            })),
-          });
+          const session = await sessionService.getSessionById(sessionId);
+          if (session) {
+            broadcastToSession(sessionId, 'participants', {
+              participants: session.participants.map(p => ({
+                userId: p.userId,
+                name: p.name,
+                avatar: p.avatar,
+              })),
+            });
+          }
         }
 
-        fastify.log.info(`User ${userId} disconnected from session ${sessionId}`);
+        console.log(`🚪 WebSocket: User ${userId} disconnected from session ${sessionId}`);
 
       } catch (error) {
         fastify.log.error('Disconnection handling error:', error);
@@ -157,14 +159,15 @@ export default async function websocketRoutes(
       }
 
       // Broadcast updated participants
-      const participants = await sessionService.getSessionParticipants(sessionId, user.userId);
-      broadcastToSession(sessionId, 'participants', {
-        participants: participants.map(p => ({
-          userId: p.userId,
-          name: p.name,
-          avatar: p.avatar,
-        })),
-      });
+      if (session) {
+        broadcastToSession(sessionId, 'participants', {
+          participants: session.participants.map(p => ({
+            userId: p.userId,
+            name: p.name,
+            avatar: p.avatar,
+          })),
+        });
+      }
 
       // Set up message handler
       connection.on('message', async (rawMessage) => {
@@ -221,7 +224,7 @@ export default async function websocketRoutes(
         handleDisconnection(connection);
       });
 
-      fastify.log.info(`User ${user.userId} connected to session ${sessionId}`);
+      console.log(`🔌 WebSocket: User ${user.userId} connected to session ${sessionId}`);
 
     } catch (error) {
       fastify.log.error('WebSocket connection error:', error);

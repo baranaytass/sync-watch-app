@@ -123,11 +123,17 @@ const handleSetVideo = async () => {
   }
 }
 
-const formatDate = (date: Date | string): string => {
+const formatDate = (date: Date | string | undefined | null): string => {
+  if (!date) {
+    return 'Tarih yok'
+  }
+  
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  if (isNaN(dateObj.getTime())) {
+  
+  if (!dateObj || isNaN(dateObj.getTime())) {
     return 'Geçersiz tarih'
   }
+  
   return dateObj.toLocaleString('tr-TR', {
     day: '2-digit',
     month: '2-digit',

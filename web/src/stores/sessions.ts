@@ -1,133 +1,261 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import axios from 'axios'
-import type { User } from './auth'
-
-export interface Session {
-  id: string
-  title: string
-  description?: string
-  hostId: string
-  videoProvider: 'youtube' | null
-  videoId: string | null
-  videoTitle: string | null
-  videoDuration: number
-  lastAction: 'play' | 'pause' | 'seek'
-  lastActionTimeAsSecond: number
-  lastActionTimestamp: Date
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface CreateSessionRequest {
-  title: string
-  description?: string
-}
-
-export interface SetVideoRequest {
-  videoProvider: 'youtube'
-  videoId: string
-}
+import { ref, computed } from 'vue'
+import type { Session, SessionParticipant, CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types'
+import { useAuthStore } from './auth'
 
 export const useSessionsStore = defineStore('sessions', () => {
   // State
   const sessions = ref<Session[]>([])
   const currentSession = ref<Session | null>(null)
-  const participants = ref<User[]>([])
-  const isHost = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  // Auth store for user info
+  const authStore = useAuthStore()
+
+  // Computed properties
+  const isHost = computed(() => {
+    return currentSession.value?.hostId === authStore.user?.id
+  })
+
+  const currentUser = computed(() => authStore.user)
+
+  const isParticipant = computed(() => {
+    if (!currentSession.value || !currentUser.value) return false
+    return currentSession.value.participants.some(p => p.userId === currentUser.value!.id)
+  })
+
+  // Helper function to transform date strings
+  const transformDates = (session: any): Session => ({
+    ...session,
+    createdAt: new Date(session.createdAt),
+    updatedAt: new Date(session.updatedAt),
+    lastActionTimestamp: new Date(session.lastActionTimestamp),
+    participants: session.participants?.map((p: any) => ({
+      ...p,
+      joinedAt: new Date(p.joinedAt),
+      lastSeen: new Date(p.lastSeen),
+    })) || []
+  })
+
   // Actions
-  const fetchSessions = async () => {
-    try {
-      loading.value = true
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/sessions`, {
-        withCredentials: true
-      })
-      sessions.value = response.data.data
-    } catch (err) {
-      error.value = 'Failed to fetch sessions'
-      console.error('Fetch sessions error:', err)
-    } finally {
-      loading.value = false
-    }
-  }
+  const fetchSessions = async (): Promise<void> => {
+    console.log('📋 Sessions Store: Fetching sessions')
+    loading.value = true
+    error.value = null
 
-  const createSession = async (sessionData: CreateSessionRequest) => {
     try {
-      loading.value = true
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/sessions`, sessionData, {
-        withCredentials: true
+      const response = await fetch('/api/sessions', {
+        method: 'GET',
+        credentials: 'include',
       })
-      const newSession = response.data.data
-      sessions.value.unshift(newSession)
-      return newSession
-    } catch (err) {
-      error.value = 'Failed to create session'
-      console.error('Create session error:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
 
-  const joinSession = async (sessionId: string) => {
-    try {
-      loading.value = true
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/sessions/${sessionId}/join`, {}, {
-        withCredentials: true
-      })
-      currentSession.value = response.data.data
-      // Check if current user is host
-      // This will be set when user data is available
-    } catch (err) {
-      error.value = 'Failed to join session'
-      console.error('Join session error:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const leaveSession = () => {
-    currentSession.value = null
-    participants.value = []
-    isHost.value = false
-  }
-
-  const setSessionVideo = async (sessionId: string, videoData: SetVideoRequest) => {
-    try {
-      loading.value = true
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/sessions/${sessionId}/video`, videoData, {
-        withCredentials: true
-      })
-      if (currentSession.value?.id === sessionId) {
-        currentSession.value = response.data.data
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    } catch (err) {
-      error.value = 'Failed to set video'
-      console.error('Set video error:', err)
-      throw err
+
+      const result: ApiResponse = await response.json()
+
+      if (result.success && Array.isArray(result.data)) {
+        sessions.value = result.data.map(transformDates)
+        console.log(`📋 Sessions Store: Loaded ${sessions.value.length} sessions`)
+        sessions.value.forEach(session => {
+          console.log(`📋 Sessions Store: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`)
+        })
+      } else {
+        throw new Error(result.error?.message || 'Failed to fetch sessions')
+      }
+    } catch (err: any) {
+      console.error('📋 Sessions Store: Error fetching sessions:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to fetch sessions'
+      sessions.value = []
     } finally {
       loading.value = false
     }
   }
 
-  const updateParticipants = (participantsList: User[]) => {
-    participants.value = participantsList
+  const fetchSession = async (sessionId: string): Promise<void> => {
+    console.log(`📋 Sessions Store: Fetching session ${sessionId}`)
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse = await response.json()
+
+      if (result.success && result.data) {
+        currentSession.value = transformDates(result.data)
+        console.log(`📋 Sessions Store: Loaded session ${sessionId} with ${currentSession.value.participants.length} participants`)
+      } else {
+        throw new Error(result.error?.message || 'Failed to fetch session')
+      }
+    } catch (err: any) {
+      console.error(`📋 Sessions Store: Error fetching session ${sessionId}:`, err)
+      error.value = err instanceof Error ? err.message : 'Failed to fetch session'
+      currentSession.value = null
+    } finally {
+      loading.value = false
+    }
   }
 
-  const setCurrentSession = (session: Session) => {
-    currentSession.value = session
+  const createSession = async (data: CreateSessionRequest): Promise<Session | null> => {
+    console.log('➕ Sessions Store: Creating new session:', data.title)
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse = await response.json()
+
+      if (result.success && result.data) {
+        const newSession = transformDates(result.data)
+        console.log(`➕ Sessions Store: Created session ${newSession.id}: "${newSession.title}"`)
+        
+        // Add to sessions list
+        sessions.value.unshift(newSession)
+        
+        return newSession
+      } else {
+        throw new Error(result.error?.message || 'Failed to create session')
+      }
+    } catch (err: any) {
+      console.error('➕ Sessions Store: Error creating session:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to create session'
+      return null
+    } finally {
+      loading.value = false
+    }
   }
 
-  const setIsHost = (host: boolean) => {
-    isHost.value = host
+  const joinSession = async (sessionId: string): Promise<Session | null> => {
+    console.log(`🚪 Sessions Store: Joining session ${sessionId}`)
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/join`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse = await response.json()
+
+      if (result.success && result.data) {
+        const joinedSession = transformDates(result.data)
+        console.log(`🚪 Sessions Store: Joined session ${sessionId} with ${joinedSession.participants.length} participants`)
+        
+        // Update current session
+        currentSession.value = joinedSession
+        
+        // Update in sessions list if exists
+        const sessionIndex = sessions.value.findIndex(s => s.id === sessionId)
+        if (sessionIndex >= 0) {
+          sessions.value[sessionIndex] = joinedSession
+        }
+        
+        return joinedSession
+      } else {
+        throw new Error(result.error?.message || 'Failed to join session')
+      }
+    } catch (err: any) {
+      console.error(`🚪 Sessions Store: Error joining session ${sessionId}:`, err)
+      error.value = err instanceof Error ? err.message : 'Failed to join session'
+      return null
+    } finally {
+      loading.value = false
+    }
   }
 
-  const clearError = () => {
+  const setSessionVideo = async (sessionId: string, data: SetSessionVideoRequest): Promise<Session | null> => {
+    console.log(`🎥 Sessions Store: Setting video for session ${sessionId}:`, data.videoId)
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse = await response.json()
+
+      if (result.success && result.data) {
+        const updatedSession = transformDates(result.data)
+        console.log(`🎥 Sessions Store: Video set for session ${sessionId}: "${updatedSession.videoTitle}"`)
+        
+        // Update current session
+        if (currentSession.value && currentSession.value.id === sessionId) {
+          currentSession.value = updatedSession
+        }
+        
+        // Update in sessions list if exists
+        const sessionIndex = sessions.value.findIndex(s => s.id === sessionId)
+        if (sessionIndex >= 0) {
+          sessions.value[sessionIndex] = updatedSession
+        }
+        
+        return updatedSession
+      } else {
+        throw new Error(result.error?.message || 'Failed to set session video')
+      }
+    } catch (err: any) {
+      console.error(`🎥 Sessions Store: Error setting video for session ${sessionId}:`, err)
+      error.value = err instanceof Error ? err.message : 'Failed to set session video'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updateCurrentSession = (updatedSession: Partial<Session>): void => {
+    if (currentSession.value) {
+      console.log(`🔄 Sessions Store: Updating current session ${currentSession.value.id}`)
+      currentSession.value = { ...currentSession.value, ...updatedSession }
+      
+      // Also update in sessions list if exists
+      const sessionIndex = sessions.value.findIndex(s => s.id === currentSession.value!.id)
+      if (sessionIndex >= 0) {
+        sessions.value[sessionIndex] = currentSession.value
+      }
+    }
+  }
+
+  const clearSessions = (): void => {
+    console.log('🗑️ Sessions Store: Clearing all sessions')
+    sessions.value = []
+    currentSession.value = null
     error.value = null
   }
 
@@ -135,19 +263,19 @@ export const useSessionsStore = defineStore('sessions', () => {
     // State
     sessions,
     currentSession,
-    participants,
-    isHost,
     loading,
     error,
+    // Computed
+    isHost,
+    isParticipant,
+    currentUser,
     // Actions
     fetchSessions,
+    fetchSession,
     createSession,
     joinSession,
-    leaveSession,
     setSessionVideo,
-    updateParticipants,
-    setCurrentSession,
-    setIsHost,
-    clearError
+    updateCurrentSession,
+    clearSessions,
   }
 }) 

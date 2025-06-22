@@ -139,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import AuthLayout from '@/components/AuthLayout.vue'
 import SessionCard from '@/components/SessionCard.vue'
@@ -211,14 +211,20 @@ const handleJoinSession = async (sessionId: string) => {
   }
 }
 
-// Mock participant count (in real app, this would come from WebSocket or API)
+// Get participant count from sessions list 
 const getParticipantCount = (sessionId: string): number => {
-  // This is a mock - in real implementation, this would be tracked via WebSocket
-  return Math.floor(Math.random() * 5) + 1
+  // Note: This is a placeholder until we implement real-time participant tracking
+  // For now, all sessions show 0 participants unless actively being tracked
+  return 0
 }
 
 // Lifecycle
 onMounted(() => {
+  loadSessions()
+})
+
+// Reload sessions when returning to this page
+onActivated(() => {
   loadSessions()
 })
 </script> 
