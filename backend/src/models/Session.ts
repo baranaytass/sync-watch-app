@@ -56,10 +56,10 @@ export class SessionModel {
               'name', u.name,
               'avatar', u.avatar,
               'joinedAt', sp.joined_at,
-              'isOnline', sp.is_online,
+              'isOnline', true,
               'lastSeen', sp.last_seen
             ) ORDER BY sp.joined_at
-          ) FILTER (WHERE sp.user_id IS NOT NULL AND sp.is_online = true), 
+          ) FILTER (WHERE sp.user_id IS NOT NULL), 
           '[]'
         ) as participants
       FROM sessions s
@@ -173,13 +173,12 @@ export class SessionModel {
   }
 
   /**
-   * Remove participant from session
+   * Remove participant from session (delete completely to avoid ghost records)
    */
   async removeParticipant(sessionId: string, userId: string): Promise<void> {
     console.log(`👤 SessionModel: Removing participant ${userId} from session ${sessionId}`);
     const query = `
-      UPDATE session_participants 
-      SET is_online = false, last_seen = NOW()
+      DELETE FROM session_participants 
       WHERE session_id = $1 AND user_id = $2
     `;
     
@@ -199,16 +198,16 @@ export class SessionModel {
         u.name,
         u.avatar,
         sp.joined_at as "joinedAt",
-        sp.is_online as "isOnline",
+        true as "isOnline",
         sp.last_seen as "lastSeen"
       FROM session_participants sp
       JOIN users u ON sp.user_id = u.id
-      WHERE sp.session_id = $1 AND sp.is_online = true
+      WHERE sp.session_id = $1
       ORDER BY sp.joined_at ASC
     `;
     
     const result = await this.db.query(query, [sessionId]);
-    console.log(`👥 SessionModel: Found ${result.rows.length} online participants for session ${sessionId}`);
+    console.log(`👥 SessionModel: Found ${result.rows.length} participants for session ${sessionId}`);
     return result.rows;
   }
 
@@ -221,7 +220,7 @@ export class SessionModel {
       LEFT JOIN session_participants sp ON s.id = sp.session_id
       WHERE s.id = $1 
         AND s.is_active = true
-        AND (s.host_id = $2 OR (sp.user_id = $2 AND sp.is_online = true))
+        AND (s.host_id = $2 OR sp.user_id = $2)
     `;
     
     const result = await this.db.query(query, [sessionId, userId]);
@@ -229,19 +228,19 @@ export class SessionModel {
   }
 
   /**
-   * Get active participant count for session
+   * Get participant count for session
    */
   async getActiveParticipantCount(sessionId: string): Promise<number> {
-    console.log(`🔢 SessionModel: Getting active participant count for session ${sessionId}`);
+    console.log(`🔢 SessionModel: Getting participant count for session ${sessionId}`);
     const query = `
       SELECT COUNT(*) as count
       FROM session_participants 
-      WHERE session_id = $1 AND is_online = true
+      WHERE session_id = $1
     `;
     
     const result = await this.db.query(query, [sessionId]);
     const count = parseInt(result.rows[0].count, 10);
-    console.log(`🔢 SessionModel: Session ${sessionId} has ${count} active participants`);
+    console.log(`🔢 SessionModel: Session ${sessionId} has ${count} participants`);
     return count;
   }
 
@@ -271,20 +270,18 @@ export class SessionModel {
   }
 
   /**
-   * Clean up sessions with no active participants (for maintenance)
+   * Clean up sessions with no participants (for maintenance)
    */
   async cleanupEmptySessions(): Promise<number> {
     console.log('🧹 SessionModel: Starting cleanup of empty sessions');
     
     const query = `
       DELETE FROM sessions 
-      WHERE id IN (
-        SELECT s.id 
-        FROM sessions s
-        LEFT JOIN session_participants sp ON s.id = sp.session_id AND sp.is_online = true
-        WHERE s.is_active = true
-        GROUP BY s.id
-        HAVING COUNT(sp.user_id) = 0
+      WHERE is_active = true
+      AND id NOT IN (
+        SELECT DISTINCT session_id 
+        FROM session_participants 
+        WHERE session_id IS NOT NULL
       )
     `;
     
@@ -300,16 +297,17 @@ export class SessionModel {
   async cleanupInactiveSessions(maxAgeMinutes: number = 30): Promise<number> {
     console.log(`🧹 SessionModel: Starting cleanup of sessions inactive for ${maxAgeMinutes} minutes`);
     
-    // Delete sessions with no participants that haven't been updated recently
+    // Delete sessions that are old and have no participants
     const query = `
       DELETE FROM sessions 
-      WHERE id IN (
-        SELECT s.id 
-        FROM sessions s
-        LEFT JOIN session_participants sp ON s.id = sp.session_id AND sp.is_online = true
-        WHERE s.updated_at < NOW() - INTERVAL '${maxAgeMinutes} minutes'
-        GROUP BY s.id, s.updated_at
-        HAVING COUNT(sp.user_id) = 0
+      WHERE (
+        updated_at < NOW() - INTERVAL '${maxAgeMinutes} minutes'
+        OR created_at < NOW() - INTERVAL '${maxAgeMinutes * 2} minutes'
+      )
+      AND id NOT IN (
+        SELECT DISTINCT session_id 
+        FROM session_participants 
+        WHERE session_id IS NOT NULL
       )
     `;
     
