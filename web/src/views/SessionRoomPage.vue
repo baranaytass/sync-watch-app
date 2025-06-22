@@ -83,7 +83,7 @@
           <!-- Video Area -->
           <div class="flex-1 bg-black relative min-h-[400px]">
             <VideoPlayer
-              v-if="currentSession.videoId"
+              v-if="currentSession?.videoId"
               :video-id="currentSession.videoId"
               :is-host="isHost"
               :show-controls="true"
@@ -104,6 +104,7 @@
 
           <!-- Session Info Panel -->
           <SessionInfo 
+            v-if="currentSession"
             :session="currentSession"
             :is-host="isHost"
             @set-video="handleSetVideo"
@@ -113,7 +114,10 @@
         <!-- Right Side - Chat and Participants -->
         <div class="w-96 bg-white border-l flex flex-col">
           <!-- Participants -->
-          <ParticipantsList :participants="participants" :host-id="currentSession.hostId" />
+          <ParticipantsList 
+            :participants="participants" 
+            :host-id="currentSession?.hostId || ''" 
+          />
           
           <!-- Chat will be here -->
           <div class="flex-1 border-t">
@@ -170,7 +174,7 @@ const {
 // Computed properties
 const currentSession = computed(() => sessionsStore.currentSession)
 const isHost = computed(() => sessionsStore.isHost)
-const participants = computed(() => sessionsStore.participants)
+const participants = computed(() => sessionsStore.participants || [])
 
 // Methods
 const loadSession = async () => {
@@ -220,7 +224,6 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
     if (!currentSession.value) return
     
     await sessionsStore.setSessionVideo(currentSession.value.id, {
-      videoProvider: 'youtube',
       videoId: videoData.videoId
     })
   } catch (error) {

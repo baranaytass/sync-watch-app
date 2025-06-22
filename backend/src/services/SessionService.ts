@@ -113,8 +113,9 @@ export class SessionService {
 
   /**
    * Leave a session (simple participant removal)
+   * Returns true if session was deactivated due to no remaining participants
    */
-  async leaveSession(sessionId: string, userId: string): Promise<void> {
+  async leaveSession(sessionId: string, userId: string): Promise<boolean> {
     console.log(`🚪 SessionService: User ${userId} leaving session ${sessionId}`);
     
     // Check if session exists
@@ -129,6 +130,19 @@ export class SessionService {
     // Remove user from participants
     await this.sessionModel.removeParticipant(sessionId, userId);
     console.log(`👤 SessionService: User ${userId} removed from session ${sessionId}`);
+
+    // Check if any participants remain
+    const activeParticipantCount = await this.sessionModel.getActiveParticipantCount(sessionId);
+    
+    if (activeParticipantCount === 0) {
+      console.log(`🔚 SessionService: No participants remaining in session ${sessionId}, deactivating session`);
+      await this.sessionModel.deactivateSession(sessionId);
+      console.log(`✅ SessionService: Session ${sessionId} deactivated successfully`);
+      return true; // Session was deactivated
+    } else {
+      console.log(`✅ SessionService: Session ${sessionId} still has ${activeParticipantCount} active participants`);
+      return false; // Session remains active
+    }
   }
 
   /**

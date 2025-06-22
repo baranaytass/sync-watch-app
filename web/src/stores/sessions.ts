@@ -25,6 +25,10 @@ export const useSessionsStore = defineStore('sessions', () => {
     return currentSession.value.participants.some(p => p.userId === currentUser.value!.id)
   })
 
+  const participants = computed(() => {
+    return currentSession.value?.participants || []
+  })
+
   // Helper function to transform date strings
   const transformDates = (session: any): Session => ({
     ...session,
@@ -252,6 +256,35 @@ export const useSessionsStore = defineStore('sessions', () => {
     }
   }
 
+  const updateParticipants = (participantsList: Array<{ userId: string; name: string; avatar: string }>): void => {
+    if (currentSession.value) {
+      console.log(`👥 Sessions Store: Updating participants (${participantsList.length} users)`)
+      
+      // Convert WebSocket participant format to SessionParticipant format
+      const updatedParticipants: SessionParticipant[] = participantsList.map(p => {
+        // Find existing participant to preserve their data
+        const existing = currentSession.value!.participants.find(ep => ep.userId === p.userId)
+        return {
+          sessionId: currentSession.value!.id,
+          userId: p.userId,
+          name: p.name,
+          avatar: p.avatar,
+          joinedAt: existing?.joinedAt || new Date(),
+          isOnline: true,
+          lastSeen: new Date(),
+        }
+      })
+      
+      updateCurrentSession({ participants: updatedParticipants })
+    }
+  }
+
+  const leaveSession = (): void => {
+    console.log('🚪 Sessions Store: Leaving current session')
+    currentSession.value = null
+    error.value = null
+  }
+
   const clearSessions = (): void => {
     console.log('🗑️ Sessions Store: Clearing all sessions')
     sessions.value = []
@@ -269,6 +302,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     isHost,
     isParticipant,
     currentUser,
+    participants,
     // Actions
     fetchSessions,
     fetchSession,
@@ -276,6 +310,8 @@ export const useSessionsStore = defineStore('sessions', () => {
     joinSession,
     setSessionVideo,
     updateCurrentSession,
+    updateParticipants,
+    leaveSession,
     clearSessions,
   }
 }) 

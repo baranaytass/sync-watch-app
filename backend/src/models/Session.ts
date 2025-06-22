@@ -227,4 +227,36 @@ export class SessionModel {
     const result = await this.db.query(query, [sessionId, userId]);
     return result.rows.length > 0;
   }
+
+  /**
+   * Get active participant count for session
+   */
+  async getActiveParticipantCount(sessionId: string): Promise<number> {
+    console.log(`🔢 SessionModel: Getting active participant count for session ${sessionId}`);
+    const query = `
+      SELECT COUNT(*) as count
+      FROM session_participants 
+      WHERE session_id = $1 AND is_online = true
+    `;
+    
+    const result = await this.db.query(query, [sessionId]);
+    const count = parseInt(result.rows[0].count, 10);
+    console.log(`🔢 SessionModel: Session ${sessionId} has ${count} active participants`);
+    return count;
+  }
+
+  /**
+   * Deactivate session (mark as inactive)
+   */
+  async deactivateSession(sessionId: string): Promise<void> {
+    console.log(`🔚 SessionModel: Deactivating session ${sessionId}`);
+    const query = `
+      UPDATE sessions 
+      SET is_active = false, updated_at = NOW()
+      WHERE id = $1
+    `;
+    
+    const result = await this.db.query(query, [sessionId]);
+    console.log(`🔚 SessionModel: Session deactivation affected ${result.rowCount} rows`);
+  }
 } 

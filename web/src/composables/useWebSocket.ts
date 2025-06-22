@@ -201,9 +201,10 @@ export const useWebSocket = (sessionId: string) => {
         
       case 'session_ended':
         // Handle session termination
-        console.log(`❌ WebSocket: Session ${sessionId} ended`)
+        console.log(`❌ WebSocket: Session ${sessionId} ended - ${message.data.reason}: ${message.data.message}`)
+        error.value = message.data.message || 'Oturum sona erdi'
         disconnect()
-        // Navigate back to sessions list or show message
+        // Could trigger navigation back to sessions list or show a modal
         break
         
       case 'chat':

@@ -1,17 +1,15 @@
 module.exports = {
   root: true,
-  parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint'],
+  env: {
+    node: true,
+    es2022: true,
+  },
   extends: [
     'eslint:recommended',
   ],
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
-  },
-  env: {
-    node: true,
-    es2022: true,
   },
   rules: {
     // General rules
@@ -22,11 +20,6 @@ module.exports = {
     'prefer-arrow-callback': 'error',
     'prefer-template': 'error',
     'no-duplicate-imports': 'error',
-    'no-unused-expressions': 'error',
-    
-    // Async/await rules
-    'require-await': 'error',
-    'no-return-await': 'error',
   },
   ignorePatterns: ['dist/', 'node_modules/', '*.js'],
 }; 

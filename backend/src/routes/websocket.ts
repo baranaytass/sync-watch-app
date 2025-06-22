@@ -55,7 +55,7 @@ export default async function websocketRoutes(
 
     if (sessionId && userId) {
       try {
-        // Remove from connections
+        // Remove from connections first
         const sessionSockets = connections.get(sessionId);
         if (sessionSockets) {
           const index = sessionSockets.indexOf(socket);
@@ -72,20 +72,33 @@ export default async function websocketRoutes(
         socketToSession.delete(socket);
         socketToUser.delete(socket);
 
-        // Leave session in database
-        await sessionService.leaveSession(sessionId, userId);
+        // Leave session in database and check if session was deactivated
+        const sessionDeactivated = await sessionService.leaveSession(sessionId, userId);
 
-        // Broadcast updated participants if there are still connections
-        if (sessionSockets && sessionSockets.length > 0) {
-          const session = await sessionService.getSessionById(sessionId);
-          if (session) {
-            broadcastToSession(sessionId, 'participants', {
-              participants: session.participants.map(p => ({
-                userId: p.userId,
-                name: p.name,
-                avatar: p.avatar,
-              })),
+        if (sessionDeactivated) {
+          // Session was deactivated due to no participants
+          console.log(`🔚 WebSocket: Session ${sessionId} was deactivated due to no remaining participants`);
+          
+          // If there are still WebSocket connections for some reason, notify them
+          if (sessionSockets && sessionSockets.length > 0) {
+            broadcastToSession(sessionId, 'session_ended', {
+              reason: 'no_participants',
+              message: 'Session ended - no participants remaining'
             });
+          }
+        } else {
+          // Session still active, broadcast updated participants
+          if (sessionSockets && sessionSockets.length > 0) {
+            const session = await sessionService.getSessionById(sessionId);
+            if (session) {
+              broadcastToSession(sessionId, 'participants', {
+                participants: session.participants.map(p => ({
+                  userId: p.userId,
+                  name: p.name,
+                  avatar: p.avatar,
+                })),
+              });
+            }
           }
         }
 
