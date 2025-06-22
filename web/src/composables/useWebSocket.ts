@@ -234,16 +234,29 @@ export const useWebSocket = (sessionId: string) => {
   // Leave session gracefully
   const leaveSession = async () => {
     console.log(`🚪 WebSocket: Leaving session ${sessionId}`)
+    console.log(`🚪 WebSocket: Connection state - connected: ${connected.value}, readyState: ${ws?.readyState}`)
     
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      // Send leave message and wait briefly for it to be processed
-      sendMessage('leave', {})
+    try {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        console.log(`📤 WebSocket: Sending leave message to server`)
+        // Send leave message and wait briefly for it to be processed
+        sendMessage('leave', {})
+        
+        // Wait for message to be sent
+        console.log(`⏳ WebSocket: Waiting 200ms for leave message to be processed`)
+        await new Promise(resolve => setTimeout(resolve, 200))
+        console.log(`✅ WebSocket: Leave message processing time completed`)
+      } else {
+        console.warn(`⚠️ WebSocket: Cannot send leave message - connection not open`)
+      }
       
-      // Wait for message to be sent
-      await new Promise(resolve => setTimeout(resolve, 200))
+      console.log(`🧹 WebSocket: Cleaning up connection`)
+      cleanup()
+      console.log(`✅ WebSocket: Leave session completed`)
+    } catch (error) {
+      console.error(`❌ WebSocket: Error during leave session:`, error)
+      cleanup() // Still cleanup even if there's an error
     }
-    
-    cleanup()
   }
 
   // Page lifecycle handlers

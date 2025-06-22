@@ -166,7 +166,6 @@ const {
   connected: websocketConnected, 
   participants: wsParticipants, 
   connect, 
-  disconnect,
   sendVideoAction,
   leaveSession: leaveSessionWS
 } = useWebSocket(props.id)
@@ -261,6 +260,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  disconnect()
+  leaveSessionWS()
 })
 </script> 
