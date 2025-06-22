@@ -257,7 +257,9 @@ export default async function websocketRoutes(
 
           const handler = messageHandlers[message.type as keyof typeof messageHandlers];
           if (handler) {
+            console.log(`🔄 WebSocket: Processing ${message.type} message for user ${user.userId}`);
             await handler(connection, message.data, user.userId, sessionId);
+            console.log(`✅ WebSocket: Completed ${message.type} message for user ${user.userId}`);
           } else {
             console.warn(`⚠️ WebSocket: Unknown message type: ${message.type}`);
             sendMessage(connection, 'error', { message: `Unknown message type: ${message.type}` });

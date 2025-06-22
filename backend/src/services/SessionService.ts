@@ -51,6 +51,15 @@ export class SessionService {
     const sessions = await this.sessionModel.findActiveSessions();
     
     console.log(`📋 SessionService: Found ${sessions.length} active sessions for public listing`);
+    sessions.forEach(session => {
+      console.log(`📋 SessionService: - Session ${session.id}: "${session.title}"`);
+      console.log(`📋 SessionService:   - Total participants: ${session.participants.length}`);
+      console.log(`📋 SessionService:   - Online participants: ${session.participants.filter(p => p.isOnline).length}`);
+      session.participants.forEach(p => {
+        console.log(`📋 SessionService:     * ${p.name} (${p.userId}) - Online: ${p.isOnline}, LastSeen: ${p.lastSeen}`);
+      });
+    });
+    
     return sessions;
   }
 
@@ -126,13 +135,18 @@ export class SessionService {
     }
 
     console.log(`📊 SessionService: Session ${sessionId} found, current participants: ${session.participants.length}`);
+    session.participants.forEach(p => {
+      console.log(`📊 SessionService:   - ${p.name} (${p.userId}) - Online: ${p.isOnline}`);
+    });
 
     // Remove user from participants
+    console.log(`🗑️ SessionService: Removing user ${userId} from session ${sessionId} participants`);
     await this.sessionModel.removeParticipant(sessionId, userId);
     console.log(`👤 SessionService: User ${userId} removed from session ${sessionId}`);
 
     // Check if any participants remain
     const activeParticipantCount = await this.sessionModel.getActiveParticipantCount(sessionId);
+    console.log(`📊 SessionService: Active participant count after removal: ${activeParticipantCount}`);
     
     if (activeParticipantCount === 0) {
       console.log(`🔚 SessionService: No participants remaining in session ${sessionId}, deleting session`);

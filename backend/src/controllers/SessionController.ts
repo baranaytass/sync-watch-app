@@ -29,7 +29,12 @@ export class SessionController {
       
       console.log(`📋 SessionController: Found ${sessions.length} active sessions`);
       sessions.forEach(session => {
-        console.log(`📋 SessionController: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`);
+        console.log(`📋 SessionController: - Session ${session.id}: "${session.title}"`);
+        console.log(`📋 SessionController:   - Host: ${session.hostId}`);
+        console.log(`📋 SessionController:   - Participants: ${session.participants.length}`);
+        session.participants.forEach(p => {
+          console.log(`📋 SessionController:     * ${p.name} (${p.userId}) - Online: ${p.isOnline}`);
+        });
       });
       
       const response: ApiResponse = {

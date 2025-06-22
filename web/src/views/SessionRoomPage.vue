@@ -202,15 +202,20 @@ const loadSession = async () => {
 
 const handleLeaveSession = async () => {
   try {
-    console.log(`🚪 SessionRoom: Leaving session ${props.id}`)
+    console.log(`🚪 SessionRoom: User clicked leave button for session ${props.id}`)
+    console.log(`🚪 SessionRoom: WebSocket connected: ${websocketConnected.value}`)
     
     // Send leave message via WebSocket before disconnecting
-    leaveSessionWS()
+    console.log(`📤 SessionRoom: Calling leaveSessionWS()`)
+    await leaveSessionWS()
+    console.log(`✅ SessionRoom: leaveSessionWS() completed`)
     
     // Clean up store state
+    console.log(`🧹 SessionRoom: Cleaning up store state`)
     sessionsStore.leaveSession()
     
     // Navigate back to sessions
+    console.log(`🔄 SessionRoom: Navigating to /sessions`)
     await router.push('/sessions')
     
     console.log(`✅ SessionRoom: Successfully left session ${props.id}`)

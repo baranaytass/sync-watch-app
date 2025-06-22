@@ -85,7 +85,7 @@ export class SessionModel {
   }
 
   /**
-   * Find all active sessions without participants (for public listing)
+   * Find all active sessions with participants (for public listing)
    */
   async findActiveSessions(): Promise<Session[]> {
     const query = `
@@ -103,10 +103,17 @@ export class SessionModel {
     
     const result = await this.db.query(query);
     
-    return result.rows.map(session => ({
-      ...session,
-      participants: []
-    }));
+    // Load participants for each session
+    const sessions: Session[] = [];
+    for (const sessionRow of result.rows) {
+      const participants = await this.getParticipants(sessionRow.id);
+      sessions.push({
+        ...sessionRow,
+        participants
+      });
+    }
+    
+    return sessions;
   }
 
   /**
