@@ -84,3 +84,11 @@ You are a senior full-stack developer with expertise in Vue 3, Fastify, TypeScri
 - Write self-documenting code
 - Use consistent naming conventions
 - Implement proper typing throughout
+
+## Git & Commit Guidelines
+- **ALL commit messages MUST be in English** - This is critical for code consistency
+- Use conventional commit format: `type(scope): description`
+- Common types: feat, fix, docs, style, refactor, test, chore
+- Keep commit messages concise but descriptive
+- Use imperative mood: "Add feature" not "Added feature"
+- Reference issues/PRs when applicable: "fix: resolve session cleanup issue (#123)"

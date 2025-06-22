@@ -1,4 +1,5 @@
 import { ref, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useVideoSyncStore } from '@/stores/videoSync'
 import { useSessionsStore } from '@/stores/sessions'
@@ -13,6 +14,7 @@ export const useWebSocket = (sessionId: string) => {
   const authStore = useAuthStore()
   const videoSyncStore = useVideoSyncStore()
   const sessionsStore = useSessionsStore()
+  const router = useRouter()
   
   // Reactive state
   const connected = ref(false)
@@ -201,10 +203,17 @@ export const useWebSocket = (sessionId: string) => {
         
       case 'session_ended':
         // Handle session termination
-        console.log(`❌ WebSocket: Session ${sessionId} ended - ${message.data.reason}: ${message.data.message}`)
+        console.log(`🔚 WebSocket: Session ${sessionId} ended - ${message.data.reason}: ${message.data.message}`)
         error.value = message.data.message || 'Oturum sona erdi'
+        
+        // Clear current session
+        sessionsStore.leaveSession()
+        
+        // Disconnect WebSocket
         disconnect()
-        // Could trigger navigation back to sessions list or show a modal
+        
+        // Navigate back to sessions page
+        router.push('/sessions')
         break
         
       case 'chat':

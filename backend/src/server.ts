@@ -5,10 +5,53 @@ import { authenticateJWT } from './utils/auth';
 import authRoutes from './routes/auth';
 import sessionRoutes from './routes/sessions';
 import websocketRoutes from './routes/websocket';
+import { SessionService } from './services/SessionService';
 
 const server = Fastify({
   logger: false,
 });
+
+// Session cleanup job
+let cleanupInterval: NodeJS.Timeout | null = null;
+
+function startSessionCleanupJob(sessionService: SessionService): void {
+  console.log('🧹 Starting session cleanup job (runs every 10 minutes)');
+  
+  const runCleanup = async (): Promise<void> => {
+    try {
+      console.log('🧹 Running session cleanup job...');
+      
+      // Clean up empty sessions
+      const emptySessionsDeleted = await sessionService.cleanupEmptySessions();
+      
+      // Clean up sessions inactive for more than 30 minutes
+      const inactiveSessionsDeleted = await sessionService.cleanupInactiveSessions(30);
+      
+      const totalDeleted = emptySessionsDeleted + inactiveSessionsDeleted;
+      if (totalDeleted > 0) {
+        console.log(`🧹 Session cleanup completed: ${totalDeleted} sessions deleted`);
+      } else {
+        console.log('🧹 Session cleanup completed: No sessions needed cleanup');
+      }
+    } catch (error) {
+      console.error('❌ Session cleanup job failed:', error);
+    }
+  };
+
+  // Run cleanup immediately on startup
+  runCleanup();
+  
+  // Schedule cleanup every 10 minutes
+  cleanupInterval = setInterval(runCleanup, 10 * 60 * 1000);
+}
+
+function stopSessionCleanupJob(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+    console.log('🧹 Session cleanup job stopped');
+  }
+}
 
 async function start(): Promise<void> {
   try {
@@ -57,6 +100,10 @@ async function start(): Promise<void> {
     
     await server.listen({ port, host });
     console.log(`Server listening on ${host}:${port}`);
+
+    // Start session cleanup job
+    const sessionService = new SessionService(db.getPool());
+    startSessionCleanupJob(sessionService);
   } catch (error) {
     server.log.error(error);
     process.exit(1);
@@ -66,12 +113,14 @@ async function start(): Promise<void> {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('Received SIGINT, shutting down gracefully...');
+  stopSessionCleanupJob();
   await server.close();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('Received SIGTERM, shutting down gracefully...');
+  stopSessionCleanupJob();
   await server.close();
   process.exit(0);
 });

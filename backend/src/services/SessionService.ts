@@ -135,10 +135,10 @@ export class SessionService {
     const activeParticipantCount = await this.sessionModel.getActiveParticipantCount(sessionId);
     
     if (activeParticipantCount === 0) {
-      console.log(`🔚 SessionService: No participants remaining in session ${sessionId}, deactivating session`);
-      await this.sessionModel.deactivateSession(sessionId);
-      console.log(`✅ SessionService: Session ${sessionId} deactivated successfully`);
-      return true; // Session was deactivated
+      console.log(`🔚 SessionService: No participants remaining in session ${sessionId}, deleting session`);
+      await this.sessionModel.deleteSession(sessionId);
+      console.log(`✅ SessionService: Session ${sessionId} deleted successfully`);
+      return true; // Session was deleted
     } else {
       console.log(`✅ SessionService: Session ${sessionId} still has ${activeParticipantCount} active participants`);
       return false; // Session remains active
@@ -205,5 +205,21 @@ export class SessionService {
     const hasAccess = await this.sessionModel.isUserParticipant(sessionId, userId);
     console.log(`🔐 SessionService: User ${userId} ${hasAccess ? 'has' : 'does not have'} access to session ${sessionId}`);
     return hasAccess;
+  }
+
+  /**
+   * Cleanup empty sessions (no active participants)
+   */
+  async cleanupEmptySessions(): Promise<number> {
+    console.log('🧹 SessionService: Running cleanup for empty sessions');
+    return await this.sessionModel.cleanupEmptySessions();
+  }
+
+  /**
+   * Cleanup inactive sessions (older than specified time)
+   */
+  async cleanupInactiveSessions(maxAgeMinutes: number = 30): Promise<number> {
+    console.log(`🧹 SessionService: Running cleanup for sessions inactive for ${maxAgeMinutes} minutes`);
+    return await this.sessionModel.cleanupInactiveSessions(maxAgeMinutes);
   }
 } 

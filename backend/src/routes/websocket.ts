@@ -72,12 +72,12 @@ export default async function websocketRoutes(
         socketToSession.delete(socket);
         socketToUser.delete(socket);
 
-        // Leave session in database and check if session was deactivated
-        const sessionDeactivated = await sessionService.leaveSession(sessionId, userId);
+        // Leave session in database and check if session was deleted
+        const sessionDeleted = await sessionService.leaveSession(sessionId, userId);
 
-        if (sessionDeactivated) {
-          // Session was deactivated due to no participants
-          console.log(`🔚 WebSocket: Session ${sessionId} was deactivated due to no remaining participants`);
+        if (sessionDeleted) {
+          // Session was deleted due to no participants
+          console.log(`🔚 WebSocket: Session ${sessionId} was deleted due to no remaining participants`);
           
           // If there are still WebSocket connections for some reason, notify them
           if (sessionSockets && sessionSockets.length > 0) {

@@ -246,17 +246,76 @@ export class SessionModel {
   }
 
   /**
-   * Deactivate session (mark as inactive)
+   * Delete session completely (including participants)
    */
-  async deactivateSession(sessionId: string): Promise<void> {
-    console.log(`🔚 SessionModel: Deactivating session ${sessionId}`);
-    const query = `
-      UPDATE sessions 
-      SET is_active = false, updated_at = NOW()
+  async deleteSession(sessionId: string): Promise<void> {
+    console.log(`🗑️ SessionModel: Deleting session ${sessionId} completely`);
+    
+    // First delete all participants
+    const deleteParticipantsQuery = `
+      DELETE FROM session_participants 
+      WHERE session_id = $1
+    `;
+    
+    const participantsResult = await this.db.query(deleteParticipantsQuery, [sessionId]);
+    console.log(`🗑️ SessionModel: Deleted ${participantsResult.rowCount} participants from session ${sessionId}`);
+    
+    // Then delete the session
+    const deleteSessionQuery = `
+      DELETE FROM sessions 
       WHERE id = $1
     `;
     
-    const result = await this.db.query(query, [sessionId]);
-    console.log(`🔚 SessionModel: Session deactivation affected ${result.rowCount} rows`);
+    const sessionResult = await this.db.query(deleteSessionQuery, [sessionId]);
+    console.log(`🗑️ SessionModel: Session deletion affected ${sessionResult.rowCount} sessions`);
+  }
+
+  /**
+   * Clean up sessions with no active participants (for maintenance)
+   */
+  async cleanupEmptySessions(): Promise<number> {
+    console.log('🧹 SessionModel: Starting cleanup of empty sessions');
+    
+    const query = `
+      DELETE FROM sessions 
+      WHERE id IN (
+        SELECT s.id 
+        FROM sessions s
+        LEFT JOIN session_participants sp ON s.id = sp.session_id AND sp.is_online = true
+        WHERE s.is_active = true
+        GROUP BY s.id
+        HAVING COUNT(sp.user_id) = 0
+      )
+    `;
+    
+    const result = await this.db.query(query);
+    const deletedCount = result.rowCount || 0;
+    console.log(`🧹 SessionModel: Cleaned up ${deletedCount} empty sessions`);
+    return deletedCount;
+  }
+
+  /**
+   * Clean up sessions older than specified minutes with no activity
+   */
+  async cleanupInactiveSessions(maxAgeMinutes: number = 30): Promise<number> {
+    console.log(`🧹 SessionModel: Starting cleanup of sessions inactive for ${maxAgeMinutes} minutes`);
+    
+    // Delete sessions with no participants that haven't been updated recently
+    const query = `
+      DELETE FROM sessions 
+      WHERE id IN (
+        SELECT s.id 
+        FROM sessions s
+        LEFT JOIN session_participants sp ON s.id = sp.session_id AND sp.is_online = true
+        WHERE s.updated_at < NOW() - INTERVAL '${maxAgeMinutes} minutes'
+        GROUP BY s.id, s.updated_at
+        HAVING COUNT(sp.user_id) = 0
+      )
+    `;
+    
+    const result = await this.db.query(query);
+    const deletedCount = result.rowCount || 0;
+    console.log(`🧹 SessionModel: Cleaned up ${deletedCount} inactive sessions`);
+    return deletedCount;
   }
 } 
