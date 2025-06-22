@@ -29,84 +29,143 @@ export default async function websocketRoutes(
   // Helper functions
   const sendMessage = (socket: SocketStream, type: string, data: any): void => {
     try {
-      socket.socket.send(JSON.stringify({ type, data }));
+      if (socket.socket.readyState === 1) { // WebSocket.OPEN
+        socket.socket.send(JSON.stringify({ type, data }));
+      }
     } catch (error) {
-      fastify.log.error('Error sending message:', error);
+      console.error('❌ WebSocket: Error sending message:', error);
     }
   };
 
-  const broadcastToSession = (sessionId: string, type: string, data: any): void => {
+  const broadcastToSession = (sessionId: string, type: string, data: any, excludeSocket?: SocketStream): void => {
     const sockets = connections.get(sessionId);
     if (!sockets) return;
 
     const message = JSON.stringify({ type, data });
-          sockets.forEach(socket => {
+    sockets.forEach(socket => {
+      if (socket !== excludeSocket) {
         try {
-          socket.socket.send(message);
+          if (socket.socket.readyState === 1) { // WebSocket.OPEN
+            socket.socket.send(message);
+          }
         } catch (error) {
-          fastify.log.error('Error broadcasting message:', error);
+          console.error('❌ WebSocket: Error broadcasting message:', error);
         }
-      });
+      }
+    });
   };
 
-  const handleDisconnection = async (socket: SocketStream): Promise<void> => {
+  // Connection cleanup
+  const cleanupConnection = (socket: SocketStream): void => {
+    const sessionId = socketToSession.get(socket);
+    if (sessionId) {
+      const sessionSockets = connections.get(sessionId);
+      if (sessionSockets) {
+        const index = sessionSockets.indexOf(socket);
+        if (index > -1) {
+          sessionSockets.splice(index, 1);
+        }
+        
+        if (sessionSockets.length === 0) {
+          connections.delete(sessionId);
+        }
+      }
+    }
+
+    socketToSession.delete(socket);
+    socketToUser.delete(socket);
+  };
+
+  // Handle user disconnection from session
+  const handleUserLeave = async (socket: SocketStream): Promise<void> => {
     const sessionId = socketToSession.get(socket);
     const userId = socketToUser.get(socket);
 
-    if (sessionId && userId) {
-      try {
-        // Remove from connections first
-        const sessionSockets = connections.get(sessionId);
-        if (sessionSockets) {
-          const index = sessionSockets.indexOf(socket);
-          if (index > -1) {
-            sessionSockets.splice(index, 1);
-          }
-          
-          if (sessionSockets.length === 0) {
-            connections.delete(sessionId);
-          }
+    console.log(`🚪 WebSocket: handleUserLeave - sessionId: ${sessionId}, userId: ${userId}`);
+
+    if (!sessionId || !userId) {
+      console.log(`⚠️ WebSocket: handleUserLeave called but missing sessionId or userId`);
+      return;
+    }
+
+    try {
+      // Clean up connection mapping first
+      cleanupConnection(socket);
+
+      // Remove user from session in database
+      const sessionDeleted = await sessionService.leaveSession(sessionId, userId);
+
+      if (sessionDeleted) {
+        console.log(`🔚 WebSocket: Session ${sessionId} was deleted - no participants remaining`);
+        
+        // Notify any remaining connections (shouldn't be any, but just in case)
+        broadcastToSession(sessionId, 'session_ended', {
+          reason: 'no_participants',
+          message: 'Session ended - no participants remaining'
+        });
+      } else {
+        console.log(`✅ WebSocket: User ${userId} left session ${sessionId}, session still active`);
+        
+        // Update participant list for remaining users
+        const session = await sessionService.getSessionById(sessionId);
+        if (session) {
+          broadcastToSession(sessionId, 'participants', {
+            participants: session.participants.map(p => ({
+              userId: p.userId,
+              name: p.name,
+              avatar: p.avatar,
+            })),
+          });
         }
-
-        // Clean up mappings
-        socketToSession.delete(socket);
-        socketToUser.delete(socket);
-
-        // Leave session in database and check if session was deleted
-        const sessionDeleted = await sessionService.leaveSession(sessionId, userId);
-
-        if (sessionDeleted) {
-          // Session was deleted due to no participants
-          console.log(`🔚 WebSocket: Session ${sessionId} was deleted due to no remaining participants`);
-          
-          // If there are still WebSocket connections for some reason, notify them
-          if (sessionSockets && sessionSockets.length > 0) {
-            broadcastToSession(sessionId, 'session_ended', {
-              reason: 'no_participants',
-              message: 'Session ended - no participants remaining'
-            });
-          }
-        } else {
-          // Session still active, broadcast updated participants
-          if (sessionSockets && sessionSockets.length > 0) {
-            const session = await sessionService.getSessionById(sessionId);
-            if (session) {
-              broadcastToSession(sessionId, 'participants', {
-                participants: session.participants.map(p => ({
-                  userId: p.userId,
-                  name: p.name,
-                  avatar: p.avatar,
-                })),
-              });
-            }
-          }
-        }
-
-        console.log(`🚪 WebSocket: User ${userId} disconnected from session ${sessionId}`);
-
-      } catch (error) {
-        fastify.log.error('Disconnection handling error:', error);
       }
+
+    } catch (error) {
+      console.error('❌ WebSocket: Error handling user leave:', error);
+    }
+  };
+
+  // Message handlers
+  const messageHandlers = {
+    leave: async (socket: SocketStream, _data: any, userId: string, sessionId: string) => {
+      console.log(`🚪 WebSocket: User ${userId} manually leaving session ${sessionId}`);
+      await handleUserLeave(socket);
+      socket.end();
+    },
+
+    video_action: async (socket: SocketStream, data: any, userId: string, sessionId: string) => {
+      // Check if user is host
+      const isHost = await sessionService.isUserSessionHost(sessionId, userId);
+      if (isHost) {
+        console.log(`🎥 WebSocket: Host ${userId} sent video action: ${data.action} at ${data.time}s`);
+        broadcastToSession(sessionId, 'video_sync', {
+          action: data.action,
+          time: data.time,
+          timestamp: new Date(),
+        }, socket);
+      } else {
+        console.log(`⚠️ WebSocket: Non-host ${userId} tried to send video action`);
+      }
+    },
+
+    chat: async (_socket: SocketStream, data: any, userId: string, sessionId: string) => {
+      if (data.message && data.message.trim().length > 0) {
+        const user = await userModel.findById(userId);
+        if (user) {
+          const chatMessage = {
+            id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            userId: user.id,
+            userName: user.name,
+            message: data.message.trim(),
+            timestamp: new Date(),
+          };
+          console.log(`💬 WebSocket: Chat message from ${user.name} in session ${sessionId}`);
+          broadcastToSession(sessionId, 'chat', chatMessage);
+        }
+      }
+    },
+
+    ping: async (socket: SocketStream, _data: any, _userId: string, _sessionId: string) => {
+      sendMessage(socket, 'pong', { timestamp: new Date() });
     }
   };
 
@@ -125,6 +184,7 @@ export default async function websocketRoutes(
     }
 
     const user = authRequest.user;
+    let userDetails: any = null;
 
     try {
       // Validate session access
@@ -136,7 +196,7 @@ export default async function websocketRoutes(
       }
 
       // Get user details
-      const userDetails = await userModel.findById(user.userId);
+      userDetails = await userModel.findById(user.userId);
       if (!userDetails) {
         sendMessage(connection, 'error', { message: 'User not found' });
         connection.end();
@@ -154,9 +214,16 @@ export default async function websocketRoutes(
       // Join session in database
       await sessionService.joinSession(sessionId, user.userId);
 
-      // Send current session state
+      // Get updated session state
       const session = await sessionService.getSessionById(sessionId);
-      if (session && session.videoId) {
+      if (!session) {
+        sendMessage(connection, 'error', { message: 'Session not found' });
+        connection.end();
+        return;
+      }
+
+      // Send current video state if available
+      if (session.videoId) {
         sendMessage(connection, 'video_update', {
           videoProvider: session.videoProvider,
           videoId: session.videoId,
@@ -171,76 +238,44 @@ export default async function websocketRoutes(
         });
       }
 
-      // Broadcast updated participants
-      if (session) {
-        broadcastToSession(sessionId, 'participants', {
-          participants: session.participants.map(p => ({
-            userId: p.userId,
-            name: p.name,
-            avatar: p.avatar,
-          })),
-        });
-      }
+      // Broadcast updated participants to all users in session
+      broadcastToSession(sessionId, 'participants', {
+        participants: session.participants.map(p => ({
+          userId: p.userId,
+          name: p.name,
+          avatar: p.avatar,
+        })),
+      });
+
+      console.log(`🔌 WebSocket: User ${userDetails.name} (${user.userId}) connected to session ${sessionId}`);
 
       // Set up message handler
       connection.on('message', async (rawMessage) => {
         try {
           const message = JSON.parse(rawMessage.toString());
+          console.log(`📨 WebSocket: Message from ${userDetails.name}: ${message.type}`, message.data);
 
-          switch (message.type) {
-            case 'video_action':
-              // Check if user is host
-              const isHost = await sessionService.isUserSessionHost(sessionId, user.userId);
-              if (isHost) {
-                broadcastToSession(sessionId, 'video_sync', {
-                  action: message.data.action,
-                  time: message.data.time,
-                  timestamp: new Date(),
-                });
-              }
-              break;
-
-            case 'chat':
-              if (message.data.message && message.data.message.trim().length > 0) {
-                const chatMessage = {
-                  id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                  userId: userDetails.id,
-                  userName: userDetails.name,
-                  message: message.data.message.trim(),
-                  timestamp: new Date(),
-                };
-                broadcastToSession(sessionId, 'chat', chatMessage);
-              }
-              break;
-
-            case 'leave':
-              // Manually leave session
-              await handleDisconnection(connection);
-              connection.end();
-              break;
-
-            case 'ping':
-              sendMessage(connection, 'pong', { timestamp: new Date() });
-              break;
-
-            default:
-              sendMessage(connection, 'error', { message: `Unknown message type: ${message.type}` });
+          const handler = messageHandlers[message.type as keyof typeof messageHandlers];
+          if (handler) {
+            await handler(connection, message.data, user.userId, sessionId);
+          } else {
+            console.warn(`⚠️ WebSocket: Unknown message type: ${message.type}`);
+            sendMessage(connection, 'error', { message: `Unknown message type: ${message.type}` });
           }
         } catch (error) {
-          fastify.log.error('Message handling error:', error);
+          console.error('❌ WebSocket: Message handling error:', error);
           sendMessage(connection, 'error', { message: 'Invalid message format' });
         }
       });
 
       // Set up close handler
-      connection.on('close', () => {
-        handleDisconnection(connection);
+      connection.on('close', async () => {
+        console.log(`🔌 WebSocket: Connection closed for user ${userDetails?.name || user.userId} in session ${sessionId}`);
+        await handleUserLeave(connection);
       });
 
-      console.log(`🔌 WebSocket: User ${user.userId} connected to session ${sessionId}`);
-
     } catch (error) {
-      fastify.log.error('WebSocket connection error:', error);
+      console.error('❌ WebSocket: Connection setup error:', error);
       sendMessage(connection, 'error', { message: 'Connection failed' });
       connection.end();
     }
