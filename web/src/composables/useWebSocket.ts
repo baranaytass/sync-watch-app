@@ -27,6 +27,7 @@ export const useWebSocket = (sessionId: string) => {
   const maxReconnectAttempts = 3
   let reconnectTimeout: number | null = null
   let isManualDisconnect = false
+  let isLeavingSession = false // Prevent multiple leave calls
   
   // Cleanup function
   const cleanup = () => {
@@ -51,13 +52,14 @@ export const useWebSocket = (sessionId: string) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       try {
         const message = JSON.stringify({ type, data })
+        console.log(`📤 WebSocket: Sending ${type} message:`, message)
         ws.send(message)
-        console.log(`📤 WebSocket: Sent ${type}`, data)
+        console.log(`✅ WebSocket: Successfully sent ${type}`)
       } catch (err) {
         console.error(`❌ WebSocket: Failed to send ${type}:`, err)
       }
     } else {
-      console.warn(`⚠️ WebSocket: Cannot send ${type}, not connected`)
+      console.warn(`⚠️ WebSocket: Cannot send ${type}, not connected. ReadyState: ${ws?.readyState}`)
     }
   }
 
@@ -233,6 +235,12 @@ export const useWebSocket = (sessionId: string) => {
 
   // Leave session gracefully
   const leaveSession = async () => {
+    if (isLeavingSession) {
+      console.log(`⚠️ WebSocket: Leave session already in progress, skipping`)
+      return
+    }
+    
+    isLeavingSession = true
     console.log(`🚪 WebSocket: Leaving session ${sessionId}`)
     console.log(`🚪 WebSocket: Connection state - connected: ${connected.value}, readyState: ${ws?.readyState}`)
     
@@ -243,8 +251,8 @@ export const useWebSocket = (sessionId: string) => {
         sendMessage('leave', {})
         
         // Wait for message to be sent
-        console.log(`⏳ WebSocket: Waiting 200ms for leave message to be processed`)
-        await new Promise(resolve => setTimeout(resolve, 200))
+        console.log(`⏳ WebSocket: Waiting 500ms for leave message to be processed`)
+        await new Promise(resolve => setTimeout(resolve, 500))
         console.log(`✅ WebSocket: Leave message processing time completed`)
       } else {
         console.warn(`⚠️ WebSocket: Cannot send leave message - connection not open`)
@@ -256,6 +264,8 @@ export const useWebSocket = (sessionId: string) => {
     } catch (error) {
       console.error(`❌ WebSocket: Error during leave session:`, error)
       cleanup() // Still cleanup even if there's an error
+    } finally {
+      isLeavingSession = false
     }
   }
 
@@ -275,14 +285,7 @@ export const useWebSocket = (sessionId: string) => {
 
   // Setup page lifecycle listeners
   const setupPageLifecycle = () => {
-    // Handle page visibility changes (tab switching, minimizing)
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        handlePageHide()
-      }
-    })
-    
-    // Handle page unload (closing tab/browser)
+    // Only handle page unload (closing tab/browser) - not visibility changes
     window.addEventListener('beforeunload', handleBeforeUnload)
     
     // Handle page freeze (mobile browsers)
@@ -291,7 +294,6 @@ export const useWebSocket = (sessionId: string) => {
 
   // Cleanup page lifecycle listeners
   const cleanupPageLifecycle = () => {
-    document.removeEventListener('visibilitychange', handlePageHide)
     window.removeEventListener('beforeunload', handleBeforeUnload)
     window.removeEventListener('pagehide', handlePageHide)
   }

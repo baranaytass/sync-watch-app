@@ -252,8 +252,9 @@ export default async function websocketRoutes(
       // Set up message handler
       connection.on('message', async (rawMessage) => {
         try {
+          console.log(`📨 WebSocket: Raw message received from ${userDetails.name}:`, rawMessage.toString());
           const message = JSON.parse(rawMessage.toString());
-          console.log(`📨 WebSocket: Message from ${userDetails.name}: ${message.type}`, message.data);
+          console.log(`📨 WebSocket: Parsed message from ${userDetails.name}: ${message.type}`, message.data);
 
           const handler = messageHandlers[message.type as keyof typeof messageHandlers];
           if (handler) {
@@ -266,6 +267,7 @@ export default async function websocketRoutes(
           }
         } catch (error) {
           console.error('❌ WebSocket: Message handling error:', error);
+          console.error('❌ WebSocket: Raw message was:', rawMessage.toString());
           sendMessage(connection, 'error', { message: 'Invalid message format' });
         }
       });
