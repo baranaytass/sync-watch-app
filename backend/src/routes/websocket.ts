@@ -126,12 +126,6 @@ export default async function websocketRoutes(
 
   // Message handlers
   const messageHandlers = {
-    leave: async (socket: SocketStream, _data: any, userId: string, sessionId: string) => {
-      console.log(`🚪 WebSocket: User ${userId} manually leaving session ${sessionId}`);
-      await handleUserLeave(socket);
-      socket.end();
-    },
-
     video_action: async (socket: SocketStream, data: any, userId: string, sessionId: string) => {
       // Check if user is host
       const isHost = await sessionService.isUserSessionHost(sessionId, userId);
@@ -142,8 +136,6 @@ export default async function websocketRoutes(
           time: data.time,
           timestamp: new Date(),
         }, socket);
-      } else {
-        console.log(`⚠️ WebSocket: Non-host ${userId} tried to send video action`);
       }
     },
 
@@ -158,14 +150,10 @@ export default async function websocketRoutes(
             message: data.message.trim(),
             timestamp: new Date(),
           };
-          console.log(`💬 WebSocket: Chat message from ${user.name} in session ${sessionId}`);
+          console.log(`💬 WebSocket: Chat from ${user.name}`);
           broadcastToSession(sessionId, 'chat', chatMessage);
         }
       }
-    },
-
-    ping: async (socket: SocketStream, _data: any, _userId: string, _sessionId: string) => {
-      sendMessage(socket, 'pong', { timestamp: new Date() });
     }
   };
 
@@ -252,29 +240,23 @@ export default async function websocketRoutes(
       // Set up message handler
       connection.on('message', async (rawMessage) => {
         try {
-          console.log(`📨 WebSocket: Raw message received from ${userDetails.name}:`, rawMessage.toString());
           const message = JSON.parse(rawMessage.toString());
-          console.log(`📨 WebSocket: Parsed message from ${userDetails.name}: ${message.type}`, message.data);
-
           const handler = messageHandlers[message.type as keyof typeof messageHandlers];
           if (handler) {
-            console.log(`🔄 WebSocket: Processing ${message.type} message for user ${user.userId}`);
             await handler(connection, message.data, user.userId, sessionId);
-            console.log(`✅ WebSocket: Completed ${message.type} message for user ${user.userId}`);
           } else {
             console.warn(`⚠️ WebSocket: Unknown message type: ${message.type}`);
             sendMessage(connection, 'error', { message: `Unknown message type: ${message.type}` });
           }
         } catch (error) {
-          console.error('❌ WebSocket: Message handling error:', error);
-          console.error('❌ WebSocket: Raw message was:', rawMessage.toString());
+          console.error('❌ WebSocket: Message error:', error);
           sendMessage(connection, 'error', { message: 'Invalid message format' });
         }
       });
 
       // Set up close handler
       connection.on('close', async () => {
-        console.log(`🔌 WebSocket: Connection closed for user ${userDetails?.name || user.userId} in session ${sessionId}`);
+        console.log(`🚪 WebSocket: ${userDetails?.name} left session ${sessionId}`);
         await handleUserLeave(connection);
       });
 

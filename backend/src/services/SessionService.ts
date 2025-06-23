@@ -130,31 +130,21 @@ export class SessionService {
     // Check if session exists
     const session = await this.sessionModel.findById(sessionId);
     if (!session) {
-      console.log(`❌ SessionService: Session ${sessionId} not found`);
       throw new Error('Session not found');
     }
 
-    console.log(`📊 SessionService: Session ${sessionId} found, current participants: ${session.participants.length}`);
-    session.participants.forEach(p => {
-      console.log(`📊 SessionService:   - ${p.name} (${p.userId}) - Online: ${p.isOnline}`);
-    });
-
     // Remove user from participants
-    console.log(`🗑️ SessionService: Removing user ${userId} from session ${sessionId} participants`);
     await this.sessionModel.removeParticipant(sessionId, userId);
-    console.log(`👤 SessionService: User ${userId} removed from session ${sessionId}`);
 
     // Check if any participants remain
     const activeParticipantCount = await this.sessionModel.getActiveParticipantCount(sessionId);
-    console.log(`📊 SessionService: Active participant count after removal: ${activeParticipantCount}`);
     
     if (activeParticipantCount === 0) {
-      console.log(`🔚 SessionService: No participants remaining in session ${sessionId}, deleting session`);
+      console.log(`🔚 SessionService: Session ${sessionId} deleted (no participants)`);
       await this.sessionModel.deleteSession(sessionId);
-      console.log(`✅ SessionService: Session ${sessionId} deleted successfully`);
       return true; // Session was deleted
     } else {
-      console.log(`✅ SessionService: Session ${sessionId} still has ${activeParticipantCount} active participants`);
+      console.log(`✅ SessionService: Session ${sessionId} has ${activeParticipantCount} participants`);
       return false; // Session remains active
     }
   }

@@ -52,21 +52,18 @@ export const useWebSocket = (sessionId: string) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       try {
         const message = JSON.stringify({ type, data })
-        console.log(`📤 WebSocket: Sending ${type} message:`, message)
         ws.send(message)
-        console.log(`✅ WebSocket: Successfully sent ${type}`)
+        console.log(`📤 WebSocket: Sent ${type}`)
       } catch (err) {
         console.error(`❌ WebSocket: Failed to send ${type}:`, err)
       }
     } else {
-      console.warn(`⚠️ WebSocket: Cannot send ${type}, not connected. ReadyState: ${ws?.readyState}`)
+      console.warn(`⚠️ WebSocket: Cannot send ${type}, not connected`)
     }
   }
 
   // Handle incoming messages
   const handleMessage = (message: WebSocketMessage) => {
-    console.log(`📥 WebSocket: ${message.type}`, message.data)
-    
     switch (message.type) {
       case 'participants':
         updateParticipants(message.data.participants)
@@ -97,10 +94,6 @@ export const useWebSocket = (sessionId: string) => {
         error.value = message.data.message || 'Server error'
         break
         
-      case 'pong':
-        // Keep-alive response
-        break
-        
       default:
         console.warn(`⚠️ WebSocket: Unknown message type: ${message.type}`)
     }
@@ -120,7 +113,6 @@ export const useWebSocket = (sessionId: string) => {
     
     participants.value = participantsList
     sessionsStore.updateParticipants(participantsList)
-    console.log(`👥 WebSocket: Updated participants: ${participantsList.length} users`)
   }
 
   const addParticipant = (userData: any) => {
@@ -233,37 +225,22 @@ export const useWebSocket = (sessionId: string) => {
     })
   }
 
-  // Leave session gracefully
+  // Leave session gracefully by closing WebSocket connection
   const leaveSession = async () => {
     if (isLeavingSession) {
-      console.log(`⚠️ WebSocket: Leave session already in progress, skipping`)
       return
     }
     
     isLeavingSession = true
     console.log(`🚪 WebSocket: Leaving session ${sessionId}`)
-    console.log(`🚪 WebSocket: Connection state - connected: ${connected.value}, readyState: ${ws?.readyState}`)
     
     try {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        console.log(`📤 WebSocket: Sending leave message to server`)
-        // Send leave message and wait briefly for it to be processed
-        sendMessage('leave', {})
-        
-        // Wait for message to be sent
-        console.log(`⏳ WebSocket: Waiting 500ms for leave message to be processed`)
-        await new Promise(resolve => setTimeout(resolve, 500))
-        console.log(`✅ WebSocket: Leave message processing time completed`)
-      } else {
-        console.warn(`⚠️ WebSocket: Cannot send leave message - connection not open`)
-      }
-      
-      console.log(`🧹 WebSocket: Cleaning up connection`)
+      // Simply close the WebSocket connection - backend will handle the disconnect
       cleanup()
-      console.log(`✅ WebSocket: Leave session completed`)
+      console.log(`✅ WebSocket: Left session ${sessionId}`)
     } catch (error) {
-      console.error(`❌ WebSocket: Error during leave session:`, error)
-      cleanup() // Still cleanup even if there's an error
+      console.error(`❌ WebSocket: Error leaving session:`, error)
+      cleanup()
     } finally {
       isLeavingSession = false
     }
@@ -271,16 +248,13 @@ export const useWebSocket = (sessionId: string) => {
 
   // Page lifecycle handlers
   const handlePageHide = () => {
-    console.log('🔄 WebSocket: Page hidden, leaving session')
+    console.log('🔄 WebSocket: Page closing, leaving session')
     leaveSession()
   }
 
   const handleBeforeUnload = () => {
     console.log('🔄 WebSocket: Page unloading, leaving session')
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      // Synchronous leave for page unload
-      sendMessage('leave', {})
-    }
+    leaveSession()
   }
 
   // Setup page lifecycle listeners
