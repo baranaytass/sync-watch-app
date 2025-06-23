@@ -81,22 +81,26 @@ export default async function websocketRoutes(
     const sessionId = socketToSession.get(socket);
     const userId = socketToUser.get(socket);
 
-    console.log(`🚪 WebSocket: handleUserLeave - sessionId: ${sessionId}, userId: ${userId}`);
+    console.log(`🚪 handleUserLeave called - sessionId: ${sessionId}, userId: ${userId}`);
 
     if (!sessionId || !userId) {
-      console.log(`⚠️ WebSocket: handleUserLeave called but missing sessionId or userId`);
+      console.log(`⚠️ handleUserLeave: Missing sessionId or userId`);
       return;
     }
 
     try {
+      console.log(`🧹 Cleaning up connection for user ${userId} in session ${sessionId}`);
+      
       // Clean up connection mapping first
       cleanupConnection(socket);
 
+      console.log(`📤 Calling sessionService.leaveSession(${sessionId}, ${userId})`);
+      
       // Remove user from session in database
       const sessionDeleted = await sessionService.leaveSession(sessionId, userId);
 
       if (sessionDeleted) {
-        console.log(`🔚 WebSocket: Session ${sessionId} was deleted - no participants remaining`);
+        console.log(`🔚 Session ${sessionId} was DELETED - no participants remaining`);
         
         // Notify any remaining connections (shouldn't be any, but just in case)
         broadcastToSession(sessionId, 'session_ended', {
@@ -104,11 +108,12 @@ export default async function websocketRoutes(
           message: 'Session ended - no participants remaining'
         });
       } else {
-        console.log(`✅ WebSocket: User ${userId} left session ${sessionId}, session still active`);
+        console.log(`✅ Session ${sessionId} still active - updating participants`);
         
         // Update participant list for remaining users
         const session = await sessionService.getSessionById(sessionId);
         if (session) {
+          console.log(`📤 Broadcasting updated participants to session ${sessionId}`);
           broadcastToSession(sessionId, 'participants', {
             participants: session.participants.map(p => ({
               userId: p.userId,
@@ -116,6 +121,8 @@ export default async function websocketRoutes(
               avatar: p.avatar,
             })),
           });
+        } else {
+          console.log(`⚠️ Could not get session ${sessionId} after leave`);
         }
       }
 
@@ -130,7 +137,7 @@ export default async function websocketRoutes(
       // Check if user is host
       const isHost = await sessionService.isUserSessionHost(sessionId, userId);
       if (isHost) {
-        console.log(`🎥 WebSocket: Host ${userId} sent video action: ${data.action} at ${data.time}s`);
+
         broadcastToSession(sessionId, 'video_sync', {
           action: data.action,
           time: data.time,
@@ -150,7 +157,7 @@ export default async function websocketRoutes(
             message: data.message.trim(),
             timestamp: new Date(),
           };
-          console.log(`💬 WebSocket: Chat from ${user.name}`);
+
           broadcastToSession(sessionId, 'chat', chatMessage);
         }
       }
@@ -160,18 +167,33 @@ export default async function websocketRoutes(
   // WebSocket endpoint
   fastify.get('/ws/session/:sessionId', {
     websocket: true,
-    preHandler: [fastify.authenticate],
   }, async (connection: SocketStream, request: FastifyRequest) => {
     const { sessionId } = request.params as WebSocketParams;
-    const authRequest = request as AuthenticatedRequest;
     
-    if (!authRequest.user) {
+    // Manual JWT authentication for WebSocket
+    let user: { userId: string; email: string } | null = null;
+    
+    try {
+      const query = request.query as { token?: string };
+      const token = query.token || 
+                   request.headers.authorization?.replace('Bearer ', '') ||
+                   request.cookies?.token;
+      
+      if (!token) {
+        throw new Error('No token provided');
+      }
+      
+      const decoded = fastify.jwt.verify(token) as any;
+      user = { userId: decoded.userId, email: decoded.email };
+      
+      console.log(`🔐 WebSocket auth successful for user ${user.userId}`);
+      
+    } catch (error) {
+      console.log(`❌ WebSocket auth failed:`, error);
       sendMessage(connection, 'error', { message: 'Authentication required' });
       connection.end();
       return;
     }
-
-    const user = authRequest.user;
     let userDetails: any = null;
 
     try {
@@ -235,7 +257,7 @@ export default async function websocketRoutes(
         })),
       });
 
-      console.log(`🔌 WebSocket: User ${userDetails.name} (${user.userId}) connected to session ${sessionId}`);
+      console.log(`🔌 ${userDetails.name} joined session ${sessionId}`);
 
       // Set up message handler
       connection.on('message', async (rawMessage) => {
@@ -255,8 +277,14 @@ export default async function websocketRoutes(
       });
 
       // Set up close handler
-      connection.on('close', async () => {
-        console.log(`🚪 WebSocket: ${userDetails?.name} left session ${sessionId}`);
+      connection.socket.on('close', async (code, reason) => {
+        console.log(`🚪 WebSocket CLOSE: ${userDetails?.name} left session ${sessionId} (code: ${code}, reason: ${reason})`);
+        await handleUserLeave(connection);
+      });
+
+      // Set up error handler
+      connection.socket.on('error', async (error) => {
+        console.log(`❌ WebSocket ERROR: ${userDetails?.name} in session ${sessionId}:`, error);
         await handleUserLeave(connection);
       });
 

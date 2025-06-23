@@ -22,20 +22,7 @@ export class SessionController {
   // GET /api/sessions - Get active sessions (both user's sessions and public listing)
   async getSessions(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
     try {
-      console.log(`📋 SessionController: User ${request.user.userId} requesting sessions`);
-      
-      // Get all active sessions (this serves both user's sessions and public listing)
       const sessions = await this.sessionService.getAllActiveSessions();
-      
-      console.log(`📋 SessionController: Found ${sessions.length} active sessions`);
-      sessions.forEach(session => {
-        console.log(`📋 SessionController: - Session ${session.id}: "${session.title}"`);
-        console.log(`📋 SessionController:   - Host: ${session.hostId}`);
-        console.log(`📋 SessionController:   - Participants: ${session.participants.length}`);
-        session.participants.forEach(p => {
-          console.log(`📋 SessionController:     * ${p.name} (${p.userId}) - Online: ${p.isOnline}`);
-        });
-      });
       
       const response: ApiResponse = {
         success: true,
@@ -44,7 +31,7 @@ export class SessionController {
 
       reply.code(200).send(response);
     } catch (error) {
-      console.error('📋 SessionController: Error fetching sessions:', error);
+      console.error('❌ SessionController: Error fetching sessions:', error);
       const response: ApiResponse = {
         success: false,
         error: {
@@ -74,8 +61,6 @@ export class SessionController {
         return;
       }
 
-      console.log(`📋 SessionController: User ${request.user.userId} creating session: "${body.title}"`);
-
       const sessionData: {
         title: string;
         description?: string;
@@ -90,8 +75,6 @@ export class SessionController {
       }
 
       const session = await this.sessionService.createSession(sessionData);
-      
-      console.log(`📋 SessionController: Session created successfully: ${session.id} with ${session.participants.length} participants`);
       
       const response: ApiResponse = {
         success: true,
@@ -130,8 +113,6 @@ export class SessionController {
         return;
       }
 
-      console.log(`📋 SessionController: User ${request.user.userId} requesting session: ${id}`);
-
       const session = await this.sessionService.getSessionById(id, request.user.userId);
       
       if (!session) {
@@ -145,8 +126,6 @@ export class SessionController {
         reply.code(404).send(response);
         return;
       }
-
-      console.log(`📋 SessionController: Session found: ${session.id} with ${session.participants.length} participants`);
 
       const response: ApiResponse = {
         success: true,
@@ -193,11 +172,7 @@ export class SessionController {
         return;
       }
 
-      console.log(`📋 SessionController: User ${request.user.userId} joining session: ${id}`);
-
       const session = await this.sessionService.joinSession(id, request.user.userId);
-      
-      console.log(`📋 SessionController: User successfully joined session ${id}, now has ${session.participants.length} participants`);
       
       const response: ApiResponse = {
         success: true,

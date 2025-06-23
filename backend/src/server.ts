@@ -19,8 +19,6 @@ function startSessionCleanupJob(sessionService: SessionService): void {
   
   const runCleanup = async (): Promise<void> => {
     try {
-      console.log('🧹 Running session cleanup job...');
-      
       // Clean up empty sessions
       const emptySessionsDeleted = await sessionService.cleanupEmptySessions();
       
@@ -29,9 +27,7 @@ function startSessionCleanupJob(sessionService: SessionService): void {
       
       const totalDeleted = emptySessionsDeleted + inactiveSessionsDeleted;
       if (totalDeleted > 0) {
-        console.log(`🧹 Session cleanup completed: ${totalDeleted} sessions deleted`);
-      } else {
-        console.log('🧹 Session cleanup completed: No sessions needed cleanup');
+        console.log(`🧹 Cleanup completed: ${totalDeleted} sessions deleted`);
       }
     } catch (error) {
       console.error('❌ Session cleanup job failed:', error);

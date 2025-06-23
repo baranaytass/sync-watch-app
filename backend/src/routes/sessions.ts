@@ -16,7 +16,6 @@ export default async function sessionRoutes(
   fastify.get('/', {
     preHandler: [fastify.authenticate],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
-      console.log('📋 API: Fetching active sessions');
       return sessionController.getSessions(request as any, reply);
     },
   });
@@ -25,7 +24,6 @@ export default async function sessionRoutes(
   fastify.post('/', {
     preHandler: [fastify.authenticate],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
-      console.log('➕ API: Creating new session');
       return sessionController.createSession(request as any, reply);
     },
   });
@@ -34,8 +32,6 @@ export default async function sessionRoutes(
   fastify.get('/:id', {
     preHandler: [fastify.authenticate],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
-      const { id } = request.params as { id: string };
-      console.log(`📋 API: Fetching session ${id}`);
       return sessionController.getSession(request as any, reply);
     },
   });
@@ -44,8 +40,6 @@ export default async function sessionRoutes(
   fastify.post('/:id/join', {
     preHandler: [fastify.authenticate],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
-      const { id } = request.params as { id: string };
-      console.log(`🚪 API: User joining session ${id}`);
       return sessionController.joinSession(request as any, reply);
     },
   });
@@ -54,8 +48,6 @@ export default async function sessionRoutes(
   fastify.post('/:id/video', {
     preHandler: [fastify.authenticate],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
-      const { id } = request.params as { id: string };
-      console.log(`🎥 API: Setting video for session ${id}`);
       return sessionController.setSessionVideo(request as any, reply);
     },
   });

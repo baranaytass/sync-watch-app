@@ -183,21 +183,21 @@ export class SessionModel {
    * Remove participant from session (delete completely to avoid ghost records)
    */
   async removeParticipant(sessionId: string, userId: string): Promise<void> {
-    console.log(`👤 SessionModel: Removing participant ${userId} from session ${sessionId}`);
+    console.log(`🗑️ SessionModel.removeParticipant: Removing user ${userId} from session ${sessionId}`);
+    
     const query = `
       DELETE FROM session_participants 
       WHERE session_id = $1 AND user_id = $2
     `;
     
     const result = await this.db.query(query, [sessionId, userId]);
-    console.log(`👤 SessionModel: Participant removal affected ${result.rowCount} rows`);
+    console.log(`🗑️ SessionModel.removeParticipant: Removed ${result.rowCount} participant records`);
   }
 
   /**
    * Get participants list for session (used for host assignment)
    */
   async getParticipants(sessionId: string): Promise<SessionParticipant[]> {
-    console.log(`👥 SessionModel: Getting participants for session ${sessionId}`);
     const query = `
       SELECT 
         sp.session_id as "sessionId",
@@ -214,7 +214,6 @@ export class SessionModel {
     `;
     
     const result = await this.db.query(query, [sessionId]);
-    console.log(`👥 SessionModel: Found ${result.rows.length} participants for session ${sessionId}`);
     return result.rows;
   }
 
@@ -238,7 +237,8 @@ export class SessionModel {
    * Get participant count for session
    */
   async getActiveParticipantCount(sessionId: string): Promise<number> {
-    console.log(`🔢 SessionModel: Getting participant count for session ${sessionId}`);
+    console.log(`📊 SessionModel.getActiveParticipantCount: Checking participant count for session ${sessionId}`);
+    
     const query = `
       SELECT COUNT(*) as count
       FROM session_participants 
@@ -247,7 +247,7 @@ export class SessionModel {
     
     const result = await this.db.query(query, [sessionId]);
     const count = parseInt(result.rows[0].count, 10);
-    console.log(`🔢 SessionModel: Session ${sessionId} has ${count} participants`);
+    console.log(`📊 SessionModel.getActiveParticipantCount: Session ${sessionId} has ${count} participants`);
     return count;
   }
 
@@ -263,8 +263,7 @@ export class SessionModel {
       WHERE session_id = $1
     `;
     
-    const participantsResult = await this.db.query(deleteParticipantsQuery, [sessionId]);
-    console.log(`🗑️ SessionModel: Deleted ${participantsResult.rowCount} participants from session ${sessionId}`);
+    await this.db.query(deleteParticipantsQuery, [sessionId]);
     
     // Then delete the session
     const deleteSessionQuery = `
@@ -272,16 +271,13 @@ export class SessionModel {
       WHERE id = $1
     `;
     
-    const sessionResult = await this.db.query(deleteSessionQuery, [sessionId]);
-    console.log(`🗑️ SessionModel: Session deletion affected ${sessionResult.rowCount} sessions`);
+    await this.db.query(deleteSessionQuery, [sessionId]);
   }
 
   /**
    * Clean up sessions with no participants (for maintenance)
    */
   async cleanupEmptySessions(): Promise<number> {
-    console.log('🧹 SessionModel: Starting cleanup of empty sessions');
-    
     const query = `
       DELETE FROM sessions 
       WHERE is_active = true
@@ -294,7 +290,6 @@ export class SessionModel {
     
     const result = await this.db.query(query);
     const deletedCount = result.rowCount || 0;
-    console.log(`🧹 SessionModel: Cleaned up ${deletedCount} empty sessions`);
     return deletedCount;
   }
 
@@ -302,8 +297,6 @@ export class SessionModel {
    * Clean up sessions older than specified minutes with no activity
    */
   async cleanupInactiveSessions(maxAgeMinutes: number = 30): Promise<number> {
-    console.log(`🧹 SessionModel: Starting cleanup of sessions inactive for ${maxAgeMinutes} minutes`);
-    
     // Delete sessions that are old and have no participants
     const query = `
       DELETE FROM sessions 
@@ -320,7 +313,6 @@ export class SessionModel {
     
     const result = await this.db.query(query);
     const deletedCount = result.rowCount || 0;
-    console.log(`🧹 SessionModel: Cleaned up ${deletedCount} inactive sessions`);
     return deletedCount;
   }
 } 
