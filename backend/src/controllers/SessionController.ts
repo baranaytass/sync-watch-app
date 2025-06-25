@@ -20,7 +20,7 @@ export class SessionController {
   }
 
   // GET /api/sessions - Get active sessions (both user's sessions and public listing)
-  async getSessions(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async getSessions(_request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
     try {
       const sessions = await this.sessionService.getAllActiveSessions();
       

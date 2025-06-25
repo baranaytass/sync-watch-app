@@ -7,12 +7,7 @@ interface WebSocketParams {
   sessionId: string;
 }
 
-interface AuthenticatedRequest extends FastifyRequest {
-  user?: {
-    userId: string;
-    email: string;
-  };
-}
+// AuthenticatedRequest interface removed as it's not used in WebSocket routes
 
 export default async function websocketRoutes(
   fastify: FastifyInstance,
