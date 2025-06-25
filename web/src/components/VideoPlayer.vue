@@ -1,238 +1,157 @@
 <template>
-  <div class="w-full h-full bg-black">
-    <!-- Loading State -->
-    <div v-if="loading" class="absolute inset-0 flex items-center justify-center z-10">
-      <div class="text-center text-white">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-        <p class="text-sm">Video yükleniyor...</p>
+  <div class="w-full h-full bg-black dark:bg-gray-900">
+    <!-- Provider specific players -->
+    <YouTubePlayer
+      v-if="provider === 'youtube'"
+      :video-id="videoId"
+      :is-host="isHost"
+      :show-controls="showControls"
+      @video-action="$emit('video-action', $event)"
+      @video-ready="$emit('video-ready')"
+      @video-error="$emit('video-error', $event)"
+      @duration-change="$emit('duration-change', $event)"
+      @time-update="$emit('time-update', $event)"
+      ref="playerRef"
+    />
+    
+    <!-- Placeholder for other providers -->
+    <div v-else-if="provider === 'vimeo'" class="w-full h-full flex items-center justify-center text-white">
+      <div class="text-center">
+        <p class="text-lg mb-2">Vimeo Player</p>
+        <p class="text-sm text-gray-400">Henüz desteklenmiyor</p>
       </div>
     </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="absolute inset-0 flex items-center justify-center z-10">
-      <div class="text-center text-white">
-        <svg class="h-12 w-12 mx-auto mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    
+    <!-- Unknown provider -->
+    <div v-else class="w-full h-full flex items-center justify-center text-white">
+      <div class="text-center">
+        <svg class="h-12 w-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p class="text-sm">{{ error }}</p>
+        <p class="text-lg mb-2">Desteklenmeyen Video Sağlayıcısı</p>
+        <p class="text-sm text-gray-400">{{ provider }}</p>
       </div>
     </div>
-
-    <!-- YouTube Player Container -->
-    <div
-      :id="playerId"
-      class="youtube-player-container"
-    ></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useVideoSyncStore } from '@/stores/videoSync'
+import { ref, computed } from 'vue'
+import YouTubePlayer from './YouTubePlayer.vue'
 
 interface Props {
-  videoId: string
+  videoUrl: string
   isHost?: boolean
+  showControls?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isHost: false
+  isHost: false,
+  showControls: true
 })
 
 const emit = defineEmits<{
   'video-action': [action: 'play' | 'pause' | 'seek', time: number]
   'video-ready': []
   'video-error': [error: string]
+  'duration-change': [duration: number]
+  'time-update': [currentTime: number]
 }>()
 
-// Stores
-const videoSyncStore = useVideoSyncStore()
+// Player reference
+const playerRef = ref<InstanceType<typeof YouTubePlayer> | null>(null)
 
-// State
-const playerId = `youtube-player-${Math.random().toString(36).substr(2, 9)}`
-const loading = ref(true)
-const error = ref<string | null>(null)
-const isReady = ref(false)
-const player = ref<any>(null)
-
-// YouTube IFrame API initialization
-const initializeYouTubeAPI = (): Promise<void> => {
-  return new Promise((resolve) => {
-    if (window.YT && window.YT.Player) {
-      resolve()
-      return
+// Extract provider and video ID from URL
+const { provider, videoId } = computed(() => {
+  const url = props.videoUrl.toLowerCase()
+  
+  // YouTube detection
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    let id = ''
+    
+    // Standard YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
+    const youtubeMatch = url.match(/[?&]v=([^&]+)/)
+    if (youtubeMatch) {
+      id = youtubeMatch[1]
     }
-
-    const tag = document.createElement('script')
-    tag.src = 'https://www.youtube.com/iframe_api'
-    const firstScriptTag = document.getElementsByTagName('script')[0]
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
-
-    window.onYouTubeIframeAPIReady = () => {
-      resolve()
+    
+    // Short YouTube URL: https://youtu.be/VIDEO_ID
+    const shortMatch = url.match(/youtu\.be\/([^?&]+)/)
+    if (shortMatch) {
+      id = shortMatch[1]
     }
-  })
-}
-
-const createPlayer = async () => {
-  try {
-    loading.value = true
-    error.value = null
-
-    await initializeYouTubeAPI()
-    await nextTick()
-
-    player.value = new window.YT.Player(playerId, {
-      height: '100%',
-      width: '100%',
-      videoId: props.videoId,
-      playerVars: {
-        autoplay: 0,
-        controls: 0,
-        disablekb: 1,
-        enablejsapi: 1,
-        fs: 0,
-        iv_load_policy: 3,
-        modestbranding: 1,
-        playsinline: 1,
-        rel: 0,
-        showinfo: 0,
-        cc_load_policy: 0,
-        loop: 0,
-        start: 0,
-      },
-      events: {
-        onReady: onPlayerReady,
-        onStateChange: onPlayerStateChange,
-        onError: onPlayerError,
-      },
-    })
-  } catch (err) {
-    console.error('Failed to create YouTube player:', err)
-    error.value = 'Video player oluşturulamadı'
-    loading.value = false
-  }
-}
-
-const onPlayerReady = (event: any) => {
-  isReady.value = true
-  loading.value = false
-  
-  // Ensure iframe is properly displayed
-  const container = document.getElementById(playerId)
-  const iframe = container?.querySelector('iframe')
-  if (iframe) {
-    iframe.style.display = 'block'
-    iframe.style.visibility = 'visible'
-    iframe.style.width = '100%'
-    iframe.style.height = '100%'
+    
+    // Embed URL: https://www.youtube.com/embed/VIDEO_ID
+    const embedMatch = url.match(/\/embed\/([^?&]+)/)
+    if (embedMatch) {
+      id = embedMatch[1]
+    }
+    
+    return { provider: 'youtube', videoId: id }
   }
   
-  emit('video-ready')
-}
-
-const onPlayerStateChange = (event: any) => {
-  const state = event.data
-  
-  if (!props.isHost) return
-  
-  switch (state) {
-    case window.YT.PlayerState.PLAYING:
-      emit('video-action', 'play', player.value.getCurrentTime())
-      break
-    case window.YT.PlayerState.PAUSED:
-      emit('video-action', 'pause', player.value.getCurrentTime())
-      break
-  }
-}
-
-const onPlayerError = (event: any) => {
-  const errorMessages = {
-    2: 'Geçersiz video ID',
-    5: 'HTML5 player hatası',
-    100: 'Video bulunamadı veya kaldırıldı',
-    101: 'Video sahibi tarafından gömme devre dışı bırakıldı',
-    150: 'Video sahibi tarafından gömme devre dışı bırakıldı'
+  // Vimeo detection
+  if (url.includes('vimeo.com')) {
+    const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/)
+    const id = vimeoMatch ? vimeoMatch[1] : ''
+    return { provider: 'vimeo', videoId: id }
   }
   
-  error.value = errorMessages[event.data as keyof typeof errorMessages] || 'Video oynatılamadı'
-  loading.value = false
-  emit('video-error', error.value)
-}
+  // Unknown provider
+  return { provider: 'unknown', videoId: '' }
+}).value
 
-// Public methods for synchronization
+// Expose player methods
 const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
-  if (!player.value || !isReady.value) return
-  
-  switch (action) {
-    case 'play':
-      player.value.seekTo(time)
-      player.value.playVideo()
-      break
-    case 'pause':
-      player.value.seekTo(time)
-      player.value.pauseVideo()
-      break
-    case 'seek':
-      player.value.seekTo(time)
-      break
+  if (playerRef.value && 'syncVideo' in playerRef.value) {
+    playerRef.value.syncVideo(action, time)
   }
 }
 
-// Watch for video sync events (for non-host users)
-watch(
-  () => videoSyncStore.currentAction,
-  () => {
-    if (!props.isHost && videoSyncStore.lastActionTimestamp) {
-      const calculatedTime = videoSyncStore.calculateCurrentTime()
-      syncVideo(videoSyncStore.currentAction, calculatedTime)
-    }
+const play = () => {
+  if (playerRef.value && 'play' in playerRef.value) {
+    playerRef.value.play()
   }
-)
+}
 
-// Lifecycle
-onMounted(() => {
-  createPlayer()
-})
-
-onUnmounted(() => {
-  if (player.value && typeof player.value.destroy === 'function') {
-    player.value.destroy()
+const pause = () => {
+  if (playerRef.value && 'pause' in playerRef.value) {
+    playerRef.value.pause()
   }
-})
+}
 
-// Watch for video ID changes
-watch(
-  () => props.videoId,
-  (newVideoId) => {
-    if (newVideoId && player.value && isReady.value) {
-      player.value.loadVideoById(newVideoId)
-    }
+const seekTo = (time: number) => {
+  if (playerRef.value && 'seekTo' in playerRef.value) {
+    playerRef.value.seekTo(time)
   }
-)
+}
 
-// Expose methods
+const getCurrentTime = (): number => {
+  if (playerRef.value && 'getCurrentTime' in playerRef.value) {
+    return playerRef.value.getCurrentTime()
+  }
+  return 0
+}
+
+const getDuration = (): number => {
+  if (playerRef.value && 'getDuration' in playerRef.value) {
+    return playerRef.value.getDuration()
+  }
+  return 0
+}
+
 defineExpose({
   syncVideo,
+  play,
+  pause,
+  seekTo,
+  getCurrentTime,
+  getDuration,
+  provider,
+  videoId
 })
 </script>
 
 <style scoped>
-.youtube-player-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background: black;
-  overflow: hidden;
-}
-
-.youtube-player-container :deep(iframe) {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  border: none !important;
-  background: black !important;
-}
+/* Player specific styles handled by individual player components */
 </style> 

@@ -103,17 +103,20 @@
           <!-- Video Player -->
           <div class="flex-1 bg-black relative">
             <VideoPlayer
-              v-if="currentSession?.videoId"
-              :video-id="currentSession.videoId"
+              v-if="currentSession?.videoId && videoUrl"
+              :video-url="videoUrl"
               :is-host="isHost"
+              :show-controls="true"
               @video-action="handleVideoAction"
               @video-ready="handleVideoReady"
               @video-error="handleVideoError"
+              @duration-change="handleDurationChange"
+              @time-update="handleTimeUpdate"
             />
             <div v-else class="h-full flex items-center justify-center">
               <div class="text-center text-white">
                 <svg class="h-16 w-16 mx-auto mb-4 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2v8a2 2 0 002 2z" />
                 </svg>
                 <p class="text-lg font-medium">Video Henüz Seçilmedi</p>
                 <p class="text-sm opacity-75">Host tarafından video seçilmesi bekleniyor</p>
@@ -196,6 +199,19 @@ const currentSession = computed(() => sessionsStore.currentSession)
 const isHost = computed(() => sessionsStore.isHost)
 const participants = computed(() => sessionsStore.participants || [])
 
+// Generate video URL from session data
+const videoUrl = computed(() => {
+  const session = currentSession.value
+  if (!session?.videoId || !session?.videoProvider) return ''
+  
+  switch (session.videoProvider) {
+    case 'youtube':
+      return `https://www.youtube.com/watch?v=${session.videoId}`
+    default:
+      return ''
+  }
+})
+
 // Methods
 const loadSession = async () => {
   try {
@@ -268,6 +284,16 @@ const handleVideoReady = () => {
 
 const handleVideoError = (error: string) => {
   console.error('Video player error:', error)
+}
+
+const handleDurationChange = (duration: number) => {
+  console.log('Video duration:', duration)
+  // İleride duration'ı store'da saklayabiliriz
+}
+
+const handleTimeUpdate = (currentTime: number) => {
+  // İleride real-time time tracking için kullanabiliriz
+  // Sadece log level olarak tutuyoruz şimdilik
 }
 
 // Lifecycle
