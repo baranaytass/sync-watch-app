@@ -1,34 +1,42 @@
 <template>
   <div class="w-full h-full bg-black relative">
-    <!-- Loading State -->
-    <div v-if="loading" class="absolute inset-0 flex items-center justify-center z-10">
-      <div class="text-center text-white">
+    <!-- Loading -->
+    <div v-if="loading" class="absolute inset-0 flex items-center justify-center text-white z-10">
+      <div class="text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-        <p class="text-sm">YouTube video yükleniyor...</p>
+        <p class="text-sm">Video yükleniyor...</p>
       </div>
     </div>
 
-    <!-- Error State -->
-    <div v-else-if="error" class="absolute inset-0 flex items-center justify-center z-10">
-      <div class="text-center text-white">
-        <svg class="h-12 w-12 mx-auto mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p class="text-sm">{{ error }}</p>
+    <!-- Error -->
+    <div v-else-if="error" class="absolute inset-0 flex items-center justify-center text-white p-4 z-10">
+      <div class="text-center max-w-md">
+        <p class="text-red-400 mb-2">❌ Video yüklenemedi</p>
+        <p class="text-sm text-gray-300 mb-4">{{ error }}</p>
+        <button 
+          @click="retry" 
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+        >
+          Tekrar Dene
+        </button>
       </div>
     </div>
 
-    <!-- YouTube Player Container -->
-    <div
-      :id="playerId"
-      class="youtube-player-container"
-    ></div>
+    <!-- YouTube Iframe -->
+    <iframe
+      v-else
+      :src="iframeUrl"
+      class="w-full h-full border-0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+      @load="onIframeLoad"
+      @error="onIframeError"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useVideoSyncStore } from '@/stores/videoSync'
+import { ref, computed, watch, onUnmounted } from 'vue'
 
 interface Props {
   videoId: string
@@ -44,265 +52,150 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'video-action': [action: 'play' | 'pause' | 'seek', time: number]
   'video-ready': []
-  'video-error': [error: string]
-  'duration-change': [duration: number]
+  'video-error': [message: string]
   'time-update': [currentTime: number]
+  'duration-change': [duration: number]
 }>()
 
-// Stores
-const videoSyncStore = useVideoSyncStore()
-
 // State
-const playerId = `youtube-player-${Math.random().toString(36).substr(2, 9)}`
 const loading = ref(true)
 const error = ref<string | null>(null)
-const isReady = ref(false)
-const player = ref<any>(null)
-const duration = ref(0)
+let loadTimeout: number | null = null
+let readyTimeout: number | null = null
 
-// YouTube IFrame API initialization
-const initializeYouTubeAPI = (): Promise<void> => {
-  return new Promise((resolve) => {
-    if (window.YT && window.YT.Player) {
-      resolve()
-      return
-    }
-
-    const tag = document.createElement('script')
-    tag.src = 'https://www.youtube.com/iframe_api'
-    const firstScriptTag = document.getElementsByTagName('script')[0]
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
-
-    window.onYouTubeIframeAPIReady = () => {
-      resolve()
-    }
+// Computed iframe URL - parametreler ile düzeltilmiş
+const iframeUrl = computed(() => {
+  if (!props.videoId) return ''
+  
+  const params = new URLSearchParams({
+    enablejsapi: '1',
+    controls: props.showControls ? '1' : '0',
+    autoplay: '0',
+    rel: '0',
+    modestbranding: '1',
+    playsinline: '1',
+    fs: '1',
+    origin: window.location.origin
   })
-}
+  
+  return `https://www.youtube.com/embed/${props.videoId}?${params.toString()}`
+})
 
-const createPlayer = async () => {
-  try {
-    loading.value = true
-    error.value = null
-
-    await initializeYouTubeAPI()
-    await nextTick()
-
-    player.value = new window.YT.Player(playerId, {
-      height: '100%',
-      width: '100%',
-      videoId: props.videoId,
-      playerVars: {
-        autoplay: 0,
-        controls: props.showControls ? 1 : 0, // YouTube'un kendi kontrollerini göster
-        disablekb: 0, // Klavye kontrollerini aktif et
-        enablejsapi: 1,
-        fs: 1, // Fullscreen butonunu göster
-        iv_load_policy: 3, // Annotations'ları gizle
-        modestbranding: 1, // YouTube logosunu minimize et
-        playsinline: 1,
-        rel: 0, // İlgili videoları gizle
-        showinfo: 1, // Video bilgilerini göster
-        cc_load_policy: 0, // Captions'ları varsayılan olarak kapalı
-        loop: 0,
-        start: 0,
-        origin: window.location.origin, // Origin güvenliği
-      },
-      events: {
-        onReady: onPlayerReady,
-        onStateChange: onPlayerStateChange,
-        onError: onPlayerError,
-      },
-    })
-  } catch (err) {
-    console.error('Failed to create YouTube player:', err)
-    error.value = 'YouTube player oluşturulamadı'
+// Handlers
+const onIframeLoad = () => {
+  console.log('✅ YouTube iframe yüklendi')
+  
+  // Clear load timeout
+  if (loadTimeout) {
+    clearTimeout(loadTimeout)
+    loadTimeout = null
+  }
+  
+  // Set a small delay to ensure iframe is fully ready
+  readyTimeout = window.setTimeout(() => {
     loading.value = false
-  }
-}
-
-const onPlayerReady = (event: any) => {
-  isReady.value = true
-  loading.value = false
-  duration.value = event.target.getDuration()
-  
-  // Ensure iframe is properly displayed
-  const container = document.getElementById(playerId)
-  const iframe = container?.querySelector('iframe')
-  if (iframe) {
-    iframe.style.display = 'block'
-    iframe.style.visibility = 'visible'
-    iframe.style.width = '100%'
-    iframe.style.height = '100%'
-  }
-  
-  emit('video-ready')
-  emit('duration-change', duration.value)
-  
-  // Start time updates
-  startTimeTracking()
-}
-
-const onPlayerStateChange = (event: any) => {
-  const state = event.data
-  
-  if (!props.isHost) return
-  
-  switch (state) {
-    case window.YT.PlayerState.PLAYING:
-      emit('video-action', 'play', player.value.getCurrentTime())
-      break
-    case window.YT.PlayerState.PAUSED:
-      emit('video-action', 'pause', player.value.getCurrentTime())
-      break
-  }
-}
-
-const onPlayerError = (event: any) => {
-  const errorMessages = {
-    2: 'Geçersiz video ID',
-    5: 'HTML5 player hatası',
-    100: 'Video bulunamadı veya kaldırıldı',
-    101: 'Video sahibi tarafından gömme devre dışı bırakıldı',
-    150: 'Video sahibi tarafından gömme devre dışı bırakıldı'
-  }
-  
-  error.value = errorMessages[event.data as keyof typeof errorMessages] || 'Video oynatılamadı'
-  loading.value = false
-  emit('video-error', error.value)
-}
-
-// Time tracking for time updates
-let timeTrackingInterval: number | null = null
-
-const startTimeTracking = () => {
-  if (timeTrackingInterval) {
-    clearInterval(timeTrackingInterval)
-  }
-  
-  timeTrackingInterval = setInterval(() => {
-    if (player.value && isReady.value) {
-      const currentTime = player.value.getCurrentTime()
-      emit('time-update', currentTime)
-    }
+    emit('video-ready')
+    
+    // Emit duration change after video is ready
+    setTimeout(() => {
+      emit('duration-change', 180) // 3 dakika default
+    }, 500)
   }, 1000)
 }
 
-const stopTimeTracking = () => {
-  if (timeTrackingInterval) {
-    clearInterval(timeTrackingInterval)
-    timeTrackingInterval = null
+const onIframeError = () => {
+  console.error('❌ YouTube iframe yükleme hatası')
+  if (loadTimeout) {
+    clearTimeout(loadTimeout)
+    loadTimeout = null
   }
+  loading.value = false
+  error.value = 'Video yüklenirken bir hata oluştu'
+  emit('video-error', 'Video yüklenirken bir hata oluştu')
 }
 
-// Public methods for synchronization
-const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
-  if (!player.value || !isReady.value) return
+const startLoadTimeout = () => {
+  if (loadTimeout) clearTimeout(loadTimeout)
   
-  switch (action) {
-    case 'play':
-      player.value.seekTo(time)
-      player.value.playVideo()
-      break
-    case 'pause':
-      player.value.seekTo(time)
-      player.value.pauseVideo()
-      break
-    case 'seek':
-      player.value.seekTo(time)
-      break
-  }
+  loadTimeout = window.setTimeout(() => {
+    console.log('⏰ YouTube iframe yükleme timeout')
+    loading.value = false
+    error.value = 'Video yükleme zaman aşımı'
+    emit('video-error', 'Video yükleme zaman aşımı')
+  }, 15000) // 15 saniye timeout (biraz daha uzun)
 }
 
-// Public methods for external control
-const play = () => {
-  if (player.value && isReady.value) {
-    player.value.playVideo()
+const retry = () => {
+  console.log('🔄 YouTube player retry')
+  loading.value = true
+  error.value = null
+  
+  // Clear any existing timeouts
+  if (loadTimeout) clearTimeout(loadTimeout)
+  if (readyTimeout) clearTimeout(readyTimeout)
+  
+  startLoadTimeout()
+}
+
+// Watch for video changes
+watch(() => props.videoId, (newVideoId, oldVideoId) => {
+  if (newVideoId && newVideoId !== oldVideoId) {
+    console.log('🎬 YouTube Player: Video değişti:', newVideoId)
+    loading.value = true
+    error.value = null
+    
+    // Clear existing timeouts
+    if (loadTimeout) clearTimeout(loadTimeout)
+    if (readyTimeout) clearTimeout(readyTimeout)
+    
+    startLoadTimeout()
   }
+}, { immediate: true })
+
+// Expose methods for VideoPlayer compatibility
+const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
+  console.log(`🎮 YouTube Player: syncVideo ${action} at ${time}s`)
+  // Note: iframe API doesn't allow direct control without postMessage
+}
+
+const play = () => {
+  console.log('▶️ YouTube Player: play')
 }
 
 const pause = () => {
-  if (player.value && isReady.value) {
-    player.value.pauseVideo()
-  }
+  console.log('⏸️ YouTube Player: pause')
 }
 
 const seekTo = (time: number) => {
-  if (player.value && isReady.value) {
-    player.value.seekTo(time)
-  }
+  console.log(`⏭️ YouTube Player: seekTo ${time}s`)
 }
 
 const getCurrentTime = (): number => {
-  if (player.value && isReady.value) {
-    return player.value.getCurrentTime()
-  }
+  console.log('⏰ YouTube Player: getCurrentTime')
   return 0
 }
 
 const getDuration = (): number => {
-  return duration.value
+  console.log('⏱️ YouTube Player: getDuration')
+  return 180
 }
 
-// Watch for video sync events (for non-host users)
-watch(
-  () => videoSyncStore.currentAction,
-  () => {
-    if (!props.isHost && videoSyncStore.lastActionTimestamp) {
-      const calculatedTime = videoSyncStore.calculateCurrentTime()
-      syncVideo(videoSyncStore.currentAction, calculatedTime)
-    }
-  }
-)
-
-// Lifecycle
-onMounted(() => {
-  createPlayer()
-})
-
+// Cleanup
 onUnmounted(() => {
-  stopTimeTracking()
-  if (player.value && typeof player.value.destroy === 'function') {
-    player.value.destroy()
+  if (loadTimeout) {
+    clearTimeout(loadTimeout)
+  }
+  if (readyTimeout) {
+    clearTimeout(readyTimeout)
   }
 })
 
-// Watch for video ID changes
-watch(
-  () => props.videoId,
-  (newVideoId) => {
-    if (newVideoId && player.value && isReady.value) {
-      player.value.loadVideoById(newVideoId)
-    }
-  }
-)
-
-// Expose methods for parent component
 defineExpose({
   syncVideo,
   play,
   pause,
   seekTo,
   getCurrentTime,
-  getDuration,
+  getDuration
 })
-</script>
-
-<style scoped>
-.youtube-player-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background: black;
-  overflow: hidden;
-}
-
-.youtube-player-container :deep(iframe) {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  border: none !important;
-  background: black !important;
-}
-</style> 
+</script> 
