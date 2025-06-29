@@ -27,6 +27,32 @@
           </svg>
           {{ authStore.loading ? 'Giriş yapılıyor...' : 'Google ile Giriş Yap' }}
         </button>
+
+        <!-- Guest Login Button - Env ile kontrollü -->
+        <div v-if="isGuestLoginEnabled" class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300" />
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-gray-50 text-gray-500">veya</span>
+          </div>
+        </div>
+
+        <button
+          v-if="isGuestLoginEnabled"
+          @click="handleGuestLogin"
+          :disabled="authStore.loading"
+          class="group relative w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg v-if="authStore.loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          {{ authStore.loading ? 'Giriş yapılıyor...' : 'Misafir Olarak Giriş' }}
+        </button>
         
         <div v-if="authStore.error" class="text-red-600 text-sm text-center">
           {{ authStore.error }}
@@ -37,16 +63,26 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const router = useRouter()
 
+// Check if guest login is enabled via env
+const isGuestLoginEnabled = computed(() => {
+  return import.meta.env.VITE_ENABLE_GUEST_LOGIN === 'true'
+})
+
 const handleGoogleLogin = () => {
   authStore.clearError()
   authStore.loginWithGoogle()
+}
+
+const handleGuestLogin = () => {
+  authStore.clearError()
+  authStore.loginAsGuest()
 }
 
 // Check if user is already authenticated

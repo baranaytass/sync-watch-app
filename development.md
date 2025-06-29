@@ -300,7 +300,43 @@ FRONTEND_URL=http://localhost:5173
 
 ---
 
-## 10. Monorepo Klasör Yerleşimi (yalnızca klasörler + açıklamalar)
+## 10. Test Senaryoları
+
+### YouTube Player Comprehensive Test
+Playwright ile otomatikleştirilmiş YouTube Player test senaryosu:
+
+**Test Çalıştırma:**
+```bash
+cd web
+npm run test -- --project=chromium --workers=1 tests/youtube-comprehensive-test.spec.ts
+```
+
+**Test Senaryoları:**
+- 🔐 **Guest Authentication**: Misafir kullanıcı girişi (backend'siz test)
+- 📋 **Session Management**: Session oluşturma ve navigation
+- 🎥 **Video Input Detection**: YouTube URL input field bulma
+- 🔗 **URL Parsing**: Standard ve short YouTube URL formatları
+- 📱 **YouTube Player Integration**: iframe oluşturma ve yükleme
+- ⏱️ **Timeout Handling**: 25 saniye süresince player monitoring
+- 🌐 **Network Analysis**: YouTube embed requests tracking
+- 📝 **Console Monitoring**: Error ve log analizi
+- 🎯 **Multi-Video Testing**: Farklı video ID'leri ile test
+
+**Çözülen Problemler:**
+- ✅ Template rendering sorunu (`v-else` koşulu)
+- ✅ Reactive computed sorunu (`.value` kullanımı)
+- ✅ Case sensitivity sorunu (`toLowerCase()` video ID'yi bozuyordu)
+- ✅ Force reload (`:key` ile iframe reset)
+
+**Test Yapılandırması:**
+- Browser: Chromium (Playwright)
+- Timeout: 30 saniye
+- Workers: 1 (serial test)
+- Guest login: Environment variable kontrolü
+
+---
+
+## 11. Monorepo Klasör Yerleşimi (yalnızca klasörler + açıklamalar)
 
 ```
 packages/                       # Ortak bağımlılıklar (paylaşılan tipler, eslint-konfig vb.)

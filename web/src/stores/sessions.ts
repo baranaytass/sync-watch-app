@@ -292,6 +292,28 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
   }
 
+  // Guest user için direct set metodları
+  const setCurrentSession = (session: any): void => {
+    console.log('👤 Sessions Store: Setting current session (guest mode)')
+    currentSession.value = session
+  }
+
+  const setParticipants = (participantsList: any[]): void => {
+    console.log('👤 Sessions Store: Setting participants (guest mode)')
+    if (currentSession.value) {
+      // Direct assignment for guest mode
+      currentSession.value.participants = participantsList.map(p => ({
+        sessionId: currentSession.value!.id,
+        userId: p.id || p.userId,
+        name: p.name,
+        avatar: p.avatar || '',
+        joinedAt: new Date(),
+        isOnline: true,
+        lastSeen: new Date(),
+      }))
+    }
+  }
+
   return {
     // State
     sessions,
@@ -313,5 +335,8 @@ export const useSessionsStore = defineStore('sessions', () => {
     updateParticipants,
     leaveSession,
     clearSessions,
+    // Guest helper methods
+    setCurrentSession,
+    setParticipants,
   }
 }) 

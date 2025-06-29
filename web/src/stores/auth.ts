@@ -47,6 +47,32 @@ export const useAuthStore = defineStore('auth', () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`
   }
 
+  const loginAsGuest = () => {
+    loading.value = true
+    error.value = null
+    
+    // Create a mock guest user
+    const guestUser: User = {
+      id: 'guest-' + Date.now(),
+      googleId: 'guest',
+      email: 'guest@example.com',
+      name: 'Misafir Kullanıcı',
+      avatar: '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    
+    // Set guest user
+    setTimeout(() => {
+      user.value = guestUser
+      localStorage.setItem('user', JSON.stringify(guestUser))
+      loading.value = false
+      
+      // Redirect to sessions page after login
+      window.location.href = '/sessions'
+    }, 500) // Small delay to simulate login process
+  }
+
   const logout = async () => {
     try {
       loading.value = true
@@ -63,6 +89,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const fetchUser = async () => {
+    // Skip API call for guest users
+    if (user.value && user.value.googleId === 'guest') {
+      console.log('👤 Guest user detected, skipping API call')
+      return
+    }
+    
     try {
       loading.value = true
       error.value = null
@@ -103,6 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     // Actions
     loginWithGoogle,
+    loginAsGuest,
     logout,
     fetchUser,
     setUser,

@@ -61,45 +61,52 @@ const emit = defineEmits<{
 // Player reference
 const playerRef = ref<InstanceType<typeof YouTubePlayer> | null>(null)
 
-// Extract provider and video ID from URL
-const { provider, videoId } = computed(() => {
-  const url = props.videoUrl.toLowerCase()
+// Extract provider and video ID from URL - FIX: Case-sensitive video ID
+const providerInfo = computed(() => {
+  const originalUrl = props.videoUrl
+  const urlForMatching = props.videoUrl.toLowerCase() // Sadece domain check için
+  
+
   
   // YouTube detection
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+  if (urlForMatching.includes('youtube.com') || urlForMatching.includes('youtu.be')) {
     let id = ''
     
     // Standard YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
-    const youtubeMatch = url.match(/[?&]v=([^&]+)/)
+    const youtubeMatch = originalUrl.match(/[?&]v=([^&]+)/) // Original URL kullan!
     if (youtubeMatch) {
       id = youtubeMatch[1]
     }
     
     // Short YouTube URL: https://youtu.be/VIDEO_ID
-    const shortMatch = url.match(/youtu\.be\/([^?&]+)/)
+    const shortMatch = originalUrl.match(/youtu\.be\/([^?&]+)/) // Original URL kullan!
     if (shortMatch) {
       id = shortMatch[1]
     }
     
     // Embed URL: https://www.youtube.com/embed/VIDEO_ID
-    const embedMatch = url.match(/\/embed\/([^?&]+)/)
+    const embedMatch = originalUrl.match(/\/embed\/([^?&]+)/) // Original URL kullan!
     if (embedMatch) {
       id = embedMatch[1]
     }
     
+
     return { provider: 'youtube', videoId: id }
   }
   
   // Vimeo detection
-  if (url.includes('vimeo.com')) {
-    const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/)
+  if (urlForMatching.includes('vimeo.com')) {
+    const vimeoMatch = originalUrl.match(/vimeo\.com\/(?:.*\/)?(\d+)/) // Original URL kullan!
     const id = vimeoMatch ? vimeoMatch[1] : ''
     return { provider: 'vimeo', videoId: id }
   }
   
   // Unknown provider
   return { provider: 'unknown', videoId: '' }
-}).value
+})
+
+const provider = computed(() => providerInfo.value.provider)
+const videoId = computed(() => providerInfo.value.videoId)
 
 // Expose player methods
 const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {

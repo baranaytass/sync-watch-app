@@ -220,10 +220,51 @@ const loadSession = async () => {
     
     console.log(`📋 SessionRoom: Loading session ${props.id}`)
     
-    // Join session via API
-    await sessionsStore.joinSession(props.id)
+    // Guest user için mock session oluştur
+    if (authStore.user?.googleId === 'guest') {
+      console.log('👤 Guest user - creating mock session data')
+      
+      // Mock session data
+      const mockSession = {
+        id: props.id,
+        title: 'YouTube Test Session',
+        description: 'Test session for YouTube Player debugging',
+        hostId: authStore.user.id,
+        isActive: true,
+        isPrivate: false,
+        maxParticipants: 10,
+        currentParticipants: 1,
+        videoUrl: null,
+        videoId: null,
+        videoTitle: null,
+        videoDuration: 0,
+        videoCurrentTime: 0,
+        isPlaying: false,
+        videoProvider: 'youtube',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      // Mock participant data
+      const mockParticipants = [{
+        id: authStore.user.id,
+        name: authStore.user.name,
+        avatar: authStore.user.avatar,
+        isHost: true,
+        joinedAt: new Date().toISOString()
+      }]
+      
+      // Set mock data in store
+      sessionsStore.setCurrentSession(mockSession)
+      sessionsStore.setParticipants(mockParticipants)
+      
+      console.log(`✅ SessionRoom: Mock session ${props.id} created`)
+      loading.value = false
+      return
+    }
     
-    // Connect to WebSocket
+    // Normal user için API çağrıları
+    await sessionsStore.joinSession(props.id)
     await connect()
     
     console.log(`✅ SessionRoom: Session ${props.id} loaded successfully`)
@@ -259,6 +300,26 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
   try {
     if (!currentSession.value) return
     
+    // Guest user için mock video set
+    if (authStore.user?.googleId === 'guest') {
+      console.log('👤 Guest user setting video:', videoData.videoId)
+      
+      // Update mock session with video data
+      const updatedSession = {
+        ...currentSession.value,
+        videoId: videoData.videoId,
+        videoUrl: `https://www.youtube.com/watch?v=${videoData.videoId}`,
+        videoTitle: `Test Video ${videoData.videoId}`,
+        videoProvider: 'youtube',
+        updatedAt: new Date().toISOString()
+      }
+      
+      sessionsStore.setCurrentSession(updatedSession)
+      console.log('✅ Guest user video set complete')
+      return
+    }
+    
+    // Normal user için API çağrısı
     await sessionsStore.setSessionVideo(currentSession.value.id, {
       videoId: videoData.videoId
     })
