@@ -14,26 +14,28 @@
     </div>
 
     <!-- Participants List -->
-    <div class="max-h-64 overflow-y-auto">
-      <div v-if="participants.length === 0" class="p-4 text-center">
+    <div class="max-h-64 overflow-y-auto" data-testid="participants-container">
+      <div v-if="participants.length === 0" class="p-4 text-center" data-testid="no-participants">
         <svg class="h-8 w-8 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
         <p class="text-sm text-gray-500 dark:text-gray-400">Henüz katılımcı yok</p>
       </div>
       
-      <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
+      <div v-else class="divide-y divide-gray-100 dark:divide-gray-700" data-testid="participants-list">
         <div
           v-for="participant in sortedParticipants"
           :key="participant.userId"
-          class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+          :data-testid="`participant-${participant.userId}`"
+          class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 participant-item"
         >
           <!-- Avatar -->
           <div class="relative flex-shrink-0">
             <img
               :src="participant.avatar || defaultAvatar"
               :alt="participant.name"
-              class="h-8 w-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-600"
+              :data-testid="`avatar-${participant.userId}`"
+              class="h-8 w-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-600 user-avatar"
             />
             <!-- Online indicator -->
             <div
@@ -45,7 +47,10 @@
           <!-- User Info -->
           <div class="ml-3 flex-1 min-w-0">
             <div class="flex items-center">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p 
+                class="text-sm font-medium text-gray-900 dark:text-white truncate participant-name"
+                :data-testid="`name-${participant.userId}`"
+              >
                 {{ participant.name }}
               </p>
               <!-- Host Badge -->

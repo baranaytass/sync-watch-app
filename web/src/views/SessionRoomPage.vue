@@ -220,45 +220,83 @@ const loadSession = async () => {
     
     console.log(`📋 SessionRoom: Loading session ${props.id}`)
     
-    // Guest user için mock session oluştur
+    // Guest user için mock session oluştur/yükle
     if (authStore.user?.googleId === 'guest') {
-      console.log('👤 Guest user - creating mock session data')
+      console.log('👤 Guest user - loading/creating mock session data')
       
-      // Mock session data
-      const mockSession = {
-        id: props.id,
-        title: 'YouTube Test Session',
-        description: 'Test session for YouTube Player debugging',
-        hostId: authStore.user.id,
-        isActive: true,
-        isPrivate: false,
-        maxParticipants: 10,
-        currentParticipants: 1,
-        videoUrl: null,
-        videoId: null,
-        videoTitle: null,
-        videoDuration: 0,
-        videoCurrentTime: 0,
-        isPlaying: false,
-        videoProvider: 'youtube',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      // localStorage'dan mevcut session bilgilerini kontrol et
+      const sessionKey = `mock_session_${props.id}`
+      const existingSessionData = localStorage.getItem(sessionKey)
+      
+      let mockSession
+      let mockParticipants = []
+      
+      if (existingSessionData) {
+        // Mevcut session bilgilerini yükle
+        console.log('📋 Loading existing mock session from localStorage')
+        const parsedData = JSON.parse(existingSessionData)
+        mockSession = parsedData.session
+        mockParticipants = parsedData.participants || []
+        
+        // Mevcut kullanıcıyı participants listesine ekle (duplicate kontrolü)
+        const currentUserExists = mockParticipants.some((p: any) => p.id === authStore.user.id)
+        if (!currentUserExists) {
+          mockParticipants.push({
+            id: authStore.user.id,
+            name: authStore.user.name,
+            avatar: authStore.user.avatar,
+            isHost: false, // İlk katılan host olur, diğerleri değil
+            joinedAt: new Date().toISOString()
+          })
+        }
+        
+        console.log(`✅ Guest user joined existing session with video: ${mockSession.videoId || 'none'}`)
+      } else {
+        // Yeni mock session oluştur
+        console.log('📋 Creating new mock session')
+        mockSession = {
+          id: props.id,
+          title: 'YouTube Test Session',
+          description: 'Test session for YouTube Player debugging',
+          hostId: authStore.user.id,
+          isActive: true,
+          isPrivate: false,
+          maxParticipants: 10,
+          currentParticipants: 1,
+          videoUrl: null,
+          videoId: null,
+          videoTitle: null,
+          videoDuration: 0,
+          videoCurrentTime: 0,
+          isPlaying: false,
+          videoProvider: 'youtube',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        
+        // İlk kullanıcı host olur
+        mockParticipants = [{
+          id: authStore.user.id,
+          name: authStore.user.name,
+          avatar: authStore.user.avatar,
+          isHost: true,
+          joinedAt: new Date().toISOString()
+        }]
+        
+        console.log(`✅ Guest user created new session`)
       }
       
-      // Mock participant data
-      const mockParticipants = [{
-        id: authStore.user.id,
-        name: authStore.user.name,
-        avatar: authStore.user.avatar,
-        isHost: true,
-        joinedAt: new Date().toISOString()
-      }]
+      // Session bilgilerini localStorage'a kaydet
+      localStorage.setItem(sessionKey, JSON.stringify({
+        session: mockSession,
+        participants: mockParticipants
+      }))
       
       // Set mock data in store
       sessionsStore.setCurrentSession(mockSession)
       sessionsStore.setParticipants(mockParticipants)
       
-      console.log(`✅ SessionRoom: Mock session ${props.id} created`)
+      console.log(`✅ SessionRoom: Mock session ${props.id} loaded with ${mockParticipants.length} participants`)
       loading.value = false
       return
     }
@@ -312,6 +350,16 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
         videoTitle: `Test Video ${videoData.videoId}`,
         videoProvider: 'youtube',
         updatedAt: new Date().toISOString()
+      }
+      
+      // localStorage'a güncellenmiş session bilgilerini kaydet
+      const sessionKey = `mock_session_${props.id}`
+      const existingData = localStorage.getItem(sessionKey)
+      if (existingData) {
+        const parsedData = JSON.parse(existingData)
+        parsedData.session = updatedSession
+        localStorage.setItem(sessionKey, JSON.stringify(parsedData))
+        console.log('✅ Guest user video data saved to localStorage')
       }
       
       sessionsStore.setCurrentSession(updatedSession)

@@ -296,7 +296,7 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ## Güncel Durum
 **Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 11.2 - Chat System
+**Aktif adım:** 12.2 - Full-Stack Integration Testing & Docker Setup
 **Tamamlanan adımlar:** 
 - **Video Player Bug Fixes:** YouTube video player görüntü problemi çözüldü (origin, enablejsapi parametreleri eklendi, CSS positioning düzeltildi)
 - **Session Management Bug Fixes:** Leave session handling düzeltildi (WebSocket leave message gönderimi, sessions list refresh, participant count mock data kaldırıldı)
@@ -304,3 +304,31 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 - **10.x Video Synchronization:** YouTube Integration ve Video Player tamamen implementeli
 - **WebSocket Integration:** Real-time video sync, participant tracking, session management çalışıyor
 - **Build Status:** Tüm değişiklikler build edildi ve test edilebilir durumda 
+
+---
+
+## 📝 OTURUM NOTU (21 Haziran 2025)
+
+### Bu Oturumda Tamamlananlar ✅
+- **Test Config:** Playwright'e `maxFailures: 1` eklendi
+- **Test Selector Fix:** Tüm testlerdeki button selector hatası düzeltildi ("Ayarla" button)
+- **Docker Setup:** Backend Dockerfile + docker-compose.yml güncellemesi
+- **Integration Tests:** Full-stack test framework kuruldu (`web/tests/integration/`)
+- **Documentation:** Development.md test strategy section
+
+### 🚧 Yarım Kalan İş - Kaldığımız Nokta
+**Çok Oturumlu E2E Test Senaryosu:**
+- Integration test framework kuruldu ✅
+- Backend Docker setup yapıldı ✅
+- Single user flow test hazır ✅
+- **Multi-session scenario testi eksik** ❌
+
+**Hedef:** Backend + Frontend birlikte çalışırken, aynı anda birden fazla kullanıcının aynı session'a katıldığı, video sync ve WebSocket iletişiminin gerçek zamanlı test edildiği e2e senaryo.
+
+**Eksikler:** 
+- Multiple browser context management
+- Concurrent user video sync validation  
+- Real-time WebSocket message broadcasting test
+- Backend service Docker'da stable çalışması
+
+**Sonraki Oturum:** Backend Docker fix + çok oturumlu e2e test implementation 

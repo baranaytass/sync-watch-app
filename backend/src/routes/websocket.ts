@@ -110,7 +110,7 @@ export default async function websocketRoutes(
         if (session) {
           console.log(`📤 Broadcasting updated participants to session ${sessionId}`);
           broadcastToSession(sessionId, 'participants', {
-            participants: session.participants.map(p => ({
+            participants: session.participants.map((p: any) => ({
               userId: p.userId,
               name: p.name,
               avatar: p.avatar,
@@ -167,6 +167,7 @@ export default async function websocketRoutes(
     
     // Manual JWT authentication for WebSocket
     let user: { userId: string; email: string } | null = null;
+    let decoded: any = null;
     
     try {
       const query = request.query as { token?: string };
@@ -178,10 +179,10 @@ export default async function websocketRoutes(
         throw new Error('No token provided');
       }
       
-      const decoded = fastify.jwt.verify(token) as any;
+      decoded = fastify.jwt.verify(token) as any;
       user = { userId: decoded.userId, email: decoded.email };
       
-      console.log(`🔐 WebSocket auth successful for user ${user.userId}`);
+      console.log(`🔐 WebSocket auth successful for user ${user.userId} (guest: ${!!decoded.isGuest})`);
       
     } catch (error) {
       console.log(`❌ WebSocket auth failed:`, error);
@@ -203,9 +204,21 @@ export default async function websocketRoutes(
       // Get user details
       userDetails = await userModel.findById(user.userId);
       if (!userDetails) {
-        sendMessage(connection, 'error', { message: 'User not found' });
-        connection.end();
-        return;
+        // For guest users, create temporary user object from JWT data
+        if (decoded.isGuest) {
+          userDetails = {
+            id: user.userId,
+            name: decoded.name || 'Misafir Kullanıcı',
+            email: user.email,
+            avatar: '',
+            googleId: 'guest'
+          };
+          console.log(`👤 Guest user created from JWT: ${userDetails.name}`);
+        } else {
+          sendMessage(connection, 'error', { message: 'User not found' });
+          connection.end();
+          return;
+        }
       }
 
       // Store connection mappings
@@ -245,7 +258,7 @@ export default async function websocketRoutes(
 
       // Broadcast updated participants to all users in session
       broadcastToSession(sessionId, 'participants', {
-        participants: session.participants.map(p => ({
+        participants: session.participants.map((p: any) => ({
           userId: p.userId,
           name: p.name,
           avatar: p.avatar,

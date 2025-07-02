@@ -1,0 +1,55 @@
+FROM mcr.microsoft.com/playwright:v1.40.0-focal
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build the application for testing
+RUN npm run build
+
+# Install browsers for Playwright (only Chromium for faster testing)
+RUN npx playwright install chromium
+
+# Environment variables for testing
+ENV CI=true
+ENV BACKEND_URL=http://backend:3000
+ENV FRONTEND_URL=http://localhost:5173
+
+# Add test script that waits for backend and runs specific test
+COPY <<'EOF' /app/run-test.sh
+#!/bin/bash
+echo "🚀 Docker Test Runner Starting..."
+echo "🏥 Backend URL: $BACKEND_URL"
+
+# Wait for backend to be healthy
+echo "⏳ Waiting for backend to be ready..."
+for i in {1..30}; do
+  if curl -f "$BACKEND_URL/health" > /dev/null 2>&1; then
+    echo "✅ Backend is healthy!"
+    break
+  fi
+  echo "⏸️ Backend not ready, attempt $i/30..."
+  sleep 2
+done
+
+if ! curl -f "$BACKEND_URL/health" > /dev/null 2>&1; then
+  echo "❌ Backend failed to start"
+  exit 1
+fi
+
+echo "🎬 Running Real Video Sync E2E Test..."
+npm run test:real-sync
+EOF
+
+RUN chmod +x /app/run-test.sh
+
+# Default command runs our test script
+CMD ["/app/run-test.sh"] 

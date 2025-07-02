@@ -19,8 +19,8 @@ export class SessionController {
     this.youtubeService = youtubeService;
   }
 
-  // GET /api/sessions - Get active sessions (both user's sessions and public listing)
-  async getSessions(_request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  // GET /api/sessions - Get active sessions (public listing, no auth required)
+  async getSessions(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
       const sessions = await this.sessionService.getAllActiveSessions();
       

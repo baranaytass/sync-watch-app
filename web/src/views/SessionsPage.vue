@@ -185,12 +185,7 @@ const filteredSessions = computed(() => {
 
 // Methods
 const loadSessions = async () => {
-  // Guest user için mock session'ları gösterme
-  if (authStore.user?.googleId === 'guest') {
-    console.log('👤 Guest user - skipping sessions API call')
-    return
-  }
-  
+  console.log('📋 Loading sessions for user:', authStore.user?.googleId || 'unknown')
   await sessionsStore.fetchSessions()
 }
 

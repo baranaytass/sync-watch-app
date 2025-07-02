@@ -47,30 +47,60 @@ export const useAuthStore = defineStore('auth', () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`
   }
 
-  const loginAsGuest = () => {
+  const loginAsGuest = async () => {
     loading.value = true
     error.value = null
     
-    // Create a mock guest user
-    const guestUser: User = {
-      id: 'guest-' + Date.now(),
-      googleId: 'guest',
-      email: 'guest@example.com',
-      name: 'Misafir Kullanıcı',
-      avatar: '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-    
-    // Set guest user
-    setTimeout(() => {
-      user.value = guestUser
-      localStorage.setItem('user', JSON.stringify(guestUser))
-      loading.value = false
+    try {
+      // Call backend to get JWT token for guest user
+      const response = await axios.post(`${API_BASE_URL}/api/auth/guest`, {
+        name: 'Misafir Kullanıcı',
+        email: 'guest@example.com',
+        guestId: 'guest-' + Date.now()
+      })
       
-      // Redirect to sessions page after login
-      window.location.href = '/sessions'
-    }, 500) // Small delay to simulate login process
+      if (response.data.success && response.data.data) {
+        const guestUser = response.data.data
+        const token = response.data.token
+        
+        // Store user data
+        user.value = guestUser
+        localStorage.setItem('user', JSON.stringify(guestUser))
+        
+        // Store token for WebSocket use
+        localStorage.setItem('auth_token', token)
+        
+        loading.value = false
+        
+        // Redirect to sessions page after login
+        window.location.href = '/sessions'
+      } else {
+        throw new Error('Guest login failed')
+      }
+      
+    } catch (err: any) {
+      loading.value = false
+      error.value = 'Guest login failed'
+      console.error('Guest login error:', err)
+      
+      // Fallback to old guest logic if backend is not available
+      const guestUser: User = {
+        id: 'guest-' + Date.now(),
+        googleId: 'guest',
+        email: 'guest@example.com',
+        name: 'Misafir Kullanıcı',
+        avatar: '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      
+      setTimeout(() => {
+        user.value = guestUser
+        localStorage.setItem('user', JSON.stringify(guestUser))
+        loading.value = false
+        window.location.href = '/sessions'
+      }, 500)
+    }
   }
 
   const logout = async () => {

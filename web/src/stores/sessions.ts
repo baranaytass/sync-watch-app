@@ -301,16 +301,24 @@ export const useSessionsStore = defineStore('sessions', () => {
   const setParticipants = (participantsList: any[]): void => {
     console.log('👤 Sessions Store: Setting participants (guest mode)')
     if (currentSession.value) {
-      // Direct assignment for guest mode
-      currentSession.value.participants = participantsList.map(p => ({
+      // Create new participants array to trigger reactivity
+      const newParticipants = participantsList.map(p => ({
         sessionId: currentSession.value!.id,
         userId: p.id || p.userId,
         name: p.name,
         avatar: p.avatar || '',
-        joinedAt: new Date(),
+        joinedAt: new Date(p.joinedAt || new Date()),
         isOnline: true,
         lastSeen: new Date(),
       }))
+      
+      // Force reactive update by creating new session object
+      currentSession.value = {
+        ...currentSession.value,
+        participants: newParticipants
+      }
+      
+      console.log(`👤 Sessions Store: Set ${newParticipants.length} participants for session ${currentSession.value.id}`)
     }
   }
 

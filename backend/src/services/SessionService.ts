@@ -20,10 +20,14 @@ export class SessionService {
     description?: string;
     hostId: string;
   }): Promise<Session> {
-    // Validate host exists
-    const host = await this.userModel.findById(sessionData.hostId);
-    if (!host) {
-      throw new Error('Host user not found');
+    // Validate host exists (skip for guest users)
+    if (!sessionData.hostId.startsWith('guest-')) {
+      const host = await this.userModel.findById(sessionData.hostId);
+      if (!host) {
+        throw new Error('Host user not found');
+      }
+    } else {
+      console.log('👤 Guest user creating session, skipping DB validation');
     }
 
     // Create session
@@ -73,10 +77,14 @@ export class SessionService {
       throw new Error('Session not found or not active');
     }
 
-    // Check if user exists
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
+    // Check if user exists (skip for guest users)
+    if (!userId.startsWith('guest-')) {
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+    } else {
+      console.log('👤 Guest user joining session, skipping DB validation');
     }
 
     // Add user as participant and get updated session

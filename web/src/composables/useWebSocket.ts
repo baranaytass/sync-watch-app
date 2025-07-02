@@ -177,7 +177,13 @@ export const useWebSocket = (sessionId: string) => {
         
         console.log(`🔌 WebSocket: Connecting to session ${sessionId}`)
         
-        const wsUrl = `ws://localhost:3000/ws/session/${sessionId}`
+        // Get token from localStorage for authentication
+        const token = localStorage.getItem('auth_token')
+        const wsUrl = token 
+          ? `ws://localhost:3000/ws/session/${sessionId}?token=${encodeURIComponent(token)}`
+          : `ws://localhost:3000/ws/session/${sessionId}`
+        
+        console.log(`🔐 WebSocket: Using token: ${token ? 'YES' : 'NO'}`)
         ws = new WebSocket(wsUrl)
         
         ws.onopen = () => {

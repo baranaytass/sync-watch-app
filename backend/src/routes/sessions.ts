@@ -12,9 +12,9 @@ export default async function sessionRoutes(
   const youtubeService = new YouTubeService(process.env.YOUTUBE_API_KEY!);
   const sessionController = new SessionController(sessionService, youtubeService);
 
-  // GET /api/sessions - Get all active sessions
+  // GET /api/sessions - Get all active sessions (public listing)
   fastify.get('/', {
-    preHandler: [fastify.authenticate],
+    // No authentication required for public session listing
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       return sessionController.getSessions(request as any, reply);
     },

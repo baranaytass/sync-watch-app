@@ -17,6 +17,83 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - sync-watch-network
+
+  backend:
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sync-watch-backend
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgresql://videosync_user:videosync_pass@postgres:5432/videosync
+      - JWT_SECRET=your-super-secret-jwt-key-for-production
+      - FRONTEND_URL=http://frontend
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - sync-watch-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: sync-watch-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sync-watch-network
+
+  # Test runner service (optional - for running tests in Docker)
+  test-runner:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.test
+    container_name: sync-watch-tests
+    environment:
+      - CI=true
+      - BACKEND_URL=http://backend:3000
+      - FRONTEND_URL=http://frontend
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - sync-watch-network
+    profiles:
+      - testing
+
+networks:
+  sync-watch-network:
+    driver: bridge
 
 volumes:
   postgres_data: 

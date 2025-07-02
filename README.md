@@ -47,6 +47,23 @@ Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında ayn
    npm run dev
    ```
 
+### Geliştirme Ortamı
+
+```bash
+# PostgreSQL'i başlat
+docker-compose up -d postgres
+
+# Backend'i başlat
+cd backend
+npm install
+npm run dev
+
+# Frontend'i başlat (yeni terminal)
+cd web
+npm install
+npm run dev
+```
+
 ## 📁 Proje Yapısı
 
 ```
@@ -116,4 +133,110 @@ npm run docker:db:logs    # Veritabanı loglarını göster
 
 ## 📄 Lisans
 
-MIT License - Detaylar için [LICENSE](LICENSE) dosyasını inceleyebilirsiniz. 
+MIT License - Detaylar için [LICENSE](LICENSE) dosyasını inceleyebilirsiniz.
+
+## 🧪 E2E Test Sistemi
+
+### 🎬 Real Video Sync E2E Test
+
+İki kullanıcının gerçek zamanlı video sync'ini test eden kapsamlı e2e test sistemi:
+
+**Test Senaryosu:**
+1. **2 misafir kullanıcı** aynı anda giriş yapar
+2. **User1 (Host)** oturum oluşturur ve video setler
+3. **User2 (Participant)** aynı oturuma katılır
+4. **User1** videoyu başlatır
+5. **User2**'de videonun otomatik başladığı doğrulanır (WebSocket sync)
+6. **Participants tracking** ve **real-time communication** test edilir
+
+### Docker'da Test Çalıştırma (Önerilen)
+
+**Tek komutla test çalıştırma:**
+```bash
+# Root directory'de
+./run-e2e-test.sh
+```
+
+Bu script otomatik olarak:
+- ✅ Docker servislerini başlatır (postgres + backend)
+- ✅ Backend sağlık kontrolü yapar
+- ✅ E2E test'i çalıştırır
+- ✅ Test sonucunu raporlar
+- ✅ Cleanup işlemi yapar
+
+### Manuel Docker Test Çalıştırma
+
+```bash
+# 1. Backend servisleri başlat
+npm run test:docker:setup
+
+# 2. Backend'in hazır olmasını bekle (30 saniye)
+# health check: http://localhost:3000/health
+
+# 3. Test'i çalıştır
+cd web
+npm run test:real-sync
+
+# 4. Cleanup
+npm run test:docker:cleanup
+```
+
+### Local Development Test
+
+```bash
+# 1. Backend ve frontend'i ayrı terminallerde başlat
+# (yukarıdaki Hızlı Başlangıç'a bakın)
+
+# 2. Test'i çalıştır
+cd web
+npm run test:real-sync:headed  # Browser görünür modda
+# veya
+npm run test:real-sync         # Headless mode
+```
+
+### Test Komutları
+
+```bash
+# Tüm integration testleri
+npm run test:integration
+
+# Sadece real video sync testi
+npm run test:real-sync
+
+# Browser görünür modda test
+npm run test:real-sync:headed
+
+# Docker'da test çalıştırma
+npm run test:docker
+
+# Test servisleri setup/cleanup
+npm run test:docker:setup
+npm run test:docker:cleanup
+```
+
+### Test Bileşenleri
+
+- **Integration Test Config**: `web/playwright.config.integration.ts`
+- **Global Setup**: `web/tests/integration/global.setup.ts`
+- **Real Video Sync Test**: `web/tests/integration/real-video-sync-test.spec.ts`
+- **Docker Test Runner**: `web/Dockerfile.test`
+
+### Test Fail Handling
+
+Test hata verdiği noktada durur ve detaylı hata bilgisi verir:
+- ❌ Hangi phase'de fail olduğunu gösterir
+- 🔍 Backend/Frontend durumunu raporlar
+- 📝 WebSocket connection durumunu kontrol eder
+- 🎥 Video iframe ve sync durumunu analiz eder
+
+## 📋 Geliştirme Notları
+
+### Teknik Detaylar
+- **Backend**: Fastify + PostgreSQL + WebSocket
+- **Frontend**: Vue 3 + Pinia + Tailwind CSS
+- **Test**: Playwright + Docker
+- **Database**: UNLOGGED tables for cache data
+
+### Daha Fazla Bilgi
+- 📖 [Teknik Tasarım Dokümantasyonu](./development.md)
+- 📝 [Geliştirme Progress Notları](./development-progress.md) 

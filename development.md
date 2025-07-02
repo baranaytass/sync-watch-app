@@ -1,6 +1,6 @@
-# Realtime Video Sync Chat App – Teknik Tasarım Dokümanı (güncel 21 Haz 2025)
+# Realtime Video Sync Chat App – Teknik Tasarım Dokümanı (güncel 2 Tem 2025)
 
-**Özet:** Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında aynı anda senkronize oynatmayı ve gerçek zamanlı sohbet etmeyi amaçlayan bir web uygulamasıdır. Kullanıcılar Google hesabıyla oturum açar, bir oturum (session) oluşturur veya mevcut bir oturuma katılır. Sunucu, Fastify tabanlı REST API ve WebSocket üzerinden oynatma eylemlerini ve mesajları dağıtır. Ön yüz Vue 3 + Pinia + Vite ile geliştirilmiş olup, **Shadcn UI** bileşen kütüphanesi kullanılarak modern ve erişilebilir bir tasarım sunar.
+**Özet:** Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında aynı anda senkronize oynatmayı ve gerçek zamanlı sohbet etmeyi amaçlayan bir web uygulamasıdır. Kullanıcılar Google hesabıyla veya misafir olarak oturum açar, bir oturum (session) oluşturur veya mevcut bir oturuma katılır. Sunucu, Fastify tabanlı REST API ve WebSocket üzerinden oynatma eylemlerini ve mesajları dağıtır. Ön yüz Vue 3 + Pinia + Vite ile geliştirilmiş olup, **Shadcn UI** bileşen kütüphanesi kullanılarak modern ve erişilebilir bir tasarım sunar.
 
 ---
 
@@ -54,6 +54,7 @@ interface Session {
 | ----- | ------------------------- | ------------------------ |
 | GET   | /api/auth/google          | Google OAuth yönlendirme |
 | GET   | /api/auth/google/callback | OAuth callback           |
+| POST  | /api/auth/guest           | Misafir kullanıcı girişi |
 | POST  | /api/auth/logout          | Oturum sonlandırma       |
 | GET   | /api/auth/me              | Oturum bilgisini getir   |
 | GET   | /api/sessions             | Aktif oturumları listele |
@@ -190,6 +191,7 @@ export const useAuthStore = defineStore('auth', {
   }),
   actions: {
     loginWithGoogle() {},
+    loginAsGuest() {},
     logout() {},
     fetchUser() {}
   }
@@ -260,9 +262,6 @@ volumes:
 # Veritabanını başlatma
 docker-compose up -d postgres
 
-# Veritabanına bağlanma
-docker exec -it sync-watch-app-3_postgres_1 psql -U videosync_user -d videosync
-
 # Veritabanını durdurma
 docker-compose down
 ```
@@ -300,46 +299,62 @@ FRONTEND_URL=http://localhost:5173
 
 ---
 
-## 10. Test Senaryoları
+## 10. Test Sistemi
 
-### YouTube Player Comprehensive Test
-Playwright ile otomatikleştirilmiş YouTube Player test senaryosu:
+### Test Kategorileri
 
-**Test Çalıştırma:**
+#### 🔗 E2E Integration Test (Real Video Sync)
+Gerçek backend ile tam entegrasyon testi:
 ```bash
 cd web
-npm run test -- --project=chromium --workers=1 tests/youtube-comprehensive-test.spec.ts
+npm run test:real-sync
 ```
 
-**Test Senaryoları:**
-- 🔐 **Guest Authentication**: Misafir kullanıcı girişi (backend'siz test)
-- 📋 **Session Management**: Session oluşturma ve navigation
-- 🎥 **Video Input Detection**: YouTube URL input field bulma
-- 🔗 **URL Parsing**: Standard ve short YouTube URL formatları
-- 📱 **YouTube Player Integration**: iframe oluşturma ve yükleme
-- ⏱️ **Timeout Handling**: 25 saniye süresince player monitoring
-- 🌐 **Network Analysis**: YouTube embed requests tracking
-- 📝 **Console Monitoring**: Error ve log analizi
-- 🎯 **Multi-Video Testing**: Farklı video ID'leri ile test
+**Test Senaryosu:**
+1. **2 Guest User**: Misafir olarak authentication
+2. **Session Creation**: User1 oturum oluşturur ve video setler
+3. **Session Join**: User2 aynı oturuma katılır  
+4. **WebSocket Sync**: User1 video başlatır, User2'de otomatik başlar
+5. **Participants Tracking**: Real-time katılımcı takibi
 
-**Çözülen Problemler:**
-- ✅ Template rendering sorunu (`v-else` koşulu)
-- ✅ Reactive computed sorunu (`.value` kullanımı)
-- ✅ Case sensitivity sorunu (`toLowerCase()` video ID'yi bozuyordu)
-- ✅ Force reload (`:key` ile iframe reset)
+#### 🧪 Unit Tests (Frontend Mock)
+Frontend mantığını test eden birim testleri:
+```bash
+cd web
+npm run test
+```
 
-**Test Yapılandırması:**
-- Browser: Chromium (Playwright)
-- Timeout: 30 saniye
-- Workers: 1 (serial test)
-- Guest login: Environment variable kontrolü
+### Test Konfigürasyonları
+
+#### playwright.config.ts (Unit Tests)
+- **Amaç**: Hızlı frontend testleri
+- **Backend**: Mock data
+- **Timeout**: 30 saniye
+
+#### playwright.config.integration.ts (E2E Tests)  
+- **Amaç**: Gerçek backend entegrasyonu
+- **Backend**: localhost:3000
+- **Timeout**: 60 saniye
+- **Health Check**: Backend hazırlık kontrolü
+
+### Docker Test Runner
+
+```bash
+# Full Docker setup ile test
+./run-e2e-test.sh
+
+# Manuel setup ile test
+docker-compose up -d postgres
+cd backend && npm run dev
+cd web && npm run test:real-sync
+```
 
 ---
 
-## 11. Monorepo Klasör Yerleşimi (yalnızca klasörler + açıklamalar)
+## 11. Monorepo Klasör Yerleşimi
 
 ```
-packages/                       # Ortak bağımlılıklar (paylaşılan tipler, eslint-konfig vb.)
+packages/                       # Ortak bağımlılıklar (paylaşılan tipler)
 └─ shared-types/                # Backend ve frontend arasında paylaşılan TS tipleri
 
 backend/                        # Node.js Fastify API & WebSocket sunucusu
@@ -348,8 +363,7 @@ backend/                        # Node.js Fastify API & WebSocket sunucusu
    ├─ controllers/              # HTTP isteklerini karşılayan controller katmanı
    ├─ routes/                   # Fastify route tanımları ve plugin'ler
    ├─ services/                 # Use‑case / iş kuralları mantığı
-   ├─ models/                   # Domain modelleri & ORM (Prisma/TypeORM) şemaları
-   ├─ websocket/                # WebSocket gateway ve event handler'ları
+   ├─ models/                   # Domain modelleri & ORM şemaları
    ├─ utils/                    # Ortak yardımcı fonksiyonlar
    └─ types/                    # Backend'e özel tip tanımları
 
@@ -364,5 +378,3 @@ web/                            # Vue 3 + Vite SPA (Shadcn UI tasarım kiti)
    ├─ utils/                    # Front‑end yardımcı fonksiyonlar
    └─ types/                    # Frontend'e özel tip tanımları
 ```
-
-> **Not**: `packages/` dizini isteğe bağlıdır ancak uzun vadede paylaşılan kodu tek yerde toplamak (örn. tipler, lint kuralları) monorepo bakımını kolaylaştırır.
