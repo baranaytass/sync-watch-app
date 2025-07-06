@@ -133,7 +133,7 @@ npm run docker:db:logs    # Veritabanı loglarını göster
 
 ## 📄 Lisans
 
-MIT License - Detaylar için [LICENSE](LICENSE) dosyasını inceleyebilirsiniz.
+MIT License - Detaylar için [LICENSE](LICENSE) dosyasını inceleyebilirsiniz. 
 
 ## 🧪 E2E Test Sistemi
 

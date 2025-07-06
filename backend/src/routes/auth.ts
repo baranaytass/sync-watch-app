@@ -37,60 +37,42 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
     authController.logout(request, reply)
   );
 
-  // Protected route - requires authentication
-  fastify.get('/me', {
-    preHandler: fastify.authenticate,
-  }, async (request, reply) => 
+  // Protected route - authentication handled inside the controller
+  fastify.get('/me', async (request, reply) => 
     authController.me(request, reply)
   );
 
   // Guest user login - create JWT token for guest users
-  fastify.post('/guest', async (request, reply) => {
+  fastify.post('/guest', async (_request, reply) => {
     try {
-      const body = request.body as { 
-        name?: string; 
-        email?: string; 
-        guestId?: string 
-      }
-      
-      // Create guest user data
-      const guestUser = {
-        id: body.guestId || `guest-${Date.now()}`,
-        googleId: 'guest',
-        email: body.email || 'guest@example.com',
-        name: body.name || 'Misafir Kullanıcı',
-        avatar: '',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
+      const guestUser = await authService.findOrCreateGuestUser();
 
       // Generate JWT token for guest user
-      const token = fastify.jwt.sign({ 
-        userId: guestUser.id, 
+      const token = fastify.jwt.sign({
+        userId: guestUser.id,
         email: guestUser.email,
-        isGuest: true 
-      })
+        isGuest: true,
+      });
 
       reply
-        .setCookie('token', token, { 
-          httpOnly: true, 
+        .setCookie('token', token, {
+          httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          maxAge: 24 * 60 * 60 * 1000 // 24 hours for guests
-        })
-      
-      return reply.send({ 
-        success: true, 
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        });
+
+      return reply.send({
+        success: true,
         data: guestUser,
-        token // Also return token for WebSocket use
-      })
-        
+        token, // Also return token for WebSocket use
+      });
     } catch (error) {
-      console.error('Guest auth error:', error)
-      return reply.status(500).send({ 
-        success: false, 
-        error: { message: 'Guest authentication failed' } 
-      })
+      console.error('Guest auth error:', error);
+      return reply.status(500).send({
+        success: false,
+        error: { message: 'Guest authentication failed' },
+      });
     }
-  })
+  });
 } 

@@ -1,44 +1,52 @@
-FROM node:18-alpine
+# Use an official Node.js runtime as a parent image
+FROM node:18-alpine as build
 
-# Install dependencies for native modules and curl for health check
+# Set up environment
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+# Install Python, Make, and G++ for native dependencies
 RUN apk add --no-cache python3 make g++ curl
 
-# Set working directory
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy root package.json first for monorepo context
-COPY package*.json ./
+# Copy configuration files first to leverage Docker cache
+COPY .npmrc ./
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+COPY packages/shared-types/package.json ./packages/shared-types/
+COPY backend/package.json ./backend/
+COPY backend/tsconfig.json ./backend/
 
-# Copy shared-types package
-COPY packages/shared-types ./packages/shared-types
+# Install all dependencies, including devDependencies, based on lockfile
+RUN pnpm install --frozen-lockfile --dev
 
-# Copy backend package files
-COPY backend/package*.json ./backend/
-WORKDIR /app/backend
+# Copy the rest of the source code ONLY AFTER installing dependencies
+COPY . .
 
-# Install backend dependencies
-RUN npm install
+# Build the backend by calling tsc directly from the root node_modules
+RUN /app/node_modules/.bin/tsc --project backend/tsconfig.json
 
-# Go back to root and build shared-types first
-WORKDIR /app/packages/shared-types
-RUN npm install && npm run build
+# Prune development dependencies for production
+RUN pnpm --filter @sync-watch-app/backend deploy --legacy --prod /prod
 
-# Go back to backend and copy source
-WORKDIR /app/backend
-COPY backend/ .
+# --- Production Stage ---
+FROM node:18-alpine
 
-# Build the application
-RUN npm run build
+# Set the working directory
+WORKDIR /app
 
-# Remove dev dependencies after build
-RUN npm prune --production
+# Copy production dependencies and build output from the build stage
+COPY --from=build /prod/backend/package.json .
+COPY --from=build /prod/node_modules ./node_modules
+COPY --from=build /app/backend/dist ./dist
 
-# Expose port
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
-
-# Start the application
-CMD ["npm", "start"] 
+# Command to run the application
+CMD ["node", "dist/server.js"] 

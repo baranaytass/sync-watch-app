@@ -29,6 +29,21 @@ export const useSessionsStore = defineStore('sessions', () => {
     return currentSession.value?.participants || []
   })
 
+  // Helper function to create request headers with auth token
+  const createAuthHeaders = (): HeadersInit => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+    
+    // Add Authorization header if token exists in localStorage
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
+    return headers
+  }
+
   // Helper function to transform date strings
   const transformDates = (session: any): Session => ({
     ...session,
@@ -51,6 +66,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch('/api/sessions', {
         method: 'GET',
+        headers: createAuthHeaders(),
         credentials: 'include',
       })
 
@@ -86,6 +102,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}`, {
         method: 'GET',
+        headers: createAuthHeaders(),
         credentials: 'include',
       })
 
@@ -118,9 +135,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch('/api/sessions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: createAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify(data),
       })
@@ -159,6 +174,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/join`, {
         method: 'POST',
+        headers: createAuthHeaders(),
         credentials: 'include',
       })
 
@@ -202,9 +218,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/video`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: createAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify(data),
       })

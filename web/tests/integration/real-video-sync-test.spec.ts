@@ -41,11 +41,11 @@ test.describe('🎬 Real Video Sync E2E Test', () => {
     console.log('✅ Backend is healthy')
 
     // Test initialization
-    testSessionId = `real-sync-test-${Date.now()}`
+    let testSessionId = `initial-test-id-${Date.now()}` // Fallback ID for logging
+    let createdSessionId: string;
     testErrors = []
     
     console.log(`🎬 Starting Real Video Sync E2E Test`)
-    console.log(`🎯 Session ID: ${testSessionId}`)
     console.log(`🎥 Video: ${testVideoUrl}`)
 
     // Create two browser contexts for two users
@@ -72,7 +72,31 @@ test.describe('🎬 Real Video Sync E2E Test', () => {
         await page.locator('button:has-text("Misafir Olarak Giriş")').click()
         await page.waitForTimeout(1000)
       }
-      console.log('✅ User1: Authentication successful')
+      
+      // --- Regression Test for Duplicate Guest User ---
+      console.log('🔄 User1: Testing re-authentication to catch duplicate key error...')
+      const errorPromise = page.waitForEvent('pageerror');
+      
+      await page.goto('/') // Go back to login
+      await page.waitForLoadState('networkidle')
+      const isLoginPageAgain = await page.locator('h2:has-text("Video Sync Chat")').isVisible()
+      if (isLoginPageAgain) {
+          await page.locator('button:has-text("Misafir Olarak Giriş")').click()
+          await page.waitForTimeout(1000)
+      }
+      
+      const error = await Promise.race([
+        errorPromise,
+        page.waitForTimeout(3000).then(() => null)
+      ]);
+
+      validateStep(
+        'Phase 1.1a - User1 Re-Authentication',
+        error === null,
+        `Re-authentication should not cause a page error. Found: ${error}`
+      );
+      // --- End Regression Test ---
+      
       validateStep('Phase 1.1 - User1 Authentication', true)
 
       // 1.2: Session Creation
@@ -81,17 +105,19 @@ test.describe('🎬 Real Video Sync E2E Test', () => {
       await page.waitForLoadState('networkidle')
       
       await page.locator('button:has-text("Yeni Oturum")').click()
-      await page.locator('input#title, input[placeholder*="Film"]').fill(`Real Sync Test ${testSessionId}`)
+      await page.locator('input#title, input[placeholder*="Film"]').fill(`Real Sync Test Session`)
       await page.locator('button[type="submit"]:has-text("Oturum Oluştur")').click()
-      await page.waitForTimeout(1000)
-
-      console.log(`🏠 User1: Entering session room (${testSessionId})...`)
-      await page.goto(`/session/${testSessionId}`)
-      await page.waitForLoadState('networkidle')
-      await page.waitForTimeout(2000)
       
-      const participantsVisible1 = await page.locator('h3:has-text("Katılımcılar")').isVisible()
-      validateStep('Phase 1.2 - User1 Session Creation', participantsVisible1)
+      // Wait for navigation to the new session page and extract the real session ID (UUID)
+      await page.waitForURL(/\/session\/[a-f0-9-]+/);
+      const url = page.url();
+      createdSessionId = url.substring(url.lastIndexOf('/') + 1);
+      testSessionId = createdSessionId; // Update the main test ID
+      console.log(`🏠 User1: Session created. Real ID: ${createdSessionId}`);
+      
+      await page.waitForLoadState('networkidle')
+
+      validateStep('Phase 1.2 - User1 Session Creation', !!createdSessionId);
 
       // 1.3: Video Setup
       console.log('🎥 User1: Setting video (as host)...')
@@ -118,10 +144,10 @@ test.describe('🎬 Real Video Sync E2E Test', () => {
       validateStep('Phase 2.1 - User2 Authentication', true)
 
       // 2.2: Session Join
-      console.log(`🔗 User2: Joining same session (${testSessionId})...`)
-      await secondPage.goto(`/session/${testSessionId}`)
+      console.log(`🔗 User2: Joining same session (${createdSessionId})...`)
+      await secondPage.goto(`/session/${createdSessionId}`)
       await secondPage.waitForLoadState('networkidle')
-      await secondPage.waitForTimeout(2000)
+      await page.waitForTimeout(2000)
       
       const participantsVisible2 = await secondPage.locator('h3:has-text("Katılımcılar")').isVisible()
       validateStep('Phase 2.2 - User2 Session Join', participantsVisible2)
@@ -206,7 +232,7 @@ test.describe('🎬 Real Video Sync E2E Test', () => {
       console.log('\n🔧 Debug Information:')
       console.log(`   📍 User1 URL: ${await page.url()}`)
       console.log(`   🌐 Backend URL: ${backendUrl}`)
-      console.log(`   🎯 Session ID: ${testSessionId}`)
+      console.log(`   �� Session ID: ${testSessionId}`)
       
       throw error
     } finally {

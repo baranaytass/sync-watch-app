@@ -73,23 +73,39 @@ export class AuthController {
 
   async me(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-      // JWT middleware should have already verified the token
-      const userId = (request.user as { userId: string }).userId;
-      
-      const user = await this.authService.getUserById(userId);
-      
+      // Manually verify the JWT from the cookie or Authorization header
+      const token = request.cookies.token || request.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return reply.status(401).send({ error: 'unauthorized', message: 'No token provided' });
+      }
+
+      const decoded = this.fastify.jwt.verify(token) as { userId: string; email: string; isGuest?: boolean };
+
+      // Handle guest users
+      if (decoded.isGuest) {
+        // For guests, we can construct the user object directly from the token
+        const guestUser = {
+          id: decoded.userId,
+          email: decoded.email,
+          name: 'Misafir Kullanıcı', // This could be enhanced in the future
+          avatar: '',
+          isGuest: true,
+        };
+        return reply.send({ success: true, data: guestUser });
+      }
+
+      // Handle real users
+      const user = await this.authService.getUserById(decoded.userId);
       if (!user) {
-        return reply.status(404).send({
-          error: 'user_not_found',
-          message: 'User not found',
-        });
+        return reply.status(404).send({ error: 'user_not_found', message: 'User not found' });
       }
       
-      return reply.send({
-        success: true,
-        data: user,
-      });
+      return reply.send({ success: true, data: user });
+
     } catch (error) {
+      if (error instanceof Error && (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError')) {
+        return reply.status(401).send({ error: 'unauthorized', message: 'Invalid or expired token' });
+      }
       this.fastify.log.error('Get user error:', error);
       return reply.status(500).send({
         error: 'internal_server_error',

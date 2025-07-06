@@ -8,8 +8,9 @@ CREATE TABLE users (
   email VARCHAR(255) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
   avatar TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  is_guest BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create sessions table (cache data - UNLOGGED)
@@ -23,20 +24,20 @@ CREATE UNLOGGED TABLE sessions (
   video_title VARCHAR(500),
   video_duration INTEGER DEFAULT 0,
   last_action VARCHAR(20) DEFAULT 'pause',
-  last_action_time_as_second INTEGER DEFAULT 0,
-  last_action_timestamp TIMESTAMP DEFAULT NOW(),
+  last_action_time_as_second REAL DEFAULT 0,
+  last_action_timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create session_participants table (cache data - UNLOGGED)
 CREATE UNLOGGED TABLE session_participants (
   session_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
   user_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
-  joined_at TIMESTAMP DEFAULT NOW(),
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   is_online BOOLEAN DEFAULT TRUE,
-  last_seen TIMESTAMP DEFAULT NOW(),
+  last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (session_id, user_id)
 );
 

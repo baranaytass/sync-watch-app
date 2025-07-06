@@ -25,9 +25,12 @@ function startSessionCleanupJob(sessionService: SessionService): void {
       // Clean up sessions inactive for more than 30 minutes
       const inactiveSessionsDeleted = await sessionService.cleanupInactiveSessions(30);
       
+      // Clean up guest users older than 24 hours
+      const guestUsersDeleted = await cleanupGuestUsers();
+      
       const totalDeleted = emptySessionsDeleted + inactiveSessionsDeleted;
-      if (totalDeleted > 0) {
-        console.log(`🧹 Cleanup completed: ${totalDeleted} sessions deleted`);
+      if (totalDeleted > 0 || guestUsersDeleted > 0) {
+        console.log(`🧹 Cleanup completed: ${totalDeleted} sessions deleted, ${guestUsersDeleted} guest users deleted`);
       }
     } catch (error) {
       console.error('❌ Session cleanup job failed:', error);
@@ -46,6 +49,23 @@ function stopSessionCleanupJob(): void {
     clearInterval(cleanupInterval);
     cleanupInterval = null;
     console.log('🧹 Session cleanup job stopped');
+  }
+}
+
+// Guest user cleanup function
+async function cleanupGuestUsers(): Promise<number> {
+  try {
+    const deleteQuery = `
+      DELETE FROM users 
+      WHERE is_guest = TRUE 
+      AND created_at < NOW() - INTERVAL '24 hours'
+    `;
+    
+    const result = await server.pg.query(deleteQuery);
+    return result.rowCount || 0;
+  } catch (error) {
+    console.error('❌ Guest user cleanup failed:', error);
+    return 0;
   }
 }
 

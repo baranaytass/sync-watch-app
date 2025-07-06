@@ -12,14 +12,14 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
-    "test:real-sync": "playwright test --config playwright.config.integration.ts tests/integration/real-video-sync-test.spec.ts",
+    "test:real-sync": "playwright test -c playwright.config.integration.ts",
     "test:real-sync:headed": "playwright test --config playwright.config.integration.ts tests/integration/real-video-sync-test.spec.ts --headed",
     "test:integration": "playwright test --config playwright.config.integration.ts",
     "test:integration:headed": "playwright test --config playwright.config.integration.ts --headed"
   },
   "dependencies": {
     "@radix-icons/vue": "^1.0.0",
-    "@sync-watch-app/shared-types": "workspace:*",
+    "@sync-watch-app/shared-types": "file:../packages/shared-types",
     "@vueuse/core": "^10.5.0",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
@@ -30,12 +30,21 @@
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "vue": "^3.3.8",
-    "vue-router": "^4.2.5"
+    "vue-router": "^4.2.5",
+    "vue-sonner": "^1.1.2",
+    "vue-toastification": "^2.0.0-rc.5",
+    "vue3-google-login": "^2.0.26",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
-    "@types/node": "^20.9.4",
-    "@vitejs/plugin-vue": "^4.5.0",
+    "@playwright/test": "^1.46.0",
+    "@rushstack/eslint-patch": "^1.8.0",
+    "@sync-watch-app/shared-types": "file:../packages/shared-types",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tsconfig/node18": "^18.2.4",
+    "@types/node": "^18.19.42",
+    "@vitejs/plugin-vue": "^5.1.0",
+    "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.54.0",
     "postcss": "^8.4.31",
@@ -47,5 +56,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Realtime Video Sync Chat App - Frontend"
+  "description": "Realtime Video Sync Chat App - Frontend",
+  "private": true
 }

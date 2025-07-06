@@ -22,9 +22,9 @@ export class SessionService {
   }): Promise<Session> {
     // Validate host exists (skip for guest users)
     if (!sessionData.hostId.startsWith('guest-')) {
-      const host = await this.userModel.findById(sessionData.hostId);
-      if (!host) {
-        throw new Error('Host user not found');
+    const host = await this.userModel.findById(sessionData.hostId);
+    if (!host) {
+      throw new Error('Host user not found');
       }
     } else {
       console.log('👤 Guest user creating session, skipping DB validation');
@@ -68,7 +68,7 @@ export class SessionService {
   }
 
   /**
-   * Join a session as participant
+   * Join user to session
    */
   async joinSession(sessionId: string, userId: string): Promise<Session> {
     // Check if session exists and is active
@@ -77,20 +77,25 @@ export class SessionService {
       throw new Error('Session not found or not active');
     }
 
-    // Check if user exists (skip for guest users)
-    if (!userId.startsWith('guest-')) {
-      const user = await this.userModel.findById(userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-    } else {
-      console.log('👤 Guest user joining session, skipping DB validation');
+    // Check if user exists - all users (including guests) should exist in database
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    // Add user as participant and get updated session
-    const updatedSession = await this.sessionModel.addParticipant(sessionId, userId);
+    // Check if user is already in the session
+    const isAlreadyParticipant = await this.sessionModel.isUserParticipant(sessionId, userId);
+    if (isAlreadyParticipant) {
+      console.log(`✅ User ${userId} is already in session ${sessionId}. Skipping join.`);
+      // If already a participant, just return the session details
+      return this.getSessionById(sessionId, userId) as Promise<Session>;
+    }
 
-    return updatedSession;
+    // Add user to session participants
+    await this.sessionModel.addParticipant(sessionId, userId);
+
+    // Return updated session with participants
+    return this.getSessionById(sessionId, userId) as Promise<Session>;
   }
 
   /**

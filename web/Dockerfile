@@ -1,81 +1,36 @@
-FROM node:18-alpine as build
+# Stage 1: Build the Vue application using pnpm
+FROM node:18-alpine AS build
 
-# Set working directory
+# Install pnpm
+RUN npm install -g pnpm
+
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy configuration files first to leverage Docker cache
+COPY .npmrc ./
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+COPY packages/shared-types/package.json ./packages/shared-types/
+COPY web/package.json ./web/
 
-# Install dependencies
-RUN npm install
+# Install all dependencies based on lockfile
+RUN pnpm install --frozen-lockfile
 
-# Copy source code
+# Copy the rest of the source code ONLY AFTER installing dependencies
 COPY . .
 
-# Set environment variables for build
-ENV VITE_API_URL=http://backend:3000
-ENV VITE_ENABLE_GUEST_LOGIN=true
+# Build the frontend by calling Vite from the root node_modules
+RUN /app/node_modules/.bin/vite build --outDir web/dist
 
-# Build the application
-RUN npm run build
-
-# Production stage
+# Stage 2: Serve the built application with Nginx
 FROM nginx:alpine
 
-# Copy built files to nginx
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy the nginx configuration
+COPY --from=build /app/web/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy nginx configuration
-COPY <<'EOF' /etc/nginx/conf.d/default.conf
-server {
-    listen 80;
-    server_name localhost;
-    
-    location / {
-        root /usr/share/nginx/html;
-        index index.html index.htm;
-        try_files $uri $uri/ /index.html;
-    }
-    
-    # Enable CORS for API calls
-    location /api/ {
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE' always;
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
-        
-        if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Max-Age' 1728000;
-            add_header 'Content-Type' 'text/plain; charset=utf-8';
-            add_header 'Content-Length' 0;
-            return 204;
-        }
-        
-        proxy_pass http://backend:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    
-    # WebSocket support
-    location /ws/ {
-        proxy_pass http://backend:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    
-    error_page 500 502 503 504 /50x.html;
-    location = /50x.html {
-        root /usr/share/nginx/html;
-    }
-}
-EOF
+# Copy the built files from the build stage
+COPY --from=build /app/web/dist /usr/share/nginx/html
 
+# Expose port 80 and start nginx
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"] 
