@@ -185,47 +185,12 @@ const filteredSessions = computed(() => {
 
 // Methods
 const loadSessions = async () => {
-  // Guest user için mock session'ları gösterme
-  if (authStore.user?.googleId === 'guest') {
-    console.log('👤 Guest user - skipping sessions API call')
-    return
-  }
-  
   await sessionsStore.fetchSessions()
 }
 
 const handleCreateSession = async (sessionData: CreateSessionRequest) => {
   try {
-    // Guest user için mock session oluştur
-    if (authStore.user?.googleId === 'guest') {
-      console.log('👤 Guest user creating mock session:', sessionData)
-      
-      const mockSession = {
-        id: 'mock-session-' + Date.now(),
-        title: sessionData.title,
-        description: sessionData.description,
-        hostId: authStore.user.id,
-        isActive: true,
-        isPrivate: sessionData.isPrivate || false,
-        maxParticipants: sessionData.maxParticipants || 10,
-        currentParticipants: 1,
-        videoUrl: null,
-        videoId: null,
-        videoTitle: null,
-        videoDuration: 0,
-        videoCurrentTime: 0,
-        isPlaying: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      
-      showCreateModal.value = false
-      // Mock session için direkt route'a git
-      router.push(`/session/${mockSession.id}`)
-      return
-    }
-    
-    // Normal user için API çağrısı
+    // Create session via API
     const newSession = await sessionsStore.createSession(sessionData)
     showCreateModal.value = false
     router.push(`/session/${newSession.id}`)

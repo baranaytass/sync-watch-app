@@ -61,6 +61,18 @@ async function start(): Promise<void> {
     const db = new DatabaseConfig(server.config);
     await db.testConnection();
     
+    // Purge leftover in-memory session cache tables on each cold start
+    try {
+      console.log('🧹 Purging existing sessions on startup...')
+      const pool = db.getPool()
+      // Remove participants first to avoid potential FK issues (even though UNLOGGED tables have no FK)
+      await pool.query('TRUNCATE TABLE session_participants')
+      await pool.query('TRUNCATE TABLE sessions')
+      console.log('🧹 Session tables truncated')
+    } catch (purgeErr) {
+      console.error('❌ Failed to purge session tables:', purgeErr)
+    }
+    
     // Add database to server instance
     server.decorate('pg', db.getPool());
 

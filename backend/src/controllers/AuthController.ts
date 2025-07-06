@@ -60,15 +60,62 @@ export class AuthController {
   async logout(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     console.log('🔵 Logging out user...');
     
+    // Fastify clearCookie sometimes fails if attributes mismatch; therefore we
+    // first overwrite the cookie with an empty value and immediate expiry, then
+    // call clearCookie as fallback.
+
+    reply.setCookie('token', '', {
+      path: '/',
+      httpOnly: true,
+      secure: this.fastify.config.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+    })
+
+    // Additional clear (safety net)
     reply.clearCookie('token', {
       path: '/',
       httpOnly: true,
       secure: this.fastify.config.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
-    
+      sameSite: 'lax',
+    })
+
     console.log('🔵 Cookie cleared, logout successful');
     return reply.send({ success: true, message: 'Logged out successfully' });
+  }
+
+  async guestAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      console.log('🟢 Guest auth request received');
+
+      // Extract name from body if provided
+      const { name } = (request.body as { name?: string }) || {};
+
+      // Create guest user in DB
+      const guestUser = await this.authService.createGuestUser(name || 'Guest User');
+
+      console.log('🟢 Guest user created:', guestUser.id);
+
+      // Generate JWT token
+      const jwtToken = this.fastify.jwt.sign(
+        { userId: guestUser.id, email: guestUser.email },
+        { expiresIn: '1d' } // shorter expiry for guest accounts
+      );
+
+      // Set HTTP-only cookie
+      reply.setCookie('token', jwtToken, {
+        httpOnly: true,
+        secure: this.fastify.config.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60, // 1 day
+        path: '/',
+      });
+
+      return reply.send({ success: true, data: guestUser });
+    } catch (error) {
+      console.error('🔴 Guest auth error:', error);
+      return reply.status(500).send({ error: 'guest_auth_error', message: 'Failed to create guest user' });
+    }
   }
 
   async me(request: FastifyRequest, reply: FastifyReply): Promise<void> {

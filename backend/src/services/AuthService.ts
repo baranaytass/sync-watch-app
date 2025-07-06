@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { UserModel } from '../models/User';
 import { User } from '@sync-watch-app/shared-types';
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 
 export interface GoogleUserInfo {
   id: string;
@@ -114,5 +115,23 @@ export class AuthService {
 
   async getUserByEmail(email: string): Promise<User | null> {
     return this.userModel.findByEmail(email);
+  }
+
+  async createGuestUser(name: string = 'Guest User'): Promise<User> {
+    // Generate unique identifiers for guest user
+    const uuid = randomUUID();
+
+    const guestGoogleId = `guest_${uuid}`;
+    const guestEmail = `guest_${uuid}@guest.local`;
+
+    // Create a new guest user record
+    const guestUser = await this.userModel.create({
+      googleId: guestGoogleId,
+      email: guestEmail,
+      name,
+      avatar: '',
+    });
+
+    return guestUser;
   }
 } 

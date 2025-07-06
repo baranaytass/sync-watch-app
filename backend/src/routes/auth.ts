@@ -37,6 +37,11 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
     authController.logout(request, reply)
   );
 
+  // Guest login route
+  fastify.post('/guest', async (request, reply) =>
+    authController.guestAuth(request, reply)
+  );
+
   // Protected route - requires authentication
   fastify.get('/me', {
     preHandler: fastify.authenticate,

@@ -47,30 +47,33 @@ export const useAuthStore = defineStore('auth', () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`
   }
 
-  const loginAsGuest = () => {
-    loading.value = true
-    error.value = null
-    
-    // Create a mock guest user
-    const guestUser: User = {
-      id: 'guest-' + Date.now(),
-      googleId: 'guest',
-      email: 'guest@example.com',
-      name: 'Misafir Kullanıcı',
-      avatar: '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-    
-    // Set guest user
-    setTimeout(() => {
-      user.value = guestUser
-      localStorage.setItem('user', JSON.stringify(guestUser))
+  const loginAsGuest = async () => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await axios.post(`${API_BASE_URL}/api/auth/guest`, {
+        name: 'Misafir Kullanıcı'
+      }, {
+        withCredentials: true
+      })
+
+      if (response.data.success && response.data.data) {
+        const guestUser: User = response.data.data
+        user.value = guestUser
+        localStorage.setItem('user', JSON.stringify(guestUser))
+
+        // Redirect to sessions page after login
+        window.location.href = '/sessions'
+      } else {
+        throw new Error('Guest login failed')
+      }
+    } catch (err) {
+      error.value = 'Guest login failed'
+      console.error('Guest login error:', err)
+    } finally {
       loading.value = false
-      
-      // Redirect to sessions page after login
-      window.location.href = '/sessions'
-    }, 500) // Small delay to simulate login process
+    }
   }
 
   const logout = async () => {
@@ -78,22 +81,18 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true
       error.value = null
       await axios.post(`${API_BASE_URL}/api/auth/logout`)
-      user.value = null
-      localStorage.removeItem('user')
     } catch (err) {
       error.value = 'Logout failed'
       console.error('Logout error:', err)
     } finally {
+      user.value = null
+      localStorage.removeItem('user')
       loading.value = false
     }
   }
 
   const fetchUser = async () => {
-    // Skip API call for guest users
-    if (user.value && user.value.googleId === 'guest') {
-      console.log('👤 Guest user detected, skipping API call')
-      return
-    }
+    // Always verify session with backend to ensure cookie is valid
     
     try {
       loading.value = true

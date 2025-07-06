@@ -24,8 +24,10 @@ export default async function websocketRoutes(
   // Helper functions
   const sendMessage = (socket: SocketStream, type: string, data: any): void => {
     try {
-      if (socket.socket.readyState === 1) { // WebSocket.OPEN
-        socket.socket.send(JSON.stringify({ type, data }));
+      // Some Fastify versions expose underlying ws instance via socket, others via the stream itself.
+      const ws: any = (socket as any).socket ?? socket;
+      if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({ type, data }));
       }
     } catch (error) {
       console.error('❌ WebSocket: Error sending message:', error);
@@ -37,15 +39,15 @@ export default async function websocketRoutes(
     if (!sockets) return;
 
     const message = JSON.stringify({ type, data });
-    sockets.forEach(socket => {
-      if (socket !== excludeSocket) {
-        try {
-          if (socket.socket.readyState === 1) { // WebSocket.OPEN
-            socket.socket.send(message);
-          }
-        } catch (error) {
-          console.error('❌ WebSocket: Error broadcasting message:', error);
+    sockets.forEach(sock => {
+      if (sock === excludeSocket) return;
+      try {
+        const ws: any = (sock as any).socket ?? sock;
+        if (ws && ws.readyState === 1) {
+          ws.send(message);
         }
+      } catch (error) {
+        console.error('❌ WebSocket: Error broadcasting message:', error);
       }
     });
   };
@@ -254,8 +256,10 @@ export default async function websocketRoutes(
 
       console.log(`🔌 ${userDetails.name} joined session ${sessionId}`);
 
-      // Set up message handler
-      connection.on('message', async (rawMessage) => {
+      // Prefer underlying ws for event listeners if available
+      const wsConn: any = (connection as any).socket ?? connection;
+
+      wsConn.on('message', async (rawMessage: any) => {
         try {
           const message = JSON.parse(rawMessage.toString());
           const handler = messageHandlers[message.type as keyof typeof messageHandlers];
@@ -271,14 +275,12 @@ export default async function websocketRoutes(
         }
       });
 
-      // Set up close handler
-      connection.socket.on('close', async (code, reason) => {
+      wsConn.on('close', async (code: number, reason: Buffer) => {
         console.log(`🚪 WebSocket CLOSE: ${userDetails?.name} left session ${sessionId} (code: ${code}, reason: ${reason})`);
         await handleUserLeave(connection);
       });
 
-      // Set up error handler
-      connection.socket.on('error', async (error) => {
+      wsConn.on('error', async (error: any) => {
         console.log(`❌ WebSocket ERROR: ${userDetails?.name} in session ${sessionId}:`, error);
         await handleUserLeave(connection);
       });
