@@ -304,7 +304,24 @@ FRONTEND_URL=http://localhost:5173
 
 ### Playwright Test Yapısı (güncel)
 
-Playwright testleri `web/` paketi altındadır. Şu an aktif olarak yalnızca **YouTube iframe'in doğrudan yüklenmesini** sınayan `youtube-player-direct.spec.ts` çalışmaktadır. Diğer eski‐tanımlı senaryolar (`youtube-simple`, `step1/2/3`, `vue-app`, `comprehensive`) kod tabanı büyük değişiklik gördüğü için **geçici olarak `skip`** edilmiş durumdadır. Refactor süreci sonlandıktan sonra aşamalı olarak yeniden etkinleştirilecekler.
+Tüm uçtan-uca senaryolar `web/tests/` altında tutulur ve **gerçek backend + PostgreSQL** üzerinde, **misafir kullanıcı** (guest login) akışlarıyla çalışır.
+
+Aktif test dosyaları:
+
+| Dosya | Senaryo | Durum |
+|-------|---------|-------|
+| `auth.spec.ts` | Misafir login → cookie mevcut mu? → logout & cookie temiz mi? | ✅ Geçer |
+| `session.spec.ts` | Misafir login → yeni oturum oluştur → katılımcı listesi | ✅ Geçer |
+| `session-multi.spec.ts` | 2 ayrı browser context'i ile aynı oturuma katılma → katılımcı sayısı senkronizasyonu → 1 kullanıcının ayrılması | ✅ Geçer |
+| `video-sync.spec.ts` | Video yükle / play / pause akışı (ileride) | ⏭️ `skip` |
+
+Konfigürasyon özet (`web/playwright.config.ts`):
+
+* **Tek worker & sıra sıra** (`workers: 1`, `fullyParallel: false`)
+* **Fail-fast** (`maxFailures: 1`)
+* **HTML raporu** (`open: 'never'`)
+* **Global health-check**: Testler başlamadan önce backend'e ping atar (`globalSetup`)
+* **webServer**: `VITE_ENABLE_GUEST_LOGIN=true npm run dev` komutu otomatik çalışır
 
 #### Çalıştırma
 
@@ -312,27 +329,16 @@ Playwright testleri `web/` paketi altındadır. Şu an aktif olarak yalnızca **
 # Docker stack (postgres + backend) çalışır durumda olmalı
 npm run docker:stack:up
 
-# Ayrı terminalde web sunucusu otomatik olarak Playwright tarafından başlatılır
+# Ayrı terminalde (veya CI'de) testleri çalıştırın
 cd web
 npx playwright test         # veya npm run test
 ```
 
-Playwright konfigürasyonu (`web/playwright.config.ts`):
-
-* **Tek worker & sıra sıra** (`workers: 1`, `fullyParallel: false`)
-* **Fail-fast**: İlk hata sonrasında durur (`maxFailures: 1`)
-* **HTML raporu**: Üretilir fakat otomatik olarak tarayıcıda açılmaz (`open: 'never'`)
-* **Guest login**: Sunucu `VITE_ENABLE_GUEST_LOGIN=true` flag'iyle başlatılır
-
-#### Raporlama
-
-Test bittiğinde HTML raporu `web/playwright-report/` dizinine yazılır. Görüntülemek isterseniz:
+HTML raporu `web/playwright-report/` dizininde oluşur. Görüntüleme:
 
 ```bash
 npx playwright show-report
 ```
-
-CI ortamında `playwright test` doğrudan çağrıldığında aynı ayarlar geçerlidir ve rapor dosya sisteminde kalır; otomatik servis açılmaz.
 
 ---
 

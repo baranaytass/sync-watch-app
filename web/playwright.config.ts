@@ -8,6 +8,7 @@ export default defineConfig({
   workers: 1,
   maxFailures: 1,
   reporter: [['html', { open: 'never' }]],
+  globalSetup: './global-setup',
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
