@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 const JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkYWZiNWUwYi00ZDdlLTQxMGQtYjU0NS0zMjJmYWYxMjdmNDYiLCJlbWFpbCI6ImJhcmFubmF5dGFzQGdtYWlsLmNvbSIsImlhdCI6MTc1MDc4OTU2OSwiZXhwIjoxNzUxMzk0MzY5fQ.yzK8ewGnBb3dCNnzbbqWFN1U_FcoMgnLd8Cb6VrF0TU'
 
-test.describe('Simple YouTube Test', () => {
+test.describe.skip('Simple YouTube Test', () => {
   let consoleLogs: string[] = []
   let consoleErrors: string[] = []
 

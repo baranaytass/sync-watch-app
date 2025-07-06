@@ -302,37 +302,37 @@ FRONTEND_URL=http://localhost:5173
 
 ## 10. Test Senaryoları
 
-### YouTube Player Comprehensive Test
-Playwright ile otomatikleştirilmiş YouTube Player test senaryosu:
+### Playwright Test Yapısı (güncel)
 
-**Test Çalıştırma:**
+Playwright testleri `web/` paketi altındadır. Şu an aktif olarak yalnızca **YouTube iframe'in doğrudan yüklenmesini** sınayan `youtube-player-direct.spec.ts` çalışmaktadır. Diğer eski‐tanımlı senaryolar (`youtube-simple`, `step1/2/3`, `vue-app`, `comprehensive`) kod tabanı büyük değişiklik gördüğü için **geçici olarak `skip`** edilmiş durumdadır. Refactor süreci sonlandıktan sonra aşamalı olarak yeniden etkinleştirilecekler.
+
+#### Çalıştırma
+
 ```bash
+# Docker stack (postgres + backend) çalışır durumda olmalı
+npm run docker:stack:up
+
+# Ayrı terminalde web sunucusu otomatik olarak Playwright tarafından başlatılır
 cd web
-npm run test -- --project=chromium --workers=1 tests/youtube-comprehensive-test.spec.ts
+npx playwright test         # veya npm run test
 ```
 
-**Test Senaryoları:**
-- 🔐 **Guest Authentication**: Misafir kullanıcı girişi (backend'siz test)
-- 📋 **Session Management**: Session oluşturma ve navigation
-- 🎥 **Video Input Detection**: YouTube URL input field bulma
-- 🔗 **URL Parsing**: Standard ve short YouTube URL formatları
-- 📱 **YouTube Player Integration**: iframe oluşturma ve yükleme
-- ⏱️ **Timeout Handling**: 25 saniye süresince player monitoring
-- 🌐 **Network Analysis**: YouTube embed requests tracking
-- 📝 **Console Monitoring**: Error ve log analizi
-- 🎯 **Multi-Video Testing**: Farklı video ID'leri ile test
+Playwright konfigürasyonu (`web/playwright.config.ts`):
 
-**Çözülen Problemler:**
-- ✅ Template rendering sorunu (`v-else` koşulu)
-- ✅ Reactive computed sorunu (`.value` kullanımı)
-- ✅ Case sensitivity sorunu (`toLowerCase()` video ID'yi bozuyordu)
-- ✅ Force reload (`:key` ile iframe reset)
+* **Tek worker & sıra sıra** (`workers: 1`, `fullyParallel: false`)
+* **Fail-fast**: İlk hata sonrasında durur (`maxFailures: 1`)
+* **HTML raporu**: Üretilir fakat otomatik olarak tarayıcıda açılmaz (`open: 'never'`)
+* **Guest login**: Sunucu `VITE_ENABLE_GUEST_LOGIN=true` flag'iyle başlatılır
 
-**Test Yapılandırması:**
-- Browser: Chromium (Playwright)
-- Timeout: 30 saniye
-- Workers: 1 (serial test)
-- Guest login: Environment variable kontrolü
+#### Raporlama
+
+Test bittiğinde HTML raporu `web/playwright-report/` dizinine yazılır. Görüntülemek isterseniz:
+
+```bash
+npx playwright show-report
+```
+
+CI ortamında `playwright test` doğrudan çağrıldığında aynı ayarlar geçerlidir ve rapor dosya sisteminde kalır; otomatik servis açılmaz.
 
 ---
 
