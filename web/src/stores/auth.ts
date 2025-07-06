@@ -74,9 +74,18 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async () => {
+    loading.value = true
+    error.value = null
+
+    // For guest users, simply clear local state without calling the backend
+    if (user.value?.googleId === 'guest') {
+      user.value = null
+      localStorage.removeItem('user')
+      loading.value = false
+      return
+    }
+
     try {
-      loading.value = true
-      error.value = null
       await axios.post(`${API_BASE_URL}/api/auth/logout`)
       user.value = null
       localStorage.removeItem('user')
