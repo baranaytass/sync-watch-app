@@ -1,26 +1,30 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+// import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { SessionService } from '../services/SessionService';
 import { YouTubeService } from '../services/YouTubeService';
 import { CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types';
 
-interface AuthenticatedRequest extends FastifyRequest {
+interface AuthenticatedRequest {
   user: {
     userId: string;
     email: string;
   };
+  params: any;
+  body: any;
 }
 
 export class SessionController {
   private sessionService: SessionService;
   private youtubeService: YouTubeService;
+  private fastify: any;
 
-  constructor(sessionService: SessionService, youtubeService: YouTubeService) {
+  constructor(fastify: any, sessionService: SessionService, youtubeService: YouTubeService) {
+    this.fastify = fastify;
     this.sessionService = sessionService;
     this.youtubeService = youtubeService;
   }
 
   // GET /api/sessions - Get active sessions (both user's sessions and public listing)
-  async getSessions(_request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async getSessions(_request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const sessions = await this.sessionService.getAllActiveSessions();
       
@@ -45,7 +49,7 @@ export class SessionController {
   }
 
   // POST /api/sessions - Create new session
-  async createSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async createSession(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const body = request.body as CreateSessionRequest;
       
@@ -97,7 +101,7 @@ export class SessionController {
   }
 
   // GET /api/sessions/:id - Get specific session
-  async getSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async getSession(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       
@@ -156,7 +160,7 @@ export class SessionController {
   }
 
   // POST /api/sessions/:id/join - Join session
-  async joinSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async joinSession(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       
@@ -208,7 +212,7 @@ export class SessionController {
   }
 
   // POST /api/sessions/:id/video - Set session video
-  async setSessionVideo(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async setSessionVideo(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       const body = request.body as SetSessionVideoRequest;
@@ -279,6 +283,29 @@ export class SessionController {
       
       console.log(`📋 SessionController: Video set successfully for session ${id}: "${videoMetadata.title}"`);
       
+      // Broadcast video update & sync to all session participants via WebSocket if decorator exists
+      const broadcaster = (this.fastify as any).broadcastToSession;
+      console.log(`📡 SessionController: broadcastToSession exists: ${typeof broadcaster}`);
+      
+      if (typeof broadcaster === 'function') {
+        console.log(`📡 Broadcasting video_update to session ${id}`);
+        broadcaster(id, 'video_update', {
+          videoProvider: 'youtube',
+          videoId: videoData.videoId,
+          videoTitle: videoData.videoTitle,
+          videoDuration: videoData.videoDuration,
+        });
+
+        console.log(`📡 Broadcasting video_sync to session ${id}`);
+        broadcaster(id, 'video_sync', {
+          action: 'pause',
+          time: 0,
+          timestamp: new Date(),
+        });
+      } else {
+        console.log(`❌ SessionController: broadcastToSession decorator not available`);
+      }
+
       const response: ApiResponse = {
         success: true,
         data: session

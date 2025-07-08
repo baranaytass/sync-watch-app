@@ -5,8 +5,15 @@ const createSession = async (page: any, title: string): Promise<string> => {
   await page.goto('/sessions')
   await page.waitForLoadState('networkidle')
 
-  // Yeni oturum oluştur butonu
-  const btn = page.locator('button:has-text("Yeni Oturum")').first()
+  // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
+  const newSessionBtn = page.locator('button:has-text("Yeni Oturum")').first()
+  const firstSessionBtn = page.locator('button:has-text("İlk Oturumu Oluştur")').first()
+  
+  // Hangisi görünürse onu kullan
+  const btn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
+    ? newSessionBtn 
+    : firstSessionBtn
+  
   await expect(btn).toBeVisible()
   await btn.click()
 

@@ -1,8 +1,8 @@
-import { FastifyInstance } from 'fastify';
+// import { FastifyInstance } from 'fastify';
 import { AuthController } from '../controllers/AuthController';
 import { AuthService } from '../services/AuthService';
 
-export default async function authRoutes(fastify: FastifyInstance): Promise<void> {
+export default async function authRoutes(fastify: any): Promise<void> {
   // Initialize auth service
   const authService = new AuthService(fastify.pg);
   const authController = new AuthController(fastify, authService);

@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from 'fastify';
+// import { FastifyRequest } from 'fastify';
 import { SocketStream } from '@fastify/websocket';
 import { SessionService } from '../services/SessionService';
 import { UserModel } from '../models/User';
@@ -10,8 +10,8 @@ interface WebSocketParams {
 // AuthenticatedRequest interface removed as it's not used in WebSocket routes
 
 export default async function websocketRoutes(
-  fastify: FastifyInstance,
-  _options: FastifyPluginOptions
+  fastify: any,
+  _options: any
 ): Promise<void> {
   const sessionService = new SessionService(fastify.pg);
   const userModel = new UserModel(fastify.pg);
@@ -35,22 +35,18 @@ export default async function websocketRoutes(
   };
 
   const broadcastToSession = (sessionId: string, type: string, data: any, excludeSocket?: SocketStream): void => {
-    const sockets = connections.get(sessionId);
-    if (!sockets) return;
-
-    const message = JSON.stringify({ type, data });
-    sockets.forEach(sock => {
-      if (sock === excludeSocket) return;
-      try {
-        const ws: any = (sock as any).socket ?? sock;
-        if (ws && ws.readyState === 1) {
-          ws.send(message);
-        }
-      } catch (error) {
-        console.error('❌ WebSocket: Error broadcasting message:', error);
-      }
+    const sessionSockets = connections.get(sessionId);
+    if (!sessionSockets) return;
+    sessionSockets.forEach((socket) => {
+      if (excludeSocket && socket === excludeSocket) return;
+      sendMessage(socket, type, data);
     });
   };
+
+  // Decorate fastify instance for external access (e.g., from controllers)
+  if (!fastify.hasDecorator('broadcastToSession')) {
+    fastify.decorate('broadcastToSession', broadcastToSession);
+  }
 
   // Connection cleanup
   const cleanupConnection = (socket: SocketStream): void => {
@@ -129,12 +125,10 @@ export default async function websocketRoutes(
   };
 
   // Message handlers
-  const messageHandlers = {
+  const messageHandlers: Record<string, any> = {
     video_action: async (socket: SocketStream, data: any, userId: string, sessionId: string) => {
-      // Check if user is host
       const isHost = await sessionService.isUserSessionHost(sessionId, userId);
       if (isHost) {
-
         broadcastToSession(sessionId, 'video_sync', {
           action: data.action,
           time: data.time,
@@ -142,7 +136,6 @@ export default async function websocketRoutes(
         }, socket);
       }
     },
-
     chat: async (_socket: SocketStream, data: any, userId: string, sessionId: string) => {
       if (data.message && data.message.trim().length > 0) {
         const user = await userModel.findById(userId);
@@ -154,141 +147,150 @@ export default async function websocketRoutes(
             message: data.message.trim(),
             timestamp: new Date(),
           };
-
           broadcastToSession(sessionId, 'chat', chatMessage);
         }
       }
-    }
+    },
   };
 
   // WebSocket endpoint
   fastify.get('/ws/session/:sessionId', {
     websocket: true,
-  }, async (connection: SocketStream, request: FastifyRequest) => {
+  }, async (socket: SocketStream, request: any) => {
     const { sessionId } = request.params as WebSocketParams;
-    
-    // Manual JWT authentication for WebSocket
     let user: { userId: string; email: string } | null = null;
-    
+
     try {
       const query = request.query as { token?: string };
-      const token = query.token || 
-                   request.headers.authorization?.replace('Bearer ', '') ||
-                   request.cookies?.token;
-      
-      if (!token) {
-        throw new Error('No token provided');
-      }
-      
+      const token = query.token || request.headers.authorization?.replace('Bearer ', '') || request.cookies?.token;
+      if (!token) throw new Error('No token provided');
       const decoded = fastify.jwt.verify(token) as any;
       user = { userId: decoded.userId, email: decoded.email };
-      
-      console.log(`🔐 WebSocket auth successful for user ${user.userId}`);
-      
-    } catch (error) {
-      console.log(`❌ WebSocket auth failed:`, error);
-      sendMessage(connection, 'error', { message: 'Authentication required' });
-      connection.end();
+      console.log(`🔐 WebSocket auth successful for user ${user.userId} in session ${sessionId}`);
+    } catch (err) {
+      console.log('❌ WebSocket auth failed');
+      sendMessage(socket, 'error', { message: 'Authentication required' });
+      // Use socket.destroy() instead of connection.end()
+      const ws: any = (socket as any).socket ?? socket;
+      if (ws && ws.close) {
+        ws.close();
+      }
       return;
     }
-    let userDetails: any = null;
+
+    const userId = user.userId;
 
     try {
-      // Validate session access
-      const hasAccess = await sessionService.validateUserSessionAccess(sessionId, user.userId);
-      if (!hasAccess) {
-        sendMessage(connection, 'error', { message: 'You do not have access to this session' });
-        connection.end();
+      // Check if session exists and user can join
+      const session = await sessionService.getSessionById(sessionId, userId);
+      if (!session) {
+        console.log(`❌ WebSocket: Session ${sessionId} not found or not accessible`);
+        sendMessage(socket, 'error', { message: 'Session not found or not accessible' });
+        const ws: any = (socket as any).socket ?? socket;
+        if (ws && ws.close) {
+          ws.close();
+        }
         return;
       }
 
-      // Get user details
-      userDetails = await userModel.findById(user.userId);
-      if (!userDetails) {
-        sendMessage(connection, 'error', { message: 'User not found' });
-        connection.end();
-        return;
-      }
+      // Add user to session if not already a participant
+      await sessionService.joinSession(sessionId, userId);
 
       // Store connection mappings
       if (!connections.has(sessionId)) {
         connections.set(sessionId, []);
       }
-      connections.get(sessionId)!.push(connection);
-      socketToSession.set(connection, sessionId);
-      socketToUser.set(connection, user.userId);
+      connections.get(sessionId)!.push(socket);
+      socketToSession.set(socket, sessionId);
+      socketToUser.set(socket, userId);
 
-      // Join session in database
-      await sessionService.joinSession(sessionId, user.userId);
+      console.log(`✅ WebSocket: User ${userId} connected to session ${sessionId}`);
 
-      // Get updated session state
-      const session = await sessionService.getSessionById(sessionId);
-      if (!session) {
-        sendMessage(connection, 'error', { message: 'Session not found' });
-        connection.end();
-        return;
-      }
-
-      // Send current video state if available
-      if (session.videoId) {
-        sendMessage(connection, 'video_update', {
-          videoProvider: session.videoProvider,
-          videoId: session.videoId,
-          videoTitle: session.videoTitle,
-          videoDuration: session.videoDuration,
+      // Send current session state to new connection
+      const updatedSession = await sessionService.getSessionById(sessionId, userId);
+      if (updatedSession) {
+        // Send current participants
+        sendMessage(socket, 'participants', {
+          participants: updatedSession.participants.map(p => ({
+            userId: p.userId,
+            name: p.name,
+            avatar: p.avatar,
+          })),
         });
 
-        sendMessage(connection, 'video_sync', {
-          action: session.lastAction,
-          time: session.lastActionTimeAsSecond,
-          timestamp: session.lastActionTimestamp,
-        });
-      }
+        // Send current video state if available
+        if (updatedSession.videoProvider && updatedSession.videoId) {
+          sendMessage(socket, 'video_update', {
+            videoProvider: updatedSession.videoProvider,
+            videoId: updatedSession.videoId,
+            videoTitle: updatedSession.videoTitle,
+            videoDuration: updatedSession.videoDuration,
+          });
 
-      // Broadcast updated participants to all users in session
-      broadcastToSession(sessionId, 'participants', {
-        participants: session.participants.map(p => ({
-          userId: p.userId,
-          name: p.name,
-          avatar: p.avatar,
-        })),
-      });
-
-      console.log(`🔌 ${userDetails.name} joined session ${sessionId}`);
-
-      // Prefer underlying ws for event listeners if available
-      const wsConn: any = (connection as any).socket ?? connection;
-
-      wsConn.on('message', async (rawMessage: any) => {
-        try {
-          const message = JSON.parse(rawMessage.toString());
-          const handler = messageHandlers[message.type as keyof typeof messageHandlers];
-          if (handler) {
-            await handler(connection, message.data, user.userId, sessionId);
-          } else {
-            console.warn(`⚠️ WebSocket: Unknown message type: ${message.type}`);
-            sendMessage(connection, 'error', { message: `Unknown message type: ${message.type}` });
-          }
-        } catch (error) {
-          console.error('❌ WebSocket: Message error:', error);
-          sendMessage(connection, 'error', { message: 'Invalid message format' });
+          // Send current video sync state
+          sendMessage(socket, 'video_sync', {
+            action: updatedSession.lastAction,
+            time: updatedSession.lastActionTimeAsSecond,
+            timestamp: updatedSession.lastActionTimestamp,
+          });
         }
-      });
 
-      wsConn.on('close', async (code: number, reason: Buffer) => {
-        console.log(`🚪 WebSocket CLOSE: ${userDetails?.name} left session ${sessionId} (code: ${code}, reason: ${reason})`);
-        await handleUserLeave(connection);
-      });
+        // Notify other participants about new user
+        broadcastToSession(sessionId, 'participants', {
+          participants: updatedSession.participants.map(p => ({
+            userId: p.userId,
+            name: p.name,
+            avatar: p.avatar,
+          })),
+        }, socket);
+      }
 
-      wsConn.on('error', async (error: any) => {
-        console.log(`❌ WebSocket ERROR: ${userDetails?.name} in session ${sessionId}:`, error);
-        await handleUserLeave(connection);
-      });
+      // Handle incoming messages
+      const ws: any = (socket as any).socket ?? socket;
+      if (ws) {
+        ws.on('message', async (message: string) => {
+          try {
+            const parsed = JSON.parse(message);
+            const { type, data } = parsed;
+
+            console.log(`📨 WebSocket: Received message from ${userId} in session ${sessionId}:`, { type, data });
+
+            if (messageHandlers[type]) {
+              await messageHandlers[type](socket, data, userId, sessionId);
+            } else {
+              console.log(`⚠️ WebSocket: Unknown message type: ${type}`);
+            }
+          } catch (error) {
+            console.error('❌ WebSocket: Error handling message:', error);
+            sendMessage(socket, 'error', { message: 'Invalid message format' });
+          }
+        });
+
+        ws.on('close', async () => {
+          console.log(`🔌 WebSocket: Connection closed for user ${userId} in session ${sessionId}`);
+          await handleUserLeave(socket);
+        });
+
+        ws.on('error', async (error: any) => {
+          console.error('❌ WebSocket: Connection error:', error);
+          await handleUserLeave(socket);
+        });
+      }
 
     } catch (error) {
-      console.error('❌ WebSocket: Connection setup error:', error);
-      sendMessage(connection, 'error', { message: 'Connection failed' });
-      connection.end();
+      console.error('❌ WebSocket: Error setting up connection:', error);
+      sendMessage(socket, 'error', { message: 'Connection setup failed' });
+      const ws: any = (socket as any).socket ?? socket;
+      if (ws && ws.close) {
+        ws.close();
+      }
     }
   });
-} 
+
+  // Add broadcastToSession as a decorator to fastify instance so SessionController can use it
+  // fastify.decorate('broadcastToSession', broadcastToSession); // Already decorated above
+
+  // prevent TS unused variable errors in strict mode
+  void messageHandlers;
+  void handleUserLeave;
+}

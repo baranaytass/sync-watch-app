@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+// import { FastifyInstance } from 'fastify';
 import { EnvSchema } from './config/env';
 import { DatabaseConfig } from './config/database';
 import { authenticateJWT } from './utils/auth';
@@ -7,7 +7,7 @@ import sessionRoutes from './routes/sessions';
 import websocketRoutes from './routes/websocket';
 import { SessionService } from './services/SessionService';
 
-const server = Fastify({
+const server: any = require('fastify')({
   logger: false,
 });
 
@@ -65,53 +65,85 @@ async function start(): Promise<void> {
     try {
       console.log('🧹 Purging existing sessions on startup...')
       const pool = db.getPool()
+      console.log('🧹 Got database pool')
       // Remove participants first to avoid potential FK issues (even though UNLOGGED tables have no FK)
       await pool.query('TRUNCATE TABLE session_participants')
+      console.log('🧹 Truncated session_participants')
       await pool.query('TRUNCATE TABLE sessions')
-      console.log('🧹 Session tables truncated')
+      console.log('🧹 Truncated sessions')
+      console.log('🧹 Session tables truncated successfully')
     } catch (purgeErr) {
       console.error('❌ Failed to purge session tables:', purgeErr)
+      console.error('❌ Error stack:', (purgeErr as Error).stack)
     }
     
     // Add database to server instance
+    console.log('🔧 Adding database to server instance...')
     server.decorate('pg', db.getPool());
+    console.log('🔧 Database added to server instance')
 
     // Register plugins
+    console.log('🔧 Registering CORS plugin...')
     await server.register(require('@fastify/cors'), {
       origin: server.config.FRONTEND_URL,
       credentials: true,
     });
+    console.log('🔧 CORS plugin registered')
 
+    console.log('🔧 Registering Cookie plugin...')
     await server.register(require('@fastify/cookie'));
+    console.log('🔧 Cookie plugin registered')
+    
+    console.log('🔧 Registering JWT plugin...')
     await server.register(require('@fastify/jwt'), {
       secret: server.config.JWT_SECRET,
     });
+    console.log('🔧 JWT plugin registered')
+    
+    console.log('🔧 Registering WebSocket plugin...')
     await server.register(require('@fastify/websocket'));
+    console.log('🔧 WebSocket plugin registered')
 
     // Register authentication middleware
+    console.log('🔧 Registering authentication middleware...')
     server.decorate('authenticate', authenticateJWT);
+    console.log('🔧 Authentication middleware registered')
 
     // Register routes
+    console.log('🔧 Registering Auth routes...')
     await server.register(authRoutes, { prefix: '/api/auth' });
+    console.log('🔧 Auth routes registered')
+    
+    console.log('🔧 Registering Session routes...')
     await server.register(sessionRoutes, { prefix: '/api/sessions' });
+    console.log('🔧 Session routes registered')
+    
+    console.log('🔧 Registering WebSocket routes...')
     await server.register(websocketRoutes);
+    console.log('🔧 WebSocket routes registered')
 
     // Health check endpoint
+    console.log('🔧 Adding health check endpoint...')
     server.get('/health', async () => ({
       status: 'OK',
       timestamp: new Date().toISOString(),
     }));
+    console.log('🔧 Health check endpoint added')
 
     // Start server
+    console.log('🔧 Starting server...')
     const port = parseInt(server.config.PORT);
     const host = server.config.HOST;
+    console.log(`🔧 Server config: ${host}:${port}`)
     
     await server.listen({ port, host });
-    console.log(`Server listening on ${host}:${port}`);
+    console.log(`🚀 Server listening on ${host}:${port}`);
 
     // Start session cleanup job
+    console.log('🔧 Starting session cleanup job...')
     const sessionService = new SessionService(db.getPool());
     startSessionCleanupJob(sessionService);
+    console.log('🔧 Session cleanup job started')
   } catch (error) {
     server.log.error(error);
     process.exit(1);

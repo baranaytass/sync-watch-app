@@ -12,7 +12,16 @@ const guestLogin = async (page: any) => {
 const createSession = async (page: any, title: string): Promise<string> => {
   await page.goto('/sessions')
   await page.waitForLoadState('networkidle')
-  const createBtn = page.getByRole('button', { name: /Yeni Oturum/i }).first()
+  
+  // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
+  const newSessionBtn = page.getByRole('button', { name: /Yeni Oturum/i }).first()
+  const firstSessionBtn = page.getByRole('button', { name: /İlk Oturumu Oluştur/i }).first()
+  
+  // Hangisi görünürse onu kullan
+  const createBtn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
+    ? newSessionBtn 
+    : firstSessionBtn
+  
   await expect(createBtn).toBeVisible()
   await createBtn.click()
   await page.locator('input#title').fill(title)

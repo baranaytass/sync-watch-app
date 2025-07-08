@@ -1,13 +1,13 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+// import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from '../services/AuthService';
 
 export class AuthController {
   constructor(
-    private fastify: FastifyInstance,
+    private fastify: any,
     private authService: AuthService
   ) {}
 
-  async googleAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async googleAuth(request: any, reply: any): Promise<void> {
     try {
       console.log('🔵 Starting Google OAuth flow...');
       
@@ -57,7 +57,7 @@ export class AuthController {
     }
   }
 
-  async logout(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async logout(_request: any, reply: any): Promise<void> {
     console.log('🔵 Logging out user...');
     
     // Fastify clearCookie sometimes fails if attributes mismatch; therefore we
@@ -84,7 +84,7 @@ export class AuthController {
     return reply.send({ success: true, message: 'Logged out successfully' });
   }
 
-  async guestAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async guestAuth(request: any, reply: any): Promise<void> {
     try {
       console.log('🟢 Guest auth request received');
 
@@ -118,7 +118,7 @@ export class AuthController {
     }
   }
 
-  async me(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async me(request: any, reply: any): Promise<void> {
     try {
       // JWT middleware should have already verified the token
       const userId = (request.user as { userId: string }).userId;

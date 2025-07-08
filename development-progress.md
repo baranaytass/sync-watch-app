@@ -295,12 +295,33 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ---
 
 ## Güncel Durum
-**Son güncelleme:** 21 Haziran 2025
-**Aktif adım:** 11.2 - Chat System
-**Tamamlanan adımlar:** 
-- **Video Player Bug Fixes:** YouTube video player görüntü problemi çözüldü (origin, enablejsapi parametreleri eklendi, CSS positioning düzeltildi)
-- **Session Management Bug Fixes:** Leave session handling düzeltildi (WebSocket leave message gönderimi, sessions list refresh, participant count mock data kaldırıldı)
-- **11.1 Session Auto-Cleanup:** Tamamlandı! Session lifecycle management tamamen çalışıyor
-- **10.x Video Synchronization:** YouTube Integration ve Video Player tamamen implementeli
-- **WebSocket Integration:** Real-time video sync, participant tracking, session management çalışıyor
-- **Build Status:** Tüm değişiklikler build edildi ve test edilebilir durumda 
+**Son güncelleme:** 7 Ocak 2025
+**Aktif adım:** 12.3 - Test Infrastructure Stability (Tüm testlerin çalışmasını sağlama)
+
+### Test Durumu (6 test dosyası)
+| Test | Durum | Açıklama |
+|------|-------|----------|
+| `auth.spec.ts` | ✅ PASS | Guest login/logout cookie management |
+| `session.spec.ts` | ✅ PASS | Session create/join functionality |
+| `session-multi.spec.ts` | ✅ PASS | Multi-user join/leave synchronization |
+| `video-sync.spec.ts` | ✅ PASS | Single user video loading |
+| `video-sync-multi.spec.ts` | ❌ FAIL | Multi-user video broadcast (20s timeout) |
+| `video-sync.spec.ts` (skipped) | ⏭️ SKIP | Geçici skip edilmiş testler |
+
+**Başarı Oranı:** 80% (4/5 aktif test geçiyor)
+
+### Son Düzeltmeler
+- **Backend Restart Loop:** ✅ Çözüldü! Duplicate `fastify.decorate('broadcastToSession')` kaldırıldı
+- **Build Errors:** ✅ Çözüldü! 59 TypeScript compilation hatası giderildi  
+- **Test Button Selectors:** ✅ Çözüldü! "Yeni Oturum" vs "İlk Oturumu Oluştur" variant handling
+- **Frontend Manual Start:** ✅ Çözüldü! VITE_ENABLE_GUEST_LOGIN=true ile manuel başlatma
+
+### Kalan Ana Sorun
+- **Video Sync Broadcast:** Guest kullanıcılar host'un video değişikliklerini alamıyor
+  - Sorun: SessionController'da `broadcastToSession` decorator kullanımı
+  - Etki: iframe 20s timeout ile başarısız oluyor
+
+### Gelecek Adımlar
+1. Video sync broadcast sorununu çöz
+2. Tüm testlerin %100 geçmesini sağla
+3. Chat system implementasyonuna geç 

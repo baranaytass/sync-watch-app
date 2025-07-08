@@ -313,7 +313,8 @@ Aktif test dosyaları:
 | `auth.spec.ts` | Misafir login → cookie mevcut mu? → logout & cookie temiz mi? | ✅ Geçer |
 | `session.spec.ts` | Misafir login → yeni oturum oluştur → katılımcı listesi | ✅ Geçer |
 | `session-multi.spec.ts` | 2 ayrı browser context'i ile aynı oturuma katılma → katılımcı sayısı senkronizasyonu → 1 kullanıcının ayrılması | ✅ Geçer |
-| `video-sync.spec.ts` | Video yükle / play / pause akışı (ileride) | ⏭️ `skip` |
+| `video-sync.spec.ts` | Video yükleme ve iframe görüntüleme (tek kullanıcı) | ✅ Geçer |
+| `video-sync-multi.spec.ts` | Host video ayarlar → guest'e broadcast (çoklu kullanıcı) | ❌ Başarısız |
 
 Konfigürasyon özet (`web/playwright.config.ts`):
 
@@ -326,13 +327,24 @@ Konfigürasyon özet (`web/playwright.config.ts`):
 #### Çalıştırma
 
 ```bash
-# Docker stack (postgres + backend) çalışır durumda olmalı
-npm run docker:stack:up
+# 1. Docker stack (postgres + backend) çalışır durumda olmalı
+docker-compose up -d backend postgres
 
-# Ayrı terminalde (veya CI'de) testleri çalıştırın
+# 2. Frontend'i manuel başlat (ayrı terminal)
+cd web
+VITE_ENABLE_GUEST_LOGIN=true npm run dev
+
+# 3. Testleri çalıştır (ayrı terminal)
 cd web
 npx playwright test         # veya npm run test
 ```
+
+#### Bilinen Sorunlar
+
+- **Video Sync Multi-user**: Host video ayarladığında guest'e WebSocket broadcast'i ulaşmıyor
+  - Sorun: `broadcastToSession` decorator'ının SessionController'da düzgün çalışmaması
+  - Etki: Guest kullanıcılar video güncellemelerini alamıyor
+  - Durum: Backend restart loop sorunu çözüldü, broadcast sorunu araştırılıyor
 
 HTML raporu `web/playwright-report/` dizininde oluşur. Görüntüleme:
 
