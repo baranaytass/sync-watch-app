@@ -1,12 +1,27 @@
 # 🎬 Sync Watch App
 
-Realtime Video Sync Chat App - YouTube videolarını senkronize oynatma ve gerçek zamanlı sohbet uygulaması
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Vue 3](https://img.shields.io/badge/Vue-3.0-green.svg)](https://vuejs.org/)
+[![Fastify](https://img.shields.io/badge/Fastify-4.0-black.svg)](https://www.fastify.io/)
 
-## 📋 Proje Hakkında
+A real-time video synchronization and chat application that allows users to watch YouTube videos together with synchronized playback and live chat functionality.
 
-Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında aynı anda senkronize oynatmayı ve gerçek zamanlı sohbet etmeyi amaçlayan bir web uygulamasıdır. Kullanıcılar Google hesabıyla oturum açar, bir oturum (session) oluşturur veya mevcut bir oturuma katılır.
+## 📋 About
 
-## 🏗️ Teknoloji Stack
+Sync Watch App enables users to watch YouTube videos together in perfect synchronization across multiple browsers. Users can authenticate with Google accounts, create or join sessions, and enjoy real-time chat while watching videos together.
+
+## ✨ Features
+
+- ✅ Google OAuth authentication
+- ✅ Real-time video synchronization
+- ✅ Live chat system
+- ✅ Session management
+- ✅ Participant list
+- ✅ YouTube integration
+- ✅ Responsive design with modern UI
+
+## 🏗️ Tech Stack
 
 ### Backend
 - **Fastify** - Fast and efficient web framework
@@ -23,53 +38,71 @@ Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında ayn
 - **Tailwind CSS** - Utility-first CSS framework
 - **TypeScript** - Type-safe JavaScript
 
-## 🚀 Hızlı Başlangıç
+## 📦 Installation
 
-### Gereksinimler
+### Prerequisites
 - Node.js >= 18.0.0
 - npm >= 9.0.0
 - Docker & Docker Compose
 
-### Kurulum
+### Setup
 
-1. **Bağımlılıkları yükleyin:**
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd sync-watch-app-3
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. **Veritabanını başlatın:**
+3. **Start the database:**
    ```bash
    npm run docker:db:up
    ```
 
-3. **Geliştirme sunucularını başlatın:**
+4. **Start development servers:**
    ```bash
    npm run dev
    ```
 
-### Geliştirme Ortamı
+The application will be available at:
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3000
+
+### Development Environment
 
 ```bash
-# PostgreSQL'i başlat
+# Start PostgreSQL
 docker-compose up -d postgres
 
-# Backend'i başlat
+# Start backend
 cd backend
 npm install
 npm run dev
 
-# Frontend'i başlat (yeni terminal)
+# Start frontend (new terminal)
 cd web
 npm install
 npm run dev
 ```
 
-## 📁 Proje Yapısı
+## 🚀 Usage
+
+1. **Authentication**: Sign in with your Google account
+2. **Create Session**: Create a new watch session with a custom title
+3. **Join Session**: Join an existing session using the session ID
+4. **Add Video**: Paste a YouTube URL to start watching together
+5. **Chat**: Use the real-time chat to communicate with other participants
+
+## 📁 Project Structure
 
 ```
-├── backend/                 # Fastify API & WebSocket sunucusu
+├── backend/                 # Fastify API & WebSocket server
 │   ├── src/
-│   │   ├── config/         # Konfigürasyon dosyaları
+│   │   ├── config/         # Configuration files
 │   │   ├── controllers/    # HTTP request handlers
 │   │   ├── routes/         # Route definitions
 │   │   ├── services/       # Business logic
@@ -89,91 +122,73 @@ npm run dev
     └── shared-types/       # Shared TypeScript types
 ```
 
-## 🔧 Geliştirme Komutları
+## 🔧 Development Scripts
 
 ```bash
-# Tüm projeyi geliştirme modunda çalıştır
+# Start all services in development mode
 npm run dev
 
-# Sadece backend'i çalıştır
+# Start backend only
 npm run dev:backend
 
-# Sadece frontend'i çalıştır
+# Start frontend only
 npm run dev:web
 
-# Projeyi build et
+# Build the project
 npm run build
 
-# Testleri çalıştır
+# Run tests
 npm run test
 
 # Linting
 npm run lint
 npm run lint:fix
 
-# Veritabanı komutları
-npm run docker:db:up      # Veritabanını başlat
-npm run docker:db:down    # Veritabanını durdur
-npm run docker:db:logs    # Veritabanı loglarını göster
+# Database commands
+npm run docker:db:up      # Start database
+npm run docker:db:down    # Stop database
+npm run docker:db:logs    # View database logs
 ```
 
-## 📚 Dökümanlar
+## 🧪 E2E Test System
 
-- [Teknik Tasarım Dokümanı](./development.md)
-- [Geliştirme Adımları](./development-progress.md)
+### 🎬 Real Video Sync E2E Testing
 
-## 🎯 Özellikler
+Comprehensive e2e test system for testing real-time video synchronization between two users:
 
-- ✅ Google OAuth ile kimlik doğrulama
-- ✅ Gerçek zamanlı video senkronizasyonu
-- ✅ Canlı sohbet sistemi
-- ✅ Oturum yönetimi
-- ✅ Katılımcı listesi
-- ✅ YouTube video entegrasyonu
+**Test Scenario:**
+1. **2 guest users** log in simultaneously
+2. **User1 (Host)** creates a session and sets a video
+3. **User2 (Participant)** joins the same session
+4. **User1** starts the video
+5. **User2** automatically starts the video (WebSocket sync verification)
+6. **Participants tracking** and **real-time communication** are tested
 
-## 📄 Lisans
+### Running Tests with Docker (Recommended)
 
-MIT License - Detaylar için [LICENSE](LICENSE) dosyasını inceleyebilirsiniz. 
-
-## 🧪 E2E Test Sistemi
-
-### 🎬 Real Video Sync E2E Test
-
-İki kullanıcının gerçek zamanlı video sync'ini test eden kapsamlı e2e test sistemi:
-
-**Test Senaryosu:**
-1. **2 misafir kullanıcı** aynı anda giriş yapar
-2. **User1 (Host)** oturum oluşturur ve video setler
-3. **User2 (Participant)** aynı oturuma katılır
-4. **User1** videoyu başlatır
-5. **User2**'de videonun otomatik başladığı doğrulanır (WebSocket sync)
-6. **Participants tracking** ve **real-time communication** test edilir
-
-### Docker'da Test Çalıştırma (Önerilen)
-
-**Tek komutla test çalıştırma:**
+**One-command test execution:**
 ```bash
-# Root directory'de
+# In root directory
 ./run-e2e-test.sh
 ```
 
-Bu script otomatik olarak:
-- ✅ Docker servislerini başlatır (postgres + backend)
-- ✅ Backend sağlık kontrolü yapar
-- ✅ E2E test'i çalıştırır
-- ✅ Test sonucunu raporlar
-- ✅ Cleanup işlemi yapar
+This script automatically:
+- ✅ Starts Docker services (postgres + backend)
+- ✅ Performs backend health checks
+- ✅ Runs E2E tests
+- ✅ Reports test results
+- ✅ Performs cleanup
 
-### Manuel Docker Test Çalıştırma
+### Manual Docker Test Execution
 
 ```bash
-# 1. Backend servisleri başlat
+# 1. Start backend services
 npm run test:docker:setup
 
-# 2. Backend'in hazır olmasını bekle (30 saniye)
+# 2. Wait for backend to be ready (30 seconds)
 # health check: http://localhost:3000/health
 
-# 3. Test'i çalıştır
+# 3. Run tests
 cd web
 npm run test:real-sync
 
@@ -181,62 +196,80 @@ npm run test:real-sync
 npm run test:docker:cleanup
 ```
 
-### Local Development Test
+### Local Development Testing
 
 ```bash
-# 1. Backend ve frontend'i ayrı terminallerde başlat
-# (yukarıdaki Hızlı Başlangıç'a bakın)
+# 1. Start backend and frontend in separate terminals
+# (see Quick Start above)
 
-# 2. Test'i çalıştır
+# 2. Run tests
 cd web
-npm run test:real-sync:headed  # Browser görünür modda
-# veya
+npm run test:real-sync:headed  # Visible browser mode
+# or
 npm run test:real-sync         # Headless mode
 ```
 
-### Test Komutları
+### Test Commands
 
 ```bash
-# Tüm integration testleri
-npm run test:integration
+# All integration tests
+npm run test
 
-# Sadece real video sync testi
-npm run test:real-sync
+# Run tests in headed mode
+npm run test:headed
 
-# Browser görünür modda test
-npm run test:real-sync:headed
-
-# Docker'da test çalıştırma
-npm run test:docker
-
-# Test servisleri setup/cleanup
-npm run test:docker:setup
-npm run test:docker:cleanup
+# View test report
+npm run test:report
 ```
 
-### Test Bileşenleri
+### AI Agent Development Ready
 
-- **Integration Test Config**: `web/playwright.config.integration.ts`
-- **Global Setup**: `web/tests/integration/global.setup.ts`
-- **Real Video Sync Test**: `web/tests/integration/real-video-sync-test.spec.ts`
-- **Docker Test Runner**: `web/Dockerfile.test`
+> **Note**: This project features comprehensive e2e tests specifically designed for AI agent development workflows. The test suite includes multi-user scenarios, real-time synchronization validation, and WebSocket communication testing. These tests demonstrate effective patterns for testing complex real-time applications and provide excellent examples for AI-assisted development. I'll be writing a detailed blog post about implementing effective e2e testing strategies for AI-assisted development soon.
 
-### Test Fail Handling
+## 🌐 Environment Variables
 
-Test hata verdiği noktada durur ve detaylı hata bilgisi verir:
-- ❌ Hangi phase'de fail olduğunu gösterir
-- 🔍 Backend/Frontend durumunu raporlar
-- 📝 WebSocket connection durumunu kontrol eder
-- 🎥 Video iframe ve sync durumunu analiz eder
+Create a `.env` file in the backend directory:
 
-## 📋 Geliştirme Notları
+```env
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
+DATABASE_URL=postgresql://videosync_user:videosync_pass@localhost:5432/videosync
+JWT_SECRET=your-jwt-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+YOUTUBE_API_KEY=your-youtube-api-key
+FRONTEND_URL=http://localhost:5173
+```
 
-### Teknik Detaylar
-- **Backend**: Fastify + PostgreSQL + WebSocket
-- **Frontend**: Vue 3 + Pinia + Tailwind CSS
-- **Test**: Playwright + Docker
-- **Database**: UNLOGGED tables for cache data
+## 🤝 Contributing
 
-### Daha Fazla Bilgi
-- 📖 [Teknik Tasarım Dokümantasyonu](./development.md)
-- 📝 [Geliştirme Progress Notları](./development-progress.md) 
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📚 Documentation
+
+- [Technical Design Document](./development.md)
+- [Development Progress](./development-progress.md)
+- [Google OAuth Setup](./docs/google-oauth-setup.md)
+
+## 🐛 Known Issues
+
+See the [development progress document](./development-progress.md) for current known issues and their status.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Thanks to the Vue.js team for the amazing framework
+- Fastify team for the high-performance web framework
+- All contributors who help improve this project
+
+---
+
+*Built with ❤️ using Vue 3, Fastify, and modern web technologies* 
