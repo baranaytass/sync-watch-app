@@ -72,56 +72,6 @@ The application will be available at:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
 
-### Development Environment
-
-```bash
-# Start PostgreSQL
-docker-compose up -d postgres
-
-# Start backend
-cd backend
-npm install
-npm run dev
-
-# Start frontend (new terminal)
-cd web
-npm install
-npm run dev
-```
-
-## 🚀 Usage
-
-1. **Authentication**: Sign in with your Google account
-2. **Create Session**: Create a new watch session with a custom title
-3. **Join Session**: Join an existing session using the session ID
-4. **Add Video**: Paste a YouTube URL to start watching together
-5. **Chat**: Use the real-time chat to communicate with other participants
-
-## 📁 Project Structure
-
-```
-├── backend/                 # Fastify API & WebSocket server
-│   ├── src/
-│   │   ├── config/         # Configuration files
-│   │   ├── controllers/    # HTTP request handlers
-│   │   ├── routes/         # Route definitions
-│   │   ├── services/       # Business logic
-│   │   ├── models/         # Data models
-│   │   ├── websocket/      # WebSocket handlers
-│   │   └── utils/          # Utility functions
-│   └── database/           # Database schemas
-├── web/                    # Vue 3 SPA
-│   └── src/
-│       ├── components/     # UI components
-│       ├── composables/    # Composition API hooks
-│       ├── stores/         # Pinia stores
-│       ├── views/          # Page components
-│       ├── router/         # Vue Router config
-│       └── utils/          # Frontend utilities
-└── packages/
-    └── shared-types/       # Shared TypeScript types
-```
-
 ## 🔧 Development Scripts
 
 ```bash
@@ -150,69 +100,12 @@ npm run docker:db:down    # Stop database
 npm run docker:db:logs    # View database logs
 ```
 
-## 🧪 E2E Test System
+## 🧪 Testing
 
-### 🎬 Real Video Sync E2E Testing
-
-Comprehensive e2e test system for testing real-time video synchronization between two users:
-
-**Test Scenario:**
-1. **2 guest users** log in simultaneously
-2. **User1 (Host)** creates a session and sets a video
-3. **User2 (Participant)** joins the same session
-4. **User1** starts the video
-5. **User2** automatically starts the video (WebSocket sync verification)
-6. **Participants tracking** and **real-time communication** are tested
-
-### Running Tests with Docker (Recommended)
-
-**One-command test execution:**
-```bash
-# In root directory
-./run-e2e-test.sh
-```
-
-This script automatically:
-- ✅ Starts Docker services (postgres + backend)
-- ✅ Performs backend health checks
-- ✅ Runs E2E tests
-- ✅ Reports test results
-- ✅ Performs cleanup
-
-### Manual Docker Test Execution
+The project includes comprehensive end-to-end tests using Playwright:
 
 ```bash
-# 1. Start backend services
-npm run test:docker:setup
-
-# 2. Wait for backend to be ready (30 seconds)
-# health check: http://localhost:3000/health
-
-# 3. Run tests
-cd web
-npm run test:real-sync
-
-# 4. Cleanup
-npm run test:docker:cleanup
-```
-
-### Local Development Testing
-
-```bash
-# 1. Start backend and frontend in separate terminals
-# (see Quick Start above)
-
-# 2. Run tests
-cd web
-npm run test:real-sync:headed  # Visible browser mode
-# or
-npm run test:real-sync         # Headless mode
-```
-
-### Test Commands
-
-```bash
-# All integration tests
+# Run all tests
 npm run test
 
 # Run tests in headed mode
@@ -224,23 +117,7 @@ npm run test:report
 
 ### AI Agent Development Ready
 
-> **Note**: This project features comprehensive e2e tests specifically designed for AI agent development workflows. The test suite includes multi-user scenarios, real-time synchronization validation, and WebSocket communication testing. These tests demonstrate effective patterns for testing complex real-time applications and provide excellent examples for AI-assisted development. I'll be writing a detailed blog post about implementing effective e2e testing strategies for AI-assisted development soon.
-
-## 🌐 Environment Variables
-
-Create a `.env` file in the backend directory:
-
-```env
-NODE_ENV=development
-PORT=3000
-HOST=0.0.0.0
-DATABASE_URL=postgresql://videosync_user:videosync_pass@localhost:5432/videosync
-JWT_SECRET=your-jwt-secret-key
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-YOUTUBE_API_KEY=your-youtube-api-key
-FRONTEND_URL=http://localhost:5173
-```
+> **Note**: This project features comprehensive e2e tests specifically designed for AI agent development workflows. The test suite includes multi-user scenarios, real-time synchronization validation, and WebSocket communication testing. I'll be writing a detailed blog post about implementing effective e2e testing strategies for AI-assisted development soon.
 
 ## 🤝 Contributing
 
