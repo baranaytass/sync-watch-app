@@ -72,39 +72,6 @@ The application will be available at:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
 
-## 🚀 Usage
-
-1. **Authentication**: Sign in with your Google account
-2. **Create Session**: Create a new watch session with a custom title
-3. **Join Session**: Join an existing session using the session ID
-4. **Add Video**: Paste a YouTube URL to start watching together
-5. **Chat**: Use the real-time chat to communicate with other participants
-
-## 📁 Project Structure
-
-```
-├── backend/                 # Fastify API & WebSocket server
-│   ├── src/
-│   │   ├── config/         # Configuration files
-│   │   ├── controllers/    # HTTP request handlers
-│   │   ├── routes/         # Route definitions
-│   │   ├── services/       # Business logic
-│   │   ├── models/         # Data models
-│   │   ├── websocket/      # WebSocket handlers
-│   │   └── utils/          # Utility functions
-│   └── database/           # Database schemas
-├── web/                    # Vue 3 SPA
-│   └── src/
-│       ├── components/     # UI components
-│       ├── composables/    # Composition API hooks
-│       ├── stores/         # Pinia stores
-│       ├── views/          # Page components
-│       ├── router/         # Vue Router config
-│       └── utils/          # Frontend utilities
-└── packages/
-    └── shared-types/       # Shared TypeScript types
-```
-
 ## 🔧 Development Scripts
 
 ```bash
@@ -151,22 +118,6 @@ npm run test:report
 ### AI Agent Development Ready
 
 > **Note**: This project features comprehensive e2e tests specifically designed for AI agent development workflows. The test suite includes multi-user scenarios, real-time synchronization validation, and WebSocket communication testing. I'll be writing a detailed blog post about implementing effective e2e testing strategies for AI-assisted development soon.
-
-## 🌐 Environment Variables
-
-Create a `.env` file in the backend directory:
-
-```env
-NODE_ENV=development
-PORT=3000
-HOST=0.0.0.0
-DATABASE_URL=postgresql://videosync_user:videosync_pass@localhost:5432/videosync
-JWT_SECRET=your-jwt-secret-key
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-YOUTUBE_API_KEY=your-youtube-api-key
-FRONTEND_URL=http://localhost:5173
-```
 
 ## 🤝 Contributing
 
