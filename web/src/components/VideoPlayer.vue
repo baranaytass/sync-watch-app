@@ -4,7 +4,6 @@
     <YouTubePlayer
       v-if="provider === 'youtube'"
       :video-id="videoId"
-      :is-host="isHost"
       :show-controls="showControls"
       @video-action="handleVideoAction"
       @video-ready="$emit('video-ready')"
@@ -41,12 +40,10 @@ import YouTubePlayer from './YouTubePlayer.vue'
 
 interface Props {
   videoUrl: string
-  isHost?: boolean
   showControls?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isHost: false,
   showControls: true
 })
 

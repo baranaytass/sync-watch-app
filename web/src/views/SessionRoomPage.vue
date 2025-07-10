@@ -106,7 +106,6 @@
               v-if="currentSession?.videoId && videoUrl"
               ref="videoPlayerRef"
               :video-url="videoUrl"
-              :is-host="isHost"
               :show-controls="true"
               @video-action="handleVideoAction"
               @video-ready="handleVideoReady"
@@ -129,7 +128,6 @@
           <SessionInfo 
             v-if="currentSession"
             :session="currentSession"
-            :is-host="isHost"
             @set-video="handleSetVideo"
           />
         </div>
@@ -273,20 +271,16 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
 }
 
 const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
-  console.log(`🎬 SessionRoom: Received video action from VideoPlayer - ${action} at ${time}s, isHost: ${isHost.value}`)
+  console.log(`🎬 SessionRoom: Received video action from VideoPlayer - ${action} at ${time}s`)
   
-  if (isHost.value) {
-    console.log(`🎬 SessionRoom: HOST is sending video action via WebSocket - ${action} at ${time}s`)
-    
-    // Host'un video action'ları WebSocket üzerinden diğer kullanıcılara gönderilir
-    sendVideoAction(action, time)
-    
-    // Video sync store'u güncelle
-    videoSyncStore.setAction(action)
-    videoSyncStore.setCurrentTime(time)
-  } else {
-    console.log(`🎬 SessionRoom: Not host, ignoring video action`)
-  }
+  console.log(`🎬 SessionRoom: USER is sending video action via WebSocket - ${action} at ${time}s`)
+  
+  // Tüm kullanıcıların video action'ları WebSocket üzerinden diğer kullanıcılara gönderilir
+  sendVideoAction(action, time)
+  
+  // Video sync store'u güncelle
+  videoSyncStore.setAction(action)
+  videoSyncStore.setCurrentTime(time)
 }
 
 const handleVideoReady = () => {

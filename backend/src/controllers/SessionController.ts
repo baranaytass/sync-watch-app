@@ -18,6 +18,9 @@ export class SessionController {
   private fastify: any;
 
   constructor(fastify: any, sessionService: SessionService, youtubeService: YouTubeService) {
+    console.log('🏗️ SessionController: Constructor called');
+    console.log('🏗️ SessionController: fastify instance decorators:', Object.keys(fastify));
+    console.log('🏗️ SessionController: hasDecorator broadcastToSession:', fastify.hasDecorator('broadcastToSession'));
     this.fastify = fastify;
     this.sessionService = sessionService;
     this.youtubeService = youtubeService;
@@ -286,22 +289,34 @@ export class SessionController {
       // Broadcast video update & sync to all session participants via WebSocket if decorator exists
       const broadcaster = (this.fastify as any).broadcastToSession;
       console.log(`📡 SessionController: broadcastToSession exists: ${typeof broadcaster}`);
+      console.log(`📡 SessionController: fastify decorators:`, Object.keys(this.fastify));
+      console.log(`📡 SessionController: fastify hasDecorator broadcastToSession:`, this.fastify.hasDecorator('broadcastToSession'));
       
       if (typeof broadcaster === 'function') {
         console.log(`📡 Broadcasting video_update to session ${id}`);
-        broadcaster(id, 'video_update', {
-          videoProvider: 'youtube',
-          videoId: videoData.videoId,
-          videoTitle: videoData.videoTitle,
-          videoDuration: videoData.videoDuration,
-        });
+        try {
+          broadcaster(id, 'video_update', {
+            videoProvider: 'youtube',
+            videoId: videoData.videoId,
+            videoTitle: videoData.videoTitle,
+            videoDuration: videoData.videoDuration,
+          });
+          console.log(`✅ video_update broadcast successful`);
+        } catch (error) {
+          console.error(`❌ video_update broadcast failed:`, error);
+        }
 
         console.log(`📡 Broadcasting video_sync to session ${id}`);
-        broadcaster(id, 'video_sync', {
-          action: 'pause',
-          time: 0,
-          timestamp: new Date(),
-        });
+        try {
+          broadcaster(id, 'video_sync', {
+            action: 'pause',
+            time: 0,
+            timestamp: new Date(),
+          });
+          console.log(`✅ video_sync broadcast successful`);
+        } catch (error) {
+          console.error(`❌ video_sync broadcast failed:`, error);
+        }
       } else {
         console.log(`❌ SessionController: broadcastToSession decorator not available`);
       }

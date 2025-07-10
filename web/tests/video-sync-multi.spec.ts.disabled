@@ -21,16 +21,41 @@ const createSession = async (page: Page, title: string): Promise<string> => {
     await page.waitForLoadState('networkidle')
   }
 
-  // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
-  const newSessionBtn = page.getByRole('button', { name: /Yeni Oturum/i }).first()
-  const firstSessionBtn = page.getByRole('button', { name: /İlk Oturumu Oluştur/i }).first()
+  // Oturum oluştur butonunu bul (çeşitli varyantları)
+  const createBtnSelectors = [
+    page.getByRole('button', { name: /Yeni Oturum/i }).first(),
+    page.getByRole('button', { name: /İlk Oturumu Oluştur/i }).first(),
+    page.getByRole('button', { name: /Oturum Oluştur/i }).first(),
+    page.getByRole('button', { name: /Create Session/i }).first(),
+    page.locator('button').filter({ hasText: /Oturum/i }).first()
+  ];
   
-  // Hangisi görünürse onu kullan
-  const createBtn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
-    ? newSessionBtn 
-    : firstSessionBtn
+  // Sayfanın yüklenmesini bekle
+  await page.waitForLoadState('networkidle')
   
-  await expect(createBtn).toBeVisible({ timeout: 15000 })
+  // Loading state'in bitmesini bekle
+  await page.waitForFunction(() => {
+    const loadingElements = document.querySelectorAll('div, p')
+    for (const el of loadingElements) {
+      if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
+        return false // Hâlâ loading
+      }
+    }
+    return true // Loading bitti
+  }, { timeout: 10000 })
+  
+  let createBtn = createBtnSelectors[0]; // Default to first selector
+  for (const selector of createBtnSelectors) {
+    try {
+      await selector.waitFor({ timeout: 3000 });
+      createBtn = selector;
+      break;
+    } catch (e) {
+      // Selector bulunamadı, bir sonrakini dene
+    }
+  }
+  
+  await expect(createBtn).toBeVisible({ timeout: 10000 })
   await createBtn.click()
 
   // Modal içi input'un görünür olmasını bekle
@@ -192,9 +217,32 @@ test('Video Sync – host sets video after guest joins → guest must load video
   /* 2) GUEST – join session */
   const ctxGuest = await browser.newContext()
   const guest = await ctxGuest.newPage()
+  
+  // Console log'larını dinle
+  guest.on('console', (msg) => {
+    console.log(`[GUEST CONSOLE] ${msg.type()}: ${msg.text()}`)
+  })
+  
   await guestLogin(guest)
+  
+  console.log(`[TEST] Guest going to session URL: ${sessionURL}`)
   await guest.goto(sessionURL)
   await guest.waitForLoadState('networkidle')
+  
+  console.log('[TEST] Guest page loaded, checking for loading state...')
+  
+  // Loading state'in bitmesini bekle
+  await guest.waitForFunction(() => {
+    const loadingElements = document.querySelectorAll('div')
+    for (const el of loadingElements) {
+      if (el.textContent && el.textContent.includes('Oturum yükleniyor...')) {
+        return (el as HTMLElement).offsetParent === null
+      }
+    }
+    return true // Loading element not found, assume loaded
+  }, { timeout: 15000 })
+  
+  console.log('[TEST] Guest loading finished')
 
   /* 3) HOST – set video AFTER guest joined */
   const urlInput = host.locator('input[placeholder*="youtube"]')
@@ -210,14 +258,78 @@ test('Video Sync – host sets video after guest joins → guest must load video
   await guest.waitForSelector('iframe', { timeout: 20000 })
   await expect(guest.locator('iframe').first()).toBeVisible()
 
-  /* 5) OPTIONAL – host play → guest receives sync (log check) */
-  // send play action via WS from host page context
-  await host.evaluate(async () => {
-    const vid = document.querySelector('iframe') as HTMLIFrameElement
-    vid?.contentWindow?.postMessage('play', '*')
+  /* 5) VIDEO SYNC TEST – host play/pause → guest receives sync */
+  console.log('[TEST] Testing video play/pause sync...')
+  
+  // Guest console log listeners for video sync
+  const guestPlaySyncPromise = new Promise<void>((resolve) => {
+    const handler = (msg: any) => {
+      if (msg.type() === 'log' && msg.text().includes('🔄 YouTube Player: Sync video - play')) {
+        console.log('[TEST] Guest received PLAY sync!')
+        guest.off('console', handler)
+        resolve()
+      }
+    }
+    guest.on('console', handler)
+  })
+  
+  const guestPauseSyncPromise = new Promise<void>((resolve) => {
+    const handler = (msg: any) => {
+      if (msg.type() === 'log' && msg.text().includes('🔄 YouTube Player: Sync video - pause')) {
+        console.log('[TEST] Guest received PAUSE sync!')
+        guest.off('console', handler)
+        resolve()
+      }
+    }
+    guest.on('console', handler)
   })
 
-  // minimal assertion: guest console should log something like "play" sync (if implemented)
+  // Host: Click play on YouTube player (simulate user interaction)
+  console.log('[TEST] Host clicking PLAY on video...')
+  await host.evaluate(async () => {
+    // Wait for YouTube player to be ready
+    let attempts = 0
+    while (attempts < 10) {
+      const iframe = document.querySelector('iframe') as HTMLIFrameElement
+      if (iframe) {
+        // YouTube player'ı play et
+        try {
+          iframe.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*')
+          console.log('🎬 Host: Sent play command to YouTube iframe')
+          break
+        } catch (e) {
+          console.log('Retrying play command...', attempts)
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 500))
+      attempts++
+    }
+  })
+
+  // Wait for guest to receive play sync
+  await guestPlaySyncPromise
+  console.log('[TEST] ✅ PLAY sync working!')
+
+  // Wait a bit then test pause
+  await new Promise(resolve => setTimeout(resolve, 2000))
+
+  // Host: Click pause on YouTube player
+  console.log('[TEST] Host clicking PAUSE on video...')
+  await host.evaluate(async () => {
+    const iframe = document.querySelector('iframe') as HTMLIFrameElement
+    if (iframe) {
+      try {
+        iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*')
+        console.log('⏸️ Host: Sent pause command to YouTube iframe')
+      } catch (e) {
+        console.log('Error sending pause command:', e)
+      }
+    }
+  })
+
+  // Wait for guest to receive pause sync
+  await guestPauseSyncPromise
+  console.log('[TEST] ✅ PAUSE sync working!')
 
   await ctxGuest.close()
   await ctxHost.close()

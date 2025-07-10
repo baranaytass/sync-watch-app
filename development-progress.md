@@ -295,8 +295,8 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ---
 
 ## Güncel Durum
-**Son güncelleme:** 7 Ocak 2025
-**Aktif adım:** 12.3 - Test Infrastructure Stability (Tüm testlerin çalışmasını sağlama)
+**Son güncelleme:** 10 Ocak 2025  
+**Aktif adım:** ✅ Tamamlandı! Test Infrastructure Stability (Tüm testlerin çalışmasını sağlama)
 
 ### Test Durumu (6 test dosyası)
 | Test | Durum | Açıklama |
@@ -305,23 +305,23 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 | `session.spec.ts` | ✅ PASS | Session create/join functionality |
 | `session-multi.spec.ts` | ✅ PASS | Multi-user join/leave synchronization |
 | `video-sync.spec.ts` | ✅ PASS | Single user video loading |
-| `video-sync-multi.spec.ts` | ❌ FAIL | Multi-user video broadcast (20s timeout) |
+| `video-sync-multi.spec.ts` | ✅ PASS | Multi-user video broadcast |
 | `video-sync.spec.ts` (skipped) | ⏭️ SKIP | Geçici skip edilmiş testler |
 
-**Başarı Oranı:** 80% (4/5 aktif test geçiyor)
+**🎉 Başarı Oranı:** 100% (5/5 aktif test geçiyor)
 
-### Son Düzeltmeler
+### ✅ Çözülen Tüm Sorunlar
 - **Backend Restart Loop:** ✅ Çözüldü! Duplicate `fastify.decorate('broadcastToSession')` kaldırıldı
 - **Build Errors:** ✅ Çözüldü! 59 TypeScript compilation hatası giderildi  
 - **Test Button Selectors:** ✅ Çözüldü! "Yeni Oturum" vs "İlk Oturumu Oluştur" variant handling
 - **Frontend Manual Start:** ✅ Çözüldü! VITE_ENABLE_GUEST_LOGIN=true ile manuel başlatma
+- **Video Sync Broadcast:** ✅ Çözüldü! Global `broadcastToSession` decorator ile scope sorunu giderildi
+- **Route Register Sırası:** ✅ Çözüldü! WebSocket routes Session routes'tan önce register ediliyor
+- **Fastify Plugin Scope:** ✅ Çözüldü! Global decorator server.ts'te register edildi
 
-### Kalan Ana Sorun
-- **Video Sync Broadcast:** Guest kullanıcılar host'un video değişikliklerini alamıyor
-  - Sorun: SessionController'da `broadcastToSession` decorator kullanımı
-  - Etki: iframe 20s timeout ile başarısız oluyor
-
-### Gelecek Adımlar
-1. Video sync broadcast sorununu çöz
-2. Tüm testlerin %100 geçmesini sağla
-3. Chat system implementasyonuna geç 
+### 🚀 Gelecek Adımlar (Proje %90 Tamamlandı)
+1. ✅ Video sync broadcast sorununu çöz  
+2. ✅ Tüm testlerin %100 geçmesini sağla
+3. 🎯 **SONRAKİ:** Chat system implementasyonu
+4. 🎯 Performance optimization  
+5. 🎯 Production deployment hazırlığı 

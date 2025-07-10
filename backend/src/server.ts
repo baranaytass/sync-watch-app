@@ -109,18 +109,42 @@ async function start(): Promise<void> {
     server.decorate('authenticate', authenticateJWT);
     console.log('🔧 Authentication middleware registered')
 
+    // Register global broadcastToSession decorator
+    console.log('🔧 Registering broadcastToSession decorator globally...')
+    let globalConnections = new Map<string, any[]>(); // sessionId -> sockets
+    
+    const globalBroadcastToSession = (sessionId: string, type: string, data: any, excludeSocket?: any): void => {
+      const sessionSockets = globalConnections.get(sessionId);
+      if (!sessionSockets) return;
+      sessionSockets.forEach((socket) => {
+        if (excludeSocket && socket === excludeSocket) return;
+        try {
+          const ws: any = (socket as any).socket ?? socket;
+          if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({ type, data }));
+          }
+        } catch (error) {
+          console.error('❌ Global WebSocket: Error sending message:', error);
+        }
+      });
+    };
+    
+    server.decorate('broadcastToSession', globalBroadcastToSession);
+    server.decorate('globalConnections', globalConnections);
+    console.log('✅ Global broadcastToSession decorator registered')
+
     // Register routes
     console.log('🔧 Registering Auth routes...')
     await server.register(authRoutes, { prefix: '/api/auth' });
     console.log('🔧 Auth routes registered')
     
-    console.log('🔧 Registering Session routes...')
-    await server.register(sessionRoutes, { prefix: '/api/sessions' });
-    console.log('🔧 Session routes registered')
-    
     console.log('🔧 Registering WebSocket routes...')
     await server.register(websocketRoutes);
     console.log('🔧 WebSocket routes registered')
+    
+    console.log('🔧 Registering Session routes...')
+    await server.register(sessionRoutes, { prefix: '/api/sessions' });
+    console.log('🔧 Session routes registered')
 
     // Health check endpoint
     console.log('🔧 Adding health check endpoint...')

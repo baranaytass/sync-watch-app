@@ -16,8 +16,8 @@ export default async function websocketRoutes(
   const sessionService = new SessionService(fastify.pg);
   const userModel = new UserModel(fastify.pg);
 
-  // Connection storage
-  const connections = new Map<string, SocketStream[]>(); // sessionId -> sockets
+  // Use global connections from server instance
+  const connections = (fastify as any).globalConnections as Map<string, SocketStream[]>;
   const socketToSession = new Map<SocketStream, string>(); // socket -> sessionId
   const socketToUser = new Map<SocketStream, string>(); // socket -> userId
 
@@ -34,19 +34,11 @@ export default async function websocketRoutes(
     }
   };
 
-  const broadcastToSession = (sessionId: string, type: string, data: any, excludeSocket?: SocketStream): void => {
-    const sessionSockets = connections.get(sessionId);
-    if (!sessionSockets) return;
-    sessionSockets.forEach((socket) => {
-      if (excludeSocket && socket === excludeSocket) return;
-      sendMessage(socket, type, data);
-    });
-  };
+  // Use global broadcastToSession function
+  const broadcastToSession = (fastify as any).broadcastToSession as (sessionId: string, type: string, data: any, excludeSocket?: SocketStream) => void;
 
-  // Decorate fastify instance for external access (e.g., from controllers)
-  if (!fastify.hasDecorator('broadcastToSession')) {
-    fastify.decorate('broadcastToSession', broadcastToSession);
-  }
+  console.log('🔧 WebSocket: Using global broadcastToSession decorator');
+  console.log('✅ WebSocket: Global broadcastToSession is available:', typeof broadcastToSession === 'function');
 
   // Connection cleanup
   const cleanupConnection = (socket: SocketStream): void => {
@@ -126,15 +118,13 @@ export default async function websocketRoutes(
 
   // Message handlers
   const messageHandlers: Record<string, any> = {
-    video_action: async (socket: SocketStream, data: any, userId: string, sessionId: string) => {
-      const isHost = await sessionService.isUserSessionHost(sessionId, userId);
-      if (isHost) {
-        broadcastToSession(sessionId, 'video_sync', {
-          action: data.action,
-          time: data.time,
-          timestamp: new Date(),
-        }, socket);
-      }
+    video_action: async (socket: SocketStream, data: any, _userId: string, sessionId: string) => {
+      // Tüm session katılımcıları video kontrolü yapabilir
+      broadcastToSession(sessionId, 'video_sync', {
+        action: data.action,
+        time: data.time,
+        timestamp: new Date(),
+      }, socket);
     },
     chat: async (_socket: SocketStream, data: any, userId: string, sessionId: string) => {
       if (data.message && data.message.trim().length > 0) {

@@ -5,6 +5,17 @@ const createSession = async (page: any, title: string): Promise<string> => {
   await page.goto('/sessions')
   await page.waitForLoadState('networkidle')
 
+  // Loading state'in bitmesini bekle
+  await page.waitForFunction(() => {
+    const loadingElements = document.querySelectorAll('div, p')
+    for (const el of loadingElements) {
+      if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
+        return false // Hâlâ loading
+      }
+    }
+    return true // Loading bitti
+  }, { timeout: 10000 })
+
   // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
   const newSessionBtn = page.locator('button:has-text("Yeni Oturum")').first()
   const firstSessionBtn = page.locator('button:has-text("İlk Oturumu Oluştur")').first()
@@ -14,7 +25,7 @@ const createSession = async (page: any, title: string): Promise<string> => {
     ? newSessionBtn 
     : firstSessionBtn
   
-  await expect(btn).toBeVisible()
+  await expect(btn).toBeVisible({ timeout: 8000 })
   await btn.click()
 
   // Modal içindeki başlık inputu doldur

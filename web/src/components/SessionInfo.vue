@@ -28,13 +28,13 @@
       </div>
     </div>
 
-    <!-- Video URL Input (Only for host) -->
-    <div v-if="isHost" class="space-y-3">
+    <!-- Video URL Input (All users) -->
+    <div class="space-y-3">
       <div class="flex items-center justify-between">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
           YouTube Video URL
         </label>
-        <span class="text-xs text-gray-500 dark:text-gray-400">Sadece host ayarlayabilir</span>  
+        <span class="text-xs text-gray-500 dark:text-gray-400">Tüm kullanıcılar ayarlayabilir</span>  
       </div>
       
       <div class="flex gap-2">
@@ -64,12 +64,12 @@
       </p>
     </div>
 
-    <!-- Not Host Message -->
-    <div v-else-if="!session.videoId" class="text-center py-4">
+    <!-- No Video Message -->
+    <div v-if="!session.videoId" class="text-center py-4">
       <svg class="h-8 w-8 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
       </svg>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Host tarafından video seçilmesi bekleniyor</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Henüz video seçilmedi</p>
     </div>
   </div>
 </template>
@@ -80,7 +80,6 @@ import type { Session } from '@/stores/sessions'
 
 interface Props {
   session: Session
-  isHost: boolean
 }
 
 const props = defineProps<Props>()

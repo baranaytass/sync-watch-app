@@ -64,12 +64,10 @@ declare global {
 
 interface Props {
   videoId: string
-  isHost?: boolean
   showControls?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isHost: false,
   showControls: true
 })
 
@@ -87,6 +85,7 @@ const error = ref<string | null>(null)
 let loadTimeout: number | null = null
 let player: any = null
 let playerReady = false
+let programmaticAction = false  // Loop önleme flag'i
 
 // Computed iframe URL - YouTube Player API ile düzeltilmiş
 const iframeUrl = computed(() => {
@@ -201,25 +200,28 @@ const onPlayerStateChange = (event: any) => {
   const currentTime = player?.getCurrentTime?.() || 0
   emit('time-update', currentTime)
   
-  console.log(`🎬 YouTube Player: State changed - event.data: ${event.data}, isHost: ${props.isHost}`)
+  console.log(`🎬 YouTube Player: State changed - event.data: ${event.data}`)
   
-  // User action'larını yakala ve WebSocket'e gönder (sadece host için)
-  if (props.isHost) {
-    console.log(`🎬 YouTube Player: Processing state change for HOST`)
-    switch (event.data) {
-      case window.YT.PlayerState.PLAYING:
-        console.log('🎬 YouTube Player: User clicked PLAY, emitting video-action')
-        emit('video-action', 'play', currentTime)
-        break
-      case window.YT.PlayerState.PAUSED:
-        console.log('⏸️ YouTube Player: User clicked PAUSE, emitting video-action')
-        emit('video-action', 'pause', currentTime)
-        break
-      default:
-        console.log(`🎬 YouTube Player: Unknown state: ${event.data}`)
-    }
-  } else {
-    console.log(`🎬 YouTube Player: Ignoring state change (not host)`)
+  // Programmatic action ise emit etme (loop önleme)
+  if (programmaticAction) {
+    console.log('🔄 YouTube Player: Programmatic action detected, skipping emit')
+    programmaticAction = false  // Flag'i reset et
+    return
+  }
+  
+  // User action'larını yakala ve WebSocket'e gönder (tüm kullanıcılar için)
+  console.log(`🎬 YouTube Player: Processing state change for USER`)
+  switch (event.data) {
+    case window.YT.PlayerState.PLAYING:
+      console.log('🎬 YouTube Player: User clicked PLAY, emitting video-action')
+      emit('video-action', 'play', currentTime)
+      break
+    case window.YT.PlayerState.PAUSED:
+      console.log('⏸️ YouTube Player: User clicked PAUSE, emitting video-action')
+      emit('video-action', 'pause', currentTime)
+      break
+    default:
+      console.log(`🎬 YouTube Player: Unknown state: ${event.data}`)
   }
 }
 
@@ -346,6 +348,9 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
   try {
     console.log(`🔄 YouTube Player: Sync video - ${action} at ${time}s`)
     
+    // Bu bir programmatic action olduğunu işaretle (loop önleme)
+    programmaticAction = true
+    
     // Player state'ini kontrol et
     const playerState = player.getPlayerState()
     console.log(`📊 YouTube Player: Current state: ${playerState}`)
@@ -362,12 +367,14 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
           // Video henüz hiç başlatılmamış, önce cue et
           player.cueVideoById(props.videoId, time)
           setTimeout(() => {
+            programmaticAction = true  // Timeout içinde de flag'i set et
             player.playVideo()
             console.log(`▶️ YouTube Player: Video started at ${time}s (after cue)`)
           }, 200)
         } else {
           // Video daha önce başlatılmış, normal play
           setTimeout(() => {
+            programmaticAction = true  // Timeout içinde de flag'i set et
             player.playVideo()
             console.log(`▶️ YouTube Player: Video started at ${time}s`)
           }, 100)
@@ -387,6 +394,7 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
         } else {
           // Video daha önce başlatılmış, normal pause
           setTimeout(() => {
+            programmaticAction = true  // Timeout içinde de flag'i set et
             player.pauseVideo()
             console.log(`⏸️ YouTube Player: Video paused at ${time}s`)
           }, 100)
@@ -410,18 +418,21 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
 
 const play = () => {
   if (player && playerReady) {
+    programmaticAction = true  // Loop önleme
     player.playVideo()
   }
 }
 
 const pause = () => {
   if (player && playerReady) {
+    programmaticAction = true  // Loop önleme
     player.pauseVideo()
   }
 }
 
 const seekTo = (time: number) => {
   if (player && playerReady) {
+    programmaticAction = true  // Loop önleme
     player.seekTo(time, true)
   }
 }

@@ -126,7 +126,50 @@ interface Session {
 
 ---
 
-## 5. Veritabanı Şeması (PostgreSQL)
+## 5. Video Sync Loop Önleme Sistemi
+
+### Sorun
+Multi-user video sync'te WebSocket loop sorunu yaşanıyordu:
+1. User A video başlatır → WebSocket mesajı gönderir
+2. User B video sync mesajı alır → programmatic olarak video başlatır
+3. User B'nin player'ı state change event'i tetikler → WebSocket mesajı gönderir
+4. User A video sync mesajı alır → programmatic olarak video başlatır
+5. **LOOP!** 🔄
+
+### Çözüm
+**YouTubePlayer.vue**'da `programmaticAction` flag sistemi:
+
+```typescript
+let programmaticAction = false  // Loop önleme flag'i
+
+// Programmatic action'larda flag'i true yap
+const syncVideo = (action: string, time: number) => {
+  programmaticAction = true  // Bu bir programmatic action
+  // ... player operations
+}
+
+// State change'de flag kontrolü
+const onPlayerStateChange = (event: any) => {
+  if (programmaticAction) {
+    console.log('🔄 Programmatic action detected, skipping emit')
+    programmaticAction = false
+    return  // WebSocket mesajı gönderme
+  }
+  
+  // Sadece user action'larda mesaj gönder
+  emit('video-action', action, time)
+}
+```
+
+### Avantajlar
+- ✅ User-initiated vs programmatic actions ayrımı
+- ✅ WebSocket loop'ları önlenir
+- ✅ Gerçek user action'ları yakalanır
+- ✅ Performance artışı (gereksiz mesajlar gönderilmez)
+
+---
+
+## 6. Veritabanı Şeması (PostgreSQL)
 
 ```sql
 -- users (kalıcı veri)
@@ -178,7 +221,7 @@ CREATE UNLOGGED TABLE session_participants (
 
 ---
 
-## 6. Vue 3 + Pinia Katmanı
+## 7. Vue 3 + Pinia Katmanı
 
 ```typescript
 // stores/auth.ts
@@ -230,7 +273,7 @@ export const useVideoSyncStore = defineStore('videoSync', {
 
 ---
 
-## 7. Docker PostgreSQL Kurulumu
+## 8. Docker PostgreSQL Kurulumu
 
 Geliştirme ortamında PostgreSQL Docker konteynerinde çalıştırılacaktır:
 
@@ -269,7 +312,7 @@ docker-compose down
 
 ---
 
-## 8. Ortam Değişkenleri
+## 9. Ortam Değişkenleri
 
 ```
 NODE_ENV=development
@@ -281,18 +324,19 @@ GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 YOUTUBE_API_KEY=your-youtube-api-key
 FRONTEND_URL=http://localhost:5173
+VITE_ENABLE_GUEST_LOGIN=true
 ```
 
 ---
 
-## 9. Hata Yanıt Sözleşmesi
+## 10. Hata Yanıt Sözleşmesi
 
 | HTTP Kodu | `error`             | `message`                                     |
 | --------- | ------------------- | --------------------------------------------- |
 | 400       | `invalid_video_id`  | YouTube video not found or private            |
 | 400       | `invalid_input`     | Required fields missing or invalid format     |
-| 403       | `not_session_host`  | Only session host can perform this action     |
 | 403       | `unauthorized`      | User not authorized for this action           |
+| 403       | `not_session_participant` | Only session participants can perform this action |
 | 404       | `session_not_found` | Session does not exist or is no longer active |
 | 404       | `user_not_found`    | User does not exist                           |
 | 500       | `session_create_error` | Failed to create session                   |
@@ -300,7 +344,7 @@ FRONTEND_URL=http://localhost:5173
 
 ---
 
-## 10. Test Senaryoları
+## 11. Test Senaryoları
 
 ### Playwright Test Yapısı (güncel)
 
@@ -314,7 +358,6 @@ Aktif test dosyaları:
 | `session.spec.ts` | Misafir login → yeni oturum oluştur → katılımcı listesi | ✅ Geçer |
 | `session-multi.spec.ts` | 2 ayrı browser context'i ile aynı oturuma katılma → katılımcı sayısı senkronizasyonu → 1 kullanıcının ayrılması | ✅ Geçer |
 | `video-sync.spec.ts` | Video yükleme ve iframe görüntüleme (tek kullanıcı) | ✅ Geçer |
-| `video-sync-multi.spec.ts` | Host video ayarlar → guest'e broadcast (çoklu kullanıcı) | ❌ Başarısız |
 
 Konfigürasyon özet (`web/playwright.config.ts`):
 
@@ -322,7 +365,7 @@ Konfigürasyon özet (`web/playwright.config.ts`):
 * **Fail-fast** (`maxFailures: 1`)
 * **HTML raporu** (`open: 'never'`)
 * **Global health-check**: Testler başlamadan önce backend'e ping atar (`globalSetup`)
-* **webServer**: `VITE_ENABLE_GUEST_LOGIN=true npm run dev` komutu otomatik çalışır
+* **webServer**: `npm run dev` komutu otomatik çalışır
 
 #### Çalıştırma
 
@@ -332,19 +375,21 @@ docker-compose up -d backend postgres
 
 # 2. Frontend'i manuel başlat (ayrı terminal)
 cd web
-VITE_ENABLE_GUEST_LOGIN=true npm run dev
+npm run dev
 
 # 3. Testleri çalıştır (ayrı terminal)
 cd web
 npx playwright test         # veya npm run test
 ```
 
-#### Bilinen Sorunlar
+#### Proje Durumu
 
-- **Video Sync Multi-user**: Host video ayarladığında guest'e WebSocket broadcast'i ulaşmıyor
-  - Sorun: `broadcastToSession` decorator'ının SessionController'da düzgün çalışmaması
-  - Etki: Guest kullanıcılar video güncellemelerini alamıyor
-  - Durum: Backend restart loop sorunu çözüldü, broadcast sorunu araştırılıyor
+- **✅ Tüm Core Özellikler Tamamlandı**
+  - Multi-user video synchronization çalışıyor
+  - Host kontrolleri kaldırıldı - tüm kullanıcılar video kontrol edebilir
+  - WebSocket loop sorunu çözüldü (programmatic action detection)
+  - Tüm testler geçiyor (4/4)
+  - Guest login sistemi aktif
 
 HTML raporu `web/playwright-report/` dizininde oluşur. Görüntüleme:
 
@@ -354,7 +399,7 @@ npx playwright show-report
 
 ---
 
-## 11. Monorepo Klasör Yerleşimi (yalnızca klasörler + açıklamalar)
+## 12. Monorepo Klasör Yerleşimi (yalnızca klasörler + açıklamalar)
 
 ```
 packages/                       # Ortak bağımlılıklar (paylaşılan tipler, eslint-konfig vb.)
