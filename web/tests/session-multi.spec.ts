@@ -12,6 +12,17 @@ const guestLogin = async (page: any) => {
 const createSession = async (page: any, title: string): Promise<string> => {
   await page.goto('/sessions')
   await page.waitForLoadState('networkidle')
+
+  // Loading state'in bitmesini bekle
+  await page.waitForFunction(() => {
+    const loadingElements = document.querySelectorAll('div, p')
+    for (const el of loadingElements) {
+      if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
+        return false // Hâlâ loading
+      }
+    }
+    return true // Loading bitti
+  }, { timeout: 10000 })
   
   // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
   const newSessionBtn = page.getByRole('button', { name: /Yeni Oturum/i }).first()
@@ -22,7 +33,7 @@ const createSession = async (page: any, title: string): Promise<string> => {
     ? newSessionBtn 
     : firstSessionBtn
   
-  await expect(createBtn).toBeVisible()
+  await expect(createBtn).toBeVisible({ timeout: 8000 })
   await createBtn.click()
   await page.locator('input#title').fill(title)
   await page.locator('button[type="submit"]').click()
@@ -63,7 +74,35 @@ test.describe('Session – very basic multi-user flow', () => {
       waitForParticipantCount(pageGuest, 2),
     ])
 
-    // 4) Guest user leaves the session
+    // 4) VIDEO SYNC TEST – Host sets video and sync to guest
+    console.log('🎥 [VIDEO SYNC] Testing video set and sync...')
+    
+    const TEST_VIDEO_URL = 'https://www.youtube.com/watch?v=cYgmnku6R3Y'
+    
+    // Host sets video
+    console.log('🎥 [HOST] Setting video...')
+    const urlInput = pageHost.locator('input[placeholder*="youtube"]').first()
+    await urlInput.fill(TEST_VIDEO_URL)
+    
+    await Promise.all([
+      pageHost.waitForResponse(r => /\/api\/sessions\/.*\/video$/.test(r.url()) && r.status() === 200, { timeout: 20000 }),
+      pageHost.getByRole('button', { name: /Ayarla/i }).click(),
+    ])
+    
+    // Both host and guest should have video iframe
+    console.log('🎥 [ASSERT] Both users should see video iframe...')
+    await Promise.all([
+      expect(pageHost.locator('iframe').first()).toBeVisible({ timeout: 15000 }),
+      expect(pageGuest.locator('iframe').first()).toBeVisible({ timeout: 15000 })
+    ])
+    
+    // Video sync testing will be handled separately - for now just verify video is loaded
+    console.log('🎥 [ASSERT] ✅ VIDEO SETTING WORKING! Both users can see the video')
+    
+    // Wait a moment to ensure video is fully loaded
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    // 5) Guest user leaves the session
     console.log('👋 [GUEST] Leaving the session')
     await pageGuest.getByRole('button', { name: /^Ayrıl$/i }).click()
     await pageGuest.waitForURL(/\/sessions$/)

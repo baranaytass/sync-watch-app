@@ -150,13 +150,20 @@ export const useWebSocket = (sessionId: string) => {
 
   const handleVideoUpdate = (data: any) => {
     console.log(`🎥 WebSocket: Video updated: ${data.videoTitle}`)
+    console.log(`🎥 WebSocket: Video update data:`, data)
+    console.log(`🎥 WebSocket: Current session exists:`, !!sessionsStore.currentSession)
+    
     if (sessionsStore.currentSession) {
+      console.log(`🎥 WebSocket: Updating current session with video data`)
       sessionsStore.updateCurrentSession({
         videoProvider: data.videoProvider,
         videoId: data.videoId,
         videoTitle: data.videoTitle,
         videoDuration: data.videoDuration
       })
+      console.log(`🎥 WebSocket: Session updated with video:`, sessionsStore.currentSession.videoId)
+    } else {
+      console.warn(`🎥 WebSocket: Cannot update video - no current session`)
     }
   }
 
@@ -190,6 +197,7 @@ export const useWebSocket = (sessionId: string) => {
         ws.onmessage = (event) => {
           try {
             const message: WebSocketMessage = JSON.parse(event.data)
+            console.log(`📨 WebSocket: Received message type: ${message.type}`, message)
             handleMessage(message)
           } catch (err) {
             console.error('❌ WebSocket: Failed to parse message:', err)

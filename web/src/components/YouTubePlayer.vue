@@ -200,6 +200,27 @@ const onPlayerReady = (event: any) => {
 const onPlayerStateChange = (event: any) => {
   const currentTime = player?.getCurrentTime?.() || 0
   emit('time-update', currentTime)
+  
+  console.log(`🎬 YouTube Player: State changed - event.data: ${event.data}, isHost: ${props.isHost}`)
+  
+  // User action'larını yakala ve WebSocket'e gönder (sadece host için)
+  if (props.isHost) {
+    console.log(`🎬 YouTube Player: Processing state change for HOST`)
+    switch (event.data) {
+      case window.YT.PlayerState.PLAYING:
+        console.log('🎬 YouTube Player: User clicked PLAY, emitting video-action')
+        emit('video-action', 'play', currentTime)
+        break
+      case window.YT.PlayerState.PAUSED:
+        console.log('⏸️ YouTube Player: User clicked PAUSE, emitting video-action')
+        emit('video-action', 'pause', currentTime)
+        break
+      default:
+        console.log(`🎬 YouTube Player: Unknown state: ${event.data}`)
+    }
+  } else {
+    console.log(`🎬 YouTube Player: Ignoring state change (not host)`)
+  }
 }
 
 // Player hata verdiğinde
@@ -317,18 +338,69 @@ watch(() => props.videoId, (newVideoId, oldVideoId) => {
 
 // Expose methods - YouTube Player API ile gerçek kontrol
 const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
-  if (!player || !playerReady) return
+  if (!player || !playerReady) {
+    console.warn('🚫 YouTube Player: Sync çağrıldı ama player hazır değil')
+    return
+  }
   
   try {
+    console.log(`🔄 YouTube Player: Sync video - ${action} at ${time}s`)
+    
+    // Player state'ini kontrol et
+    const playerState = player.getPlayerState()
+    console.log(`📊 YouTube Player: Current state: ${playerState}`)
+    
     switch (action) {
       case 'play':
-        player.playVideo()
-        break
-      case 'pause':
-        player.pauseVideo()
-        break
-      case 'seek':
+        // Önce video'yu doğru zamana seek et, sonra başlat
+        console.log(`🎯 YouTube Player: Seeking to ${time}s before play`)
         player.seekTo(time, true)
+        
+        // Player state'ine göre farklı stratejiler
+        if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
+          console.log(`🎬 YouTube Player: Video UNSTARTED, cuing first then playing`)
+          // Video henüz hiç başlatılmamış, önce cue et
+          player.cueVideoById(props.videoId, time)
+          setTimeout(() => {
+            player.playVideo()
+            console.log(`▶️ YouTube Player: Video started at ${time}s (after cue)`)
+          }, 200)
+        } else {
+          // Video daha önce başlatılmış, normal play
+          setTimeout(() => {
+            player.playVideo()
+            console.log(`▶️ YouTube Player: Video started at ${time}s`)
+          }, 100)
+        }
+        break
+        
+      case 'pause':
+        // Önce video'yu doğru zamana seek et, sonra durdur
+        console.log(`🎯 YouTube Player: Seeking to ${time}s before pause`)
+        player.seekTo(time, true)
+        
+        if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
+          console.log(`⏸️ YouTube Player: Video UNSTARTED, cuing to pause position`)
+          // Video henüz hiç başlatılmamış, sadece cue et (pause pozisyonunda)
+          player.cueVideoById(props.videoId, time)
+          console.log(`⏸️ YouTube Player: Video cued at ${time}s (paused state)`)
+        } else {
+          // Video daha önce başlatılmış, normal pause
+          setTimeout(() => {
+            player.pauseVideo()
+            console.log(`⏸️ YouTube Player: Video paused at ${time}s`)
+          }, 100)
+        }
+        break
+        
+      case 'seek':
+        console.log(`🎯 YouTube Player: Seeking to ${time}s`)
+        if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
+          console.log(`🎯 YouTube Player: Video UNSTARTED, cuing to seek position`)
+          player.cueVideoById(props.videoId, time)
+        } else {
+          player.seekTo(time, true)
+        }
         break
     }
   } catch (error) {

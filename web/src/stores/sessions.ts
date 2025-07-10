@@ -246,13 +246,21 @@ export const useSessionsStore = defineStore('sessions', () => {
   const updateCurrentSession = (updatedSession: Partial<Session>): void => {
     if (currentSession.value) {
       console.log(`🔄 Sessions Store: Updating current session ${currentSession.value.id}`)
+      console.log(`🔄 Sessions Store: Update data:`, updatedSession)
+      console.log(`🔄 Sessions Store: Current session before update:`, currentSession.value.videoId)
+      
       currentSession.value = { ...currentSession.value, ...updatedSession }
+      
+      console.log(`🔄 Sessions Store: Current session after update:`, currentSession.value.videoId)
       
       // Also update in sessions list if exists
       const sessionIndex = sessions.value.findIndex(s => s.id === currentSession.value!.id)
       if (sessionIndex >= 0) {
         sessions.value[sessionIndex] = currentSession.value
+        console.log(`🔄 Sessions Store: Also updated session in list`)
       }
+    } else {
+      console.warn(`🔄 Sessions Store: Cannot update - no current session`)
     }
   }
 

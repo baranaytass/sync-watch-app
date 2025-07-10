@@ -6,7 +6,7 @@
       :video-id="videoId"
       :is-host="isHost"
       :show-controls="showControls"
-      @video-action="$emit('video-action', $event)"
+      @video-action="handleVideoAction"
       @video-ready="$emit('video-ready')"
       @video-error="$emit('video-error', $event)"
       @duration-change="$emit('duration-change', $event)"
@@ -60,6 +60,13 @@ const emit = defineEmits<{
 
 // Player reference
 const playerRef = ref<InstanceType<typeof YouTubePlayer> | null>(null)
+
+// Event handlers
+const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
+  console.log(`🎬 VideoPlayer: Received video action from YouTubePlayer - ${action} at ${time}s`)
+  console.log(`🎬 VideoPlayer: Forwarding video action to parent - ${action} at ${time}s`)
+  emit('video-action', action, time)
+}
 
 // Extract provider and video ID from URL - FIX: Case-sensitive video ID
 const providerInfo = computed(() => {

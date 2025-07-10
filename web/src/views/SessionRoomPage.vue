@@ -104,6 +104,7 @@
           <div class="flex-1 bg-black relative">
             <VideoPlayer
               v-if="currentSession?.videoId && videoUrl"
+              ref="videoPlayerRef"
               :video-url="videoUrl"
               :is-host="isHost"
               :show-controls="true"
@@ -159,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionsStore } from '@/stores/sessions'
 import { useAuthStore } from '@/stores/auth'
@@ -184,6 +185,9 @@ const themeStore = useThemeStore()
 // Reactive state
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// VideoPlayer reference
+const videoPlayerRef = ref<InstanceType<typeof VideoPlayer> | null>(null)
 
 // WebSocket composable
 const { 
@@ -269,13 +273,19 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
 }
 
 const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
+  console.log(`🎬 SessionRoom: Received video action from VideoPlayer - ${action} at ${time}s, isHost: ${isHost.value}`)
+  
   if (isHost.value) {
+    console.log(`🎬 SessionRoom: HOST is sending video action via WebSocket - ${action} at ${time}s`)
+    
     // Host'un video action'ları WebSocket üzerinden diğer kullanıcılara gönderilir
     sendVideoAction(action, time)
     
     // Video sync store'u güncelle
     videoSyncStore.setAction(action)
     videoSyncStore.setCurrentTime(time)
+  } else {
+    console.log(`🎬 SessionRoom: Not host, ignoring video action`)
   }
 }
 
@@ -296,6 +306,25 @@ const handleTimeUpdate = (currentTime: number) => {
   // İleride real-time time tracking için kullanabiliriz
   // Sadece log level olarak tutuyoruz şimdilik
 }
+
+// Watch for video sync events and forward them to VideoPlayer
+watch(
+  () => videoSyncStore.lastActionTimestamp,
+  (newTimestamp) => {
+    if (newTimestamp && videoPlayerRef.value) {
+      const action = videoSyncStore.currentAction
+      const time = videoSyncStore.currentTime
+      
+      console.log(`🔄 SessionRoom: Forwarding sync to VideoPlayer - ${action} at ${time}s`)
+      
+      // Call syncVideo method on VideoPlayer
+      if ('syncVideo' in videoPlayerRef.value) {
+        videoPlayerRef.value.syncVideo(action, time)
+      }
+    }
+  },
+  { immediate: false }
+)
 
 // Lifecycle
 onMounted(async () => {
