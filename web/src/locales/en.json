@@ -1,0 +1,133 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "online": "online",
+    "offline": "offline",
+    "people": "people",
+    "minutes": "minutes",
+    "seconds": "seconds",
+    "hours": "hours"
+  },
+  "auth": {
+    "loginWithGoogle": "Sign in with Google",
+    "loginAsGuest": "Sign in as Guest",
+    "logout": "Sign Out",
+    "loggingIn": "Signing in...",
+    "loggingOut": "Signing out...",
+    "welcome": "Welcome",
+    "loginToAccount": "Sign in to your account",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "navigation": {
+    "home": "Home",
+    "sessions": "Sessions",
+    "login": "Sign In",
+    "backToSessions": "Back to Sessions"
+  },
+  "app": {
+    "title": "Video Sync Chat",
+    "description": "Watch videos synchronized with your friends and chat"
+  },
+  "session": {
+    "createNew": "Create New Session",
+    "title": "Session Title",
+    "description": "Description (optional)",
+    "titlePlaceholder": "e.g: Movie Night",
+    "descriptionPlaceholder": "A brief description about this session...",
+    "creating": "Creating...",
+    "create": "Create Session",
+    "join": "Join",
+    "leave": "Leave",
+    "details": "Session Details",
+    "participants": "Participants",
+    "noParticipants": "No participants yet",
+    "loading": "Loading session...",
+    "notFound": "Session Not Found",
+    "loadingSessions": "Loading sessions...",
+    "noSessions": "No active sessions yet",
+    "createFirstSession": "Create your first session",
+    "search": "Search sessions...",
+    "onlyWithVideo": "Only sessions with video",
+    "found": "sessions found",
+    "noSearchResults": "No sessions match your search criteria.",
+    "noActiveYet": "No active sessions available yet.",
+    "info": {
+      "allUsersCanSet": "All users can set",
+      "lastAction": "Last action",
+      "noVideoSelected": "No video selected yet",
+      "videoNotSelectedDesc": "Waiting for host to select a video"
+    },
+    "errors": {
+      "titleRequired": "Session title is required",
+      "titleMinLength": "Session title must be at least 3 characters",
+      "titleMaxLength": "Session title can be at most 100 characters",
+      "loadFailed": "Failed to load session",
+      "createFailed": "Failed to create session",
+      "joinFailed": "Failed to join session"
+    }
+  },
+  "video": {
+    "loading": "Loading video...",
+    "loadFailed": "Failed to load video",
+    "setVideo": "Set",
+    "setting": "Setting...",
+    "youtubeUrl": "YouTube Video URL",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlHelper": "Paste YouTube video URL. Video will be synchronized for all participants.",
+    "invalidUrl": "Enter a valid YouTube URL",
+    "setError": "An error occurred while setting video",
+    "noVideo": "No Video Selected Yet",
+    "unsupportedProvider": "Unsupported Video Provider",
+    "comingSoon": "Not supported yet",
+    "actions": {
+      "play": "Play",
+      "pause": "Pause",
+      "seek": "Seek"
+    },
+    "errors": {
+      "invalidVideoId": "Invalid video ID",
+      "html5Error": "HTML5 player error",
+      "videoNotFound": "Video not found",
+      "embedNotAllowed": "Video embedding not allowed",
+      "unknownError": "Video error"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "comingSoon": "Chat feature coming soon",
+    "typeMessage": "Type a message...",
+    "send": "Send"
+  },
+  "date": {
+    "noDate": "No date",
+    "invalidDate": "Invalid date",
+    "unknownTime": "Unknown time",
+    "justJoined": "Just joined",
+    "minutesAgoJoined": "Joined {minutes} minutes ago",
+    "hoursAgoJoined": "Joined {hours} hours ago"
+  },
+  "theme": {
+    "light": "Light Theme",
+    "dark": "Dark Theme",
+    "toggle": "Toggle Theme"
+  },
+  "language": {
+    "turkish": "Türkçe",
+    "english": "English",
+    "switch": "Switch Language"
+  }
+} 

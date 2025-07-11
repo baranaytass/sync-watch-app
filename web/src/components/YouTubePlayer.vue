@@ -4,20 +4,20 @@
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center text-white z-10">
       <div class="text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-        <p class="text-sm">Video yükleniyor...</p>
+        <p class="text-sm">{{ $t('video.loading') }}</p>
       </div>
     </div>
 
     <!-- Error -->
     <div v-else-if="error" class="absolute inset-0 flex items-center justify-center text-white p-4 z-10">
       <div class="text-center max-w-md">
-        <p class="text-red-400 mb-2">❌ Video yüklenemedi</p>
+        <p class="text-red-400 mb-2">❌ {{ $t('video.loadFailed') }}</p>
         <p class="text-sm text-gray-300 mb-4">{{ error }}</p>
         <button 
           @click="retry" 
           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
         >
-          Tekrar Dene
+          {{ $t('common.retry') }}
         </button>
       </div>
     </div>
@@ -44,6 +44,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { useI18n } from '@/composables/useI18n'
 
 // YouTube Player API TypeScript tanımları
 declare global {
@@ -78,6 +79,9 @@ const emit = defineEmits<{
   'time-update': [currentTime: number]
   'duration-change': [duration: number]
 }>()
+
+// i18n setup
+const { t } = useI18n()
 
 // State
 const loading = ref(true)
@@ -228,24 +232,24 @@ const onPlayerStateChange = (event: any) => {
 // Player hata verdiğinde
 const onPlayerError = (event: any) => {
   const errorCode = event.data || 'UNKNOWN_ERROR'
-  let errorMessage = 'Video yüklenirken bir hata oluştu'
+  let errorMessage = t('video.loadFailed')
   
   switch (errorCode) {
     case 2:
-      errorMessage = 'Geçersiz video ID'
+      errorMessage = t('video.errors.invalidVideoId')
       break
     case 5:
-      errorMessage = 'HTML5 player hatası'
+      errorMessage = t('video.errors.html5Error')
       break
     case 100:
-      errorMessage = 'Video bulunamadı'
+      errorMessage = t('video.errors.videoNotFound')
       break
     case 101:
     case 150:
-      errorMessage = 'Video gömme izni yok'
+      errorMessage = t('video.errors.embedNotAllowed')
       break
     default:
-      errorMessage = `Video hatası (Kod: ${errorCode})`
+      errorMessage = `${t('video.errors.unknownError')} (${t('common.error')}: ${errorCode})`
   }
   
   loading.value = false

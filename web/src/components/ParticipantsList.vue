@@ -4,11 +4,11 @@
     <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-medium text-gray-900 dark:text-white">
-          Katılımcılar ({{ participants.length }})
+          {{ $t('session.participants') }} ({{ participants.length }})
         </h3>
         <div class="flex items-center">
           <div class="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ onlineCount }} çevrimiçi</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ onlineCount }} {{ $t('common.online') }}</span>
         </div>
       </div>
     </div>
@@ -19,7 +19,7 @@
         <svg class="h-8 w-8 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Henüz katılımcı yok</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('session.noParticipants') }}</p>
       </div>
       
       <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -78,6 +78,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from '@/composables/useI18n'
 
 interface Participant {
   userId: string
@@ -93,6 +94,9 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+// i18n setup
+const { t } = useI18n()
 
 // Default avatar for users without profile picture
 const defaultAvatar = 'https://ui-avatars.com/api/?name=User&background=e5e7eb&color=6b7280'
@@ -123,18 +127,18 @@ const formatJoinTime = (joinedAt: Date | string): string => {
   const joined = typeof joinedAt === 'string' ? new Date(joinedAt) : joinedAt
   
   if (isNaN(joined.getTime())) {
-    return 'Bilinmeyen zaman'
+    return t('date.unknownTime')
   }
   
   const diffInMinutes = Math.floor((now.getTime() - joined.getTime()) / (1000 * 60))
   
   if (diffInMinutes < 1) {
-    return 'Az önce katıldı'
+    return t('date.justJoined')
   } else if (diffInMinutes < 60) {
-    return `${diffInMinutes} dakika önce katıldı`
+    return t('date.minutesAgoJoined', { minutes: diffInMinutes })
   } else {
     const diffInHours = Math.floor(diffInMinutes / 60)
-    return `${diffInHours} saat önce katıldı`
+    return t('date.hoursAgoJoined', { hours: diffInHours })
   }
 }
 </script> 

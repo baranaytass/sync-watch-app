@@ -17,7 +17,7 @@
     <div v-else-if="provider === 'vimeo'" class="w-full h-full flex items-center justify-center text-white">
       <div class="text-center">
         <p class="text-lg mb-2">Vimeo Player</p>
-        <p class="text-sm text-gray-400">Henüz desteklenmiyor</p>
+        <p class="text-sm text-gray-400">{{ $t('video.comingSoon') }}</p>
       </div>
     </div>
     
@@ -27,7 +27,7 @@
         <svg class="h-12 w-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p class="text-lg mb-2">Desteklenmeyen Video Sağlayıcısı</p>
+        <p class="text-lg mb-2">{{ $t('video.unsupportedProvider') }}</p>
         <p class="text-sm text-gray-400">{{ provider }}</p>
       </div>
     </div>
