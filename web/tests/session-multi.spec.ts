@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 const guestLogin = async (page: any) => {
   await page.goto('/')
-  const guestBtn = page.getByRole('button', { name: /Misafir Olarak Giriş/i })
+  const guestBtn = page.locator('[data-testid="guest-login-button"]')
   if (await guestBtn.isVisible()) {
     await guestBtn.click()
     await page.waitForURL(/\/sessions$/)
@@ -25,8 +25,8 @@ const createSession = async (page: any, title: string): Promise<string> => {
   }, { timeout: 10000 })
   
   // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
-  const newSessionBtn = page.getByRole('button', { name: /Yeni Oturum/i }).first()
-  const firstSessionBtn = page.getByRole('button', { name: /İlk Oturumu Oluştur/i }).first()
+  const newSessionBtn = page.locator('[data-testid="create-session-button"]')
+  const firstSessionBtn = page.locator('[data-testid="create-first-session-button"]')
   
   // Hangisi görünürse onu kullan
   const createBtn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
@@ -64,8 +64,8 @@ test.describe('Session – very basic multi-user flow', () => {
 
     // 3) Verify both pages show 2 participants
     const waitForParticipantCount = async (page: any, expected: number) => {
-      const header = page.locator('h3', { hasText: 'Katılımcılar' })
-      await expect(header).toHaveText(new RegExp(`\\(${expected}\\)`), { timeout: 10000 })
+      // Use participant items count instead of text
+      await expect(page.locator('[data-testid="participant-item"]')).toHaveCount(expected, { timeout: 10000 })
     }
 
     console.log('🔍 [ASSERT] Waiting for 2 participants on both views')
@@ -86,7 +86,7 @@ test.describe('Session – very basic multi-user flow', () => {
     
     await Promise.all([
       pageHost.waitForResponse(r => /\/api\/sessions\/.*\/video$/.test(r.url()) && r.status() === 200, { timeout: 20000 }),
-      pageHost.getByRole('button', { name: /Ayarla/i }).click(),
+      pageHost.locator('[data-testid="set-video-button"]').click(),
     ])
     
     // Both host and guest should have video iframe
@@ -104,7 +104,7 @@ test.describe('Session – very basic multi-user flow', () => {
 
     // 5) Guest user leaves the session
     console.log('👋 [GUEST] Leaving the session')
-    await pageGuest.getByRole('button', { name: /^Ayrıl$/i }).click()
+    await pageGuest.locator('[data-testid="leave-session-button"]').click()
     await pageGuest.waitForURL(/\/sessions$/)
 
     // 5) Host page should update participant count back to 1

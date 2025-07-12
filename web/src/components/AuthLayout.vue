@@ -54,6 +54,7 @@
                 @click="handleLogout"
                 :disabled="authStore.loading"
                 class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                data-testid="logout-button"
               >
                 {{ authStore.loading ? $t('auth.loggingOut') : $t('auth.logout') }}
               </button>

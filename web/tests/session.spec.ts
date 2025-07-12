@@ -17,8 +17,8 @@ const createSession = async (page: any, title: string): Promise<string> => {
   }, { timeout: 10000 })
 
   // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
-  const newSessionBtn = page.locator('button:has-text("Yeni Oturum")').first()
-  const firstSessionBtn = page.locator('button:has-text("İlk Oturumu Oluştur")').first()
+  const newSessionBtn = page.locator('[data-testid="create-session-button"]')
+  const firstSessionBtn = page.locator('[data-testid="create-first-session-button"]')
   
   // Hangisi görünürse onu kullan
   const btn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
@@ -40,7 +40,7 @@ const createSession = async (page: any, title: string): Promise<string> => {
 test.describe('Session – create & join', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    const guestBtn = page.locator('button:has-text("Misafir Olarak Giriş")')
+    const guestBtn = page.locator('[data-testid="guest-login-button"]')
     if (await guestBtn.isVisible()) {
       await guestBtn.click()
       await page.waitForURL(/\/sessions$/)
@@ -55,8 +55,8 @@ test.describe('Session – create & join', () => {
 
     // Session room yüklendi mi
     await expect(page).toHaveURL(url)
-    console.log('👥 Katılımcı başlığı kontrol ediliyor')
-    await expect(page.getByRole('heading', { name: /Katılımcılar/ })).toBeVisible()
+    console.log('👥 Katılımcı kontrol ediliyor')
+    await expect(page.locator('[data-testid="participant-item"]')).toHaveCount(1, { timeout: 10000 })
 
     // katılımcı listesinde kendimiz var mı
     console.log('🔎 Katılımcı listesinde kendimizi görüyoruz')

@@ -4,8 +4,8 @@ const TEST_VIDEO_URL = 'https://www.youtube.com/watch?v=cYgmnku6R3Y'
 
 // Helper function for finding create session button (matching session.spec.ts logic)
 async function findCreateSessionButton(page: any) {
-  const newSessionBtn = page.locator('button:has-text("Yeni Oturum")').first()
-  const firstSessionBtn = page.locator('button:has-text("İlk Oturumu Oluştur")').first()
+  const newSessionBtn = page.locator('[data-testid="create-session-button"]')
+  const firstSessionBtn = page.locator('[data-testid="create-first-session-button"]')
   
   // Hangisi görünürse onu kullan
   const btn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
@@ -21,7 +21,7 @@ test.describe('Video Sync – basic play / pause', () => {
     await page.goto('/')
     console.log('📍 Current URL after goto /:', page.url())
     
-    const guestBtn = page.locator('button:has-text("Misafir Olarak Giriş")')
+    const guestBtn = page.locator('[data-testid="guest-login-button"]')
     console.log('🔍 Looking for guest login button')
     if (await guestBtn.isVisible()) {
       console.log('✅ Guest button found, clicking')
@@ -54,7 +54,7 @@ test.describe('Video Sync – basic play / pause', () => {
     // Video URL input
     const input = page.locator('input[placeholder*="youtube"]').first()
     await input.fill(TEST_VIDEO_URL)
-    await page.locator('button:has-text("Ayarla")').click()
+    await page.locator('[data-testid="set-video-button"]').click()
 
     // iframe görünür olmalı
     const iframe = page.locator('iframe').first()

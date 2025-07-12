@@ -9,6 +9,13 @@ export interface VideoSyncEvent {
   timestamp: Date
 }
 
+export interface VideoSyncAuthoritativeEvent {
+  action: VideoAction
+  time: number
+  timestamp: Date
+  sourceUserId?: string | null
+}
+
 export const useVideoSyncStore = defineStore('videoSync', () => {
   // State
   const currentAction = ref<VideoAction>('pause')
@@ -24,6 +31,16 @@ export const useVideoSyncStore = defineStore('videoSync', () => {
     currentAction.value = event.action
     currentTime.value = event.time
     lastActionTimestamp.value = event.timestamp
+  }
+
+  const syncVideoAuthoritative = (event: VideoSyncAuthoritativeEvent) => {
+    console.log(`🎯 VideoSync: Applying authoritative state - ${event.action} at ${event.time}s`)
+    currentAction.value = event.action
+    currentTime.value = event.time
+    lastActionTimestamp.value = event.timestamp
+    
+    // This is the authoritative state from server, always apply it
+    // No need to emit any WebSocket messages - this prevents loops
   }
 
   const calculateCurrentTime = (): number => {
@@ -61,6 +78,7 @@ export const useVideoSyncStore = defineStore('videoSync', () => {
     isPlaying,
     // Actions
     syncVideo,
+    syncVideoAuthoritative,
     calculateCurrentTime,
     setCurrentTime,
     setAction,

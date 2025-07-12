@@ -87,6 +87,10 @@ export default async function websocketRoutes(
       if (sessionDeleted) {
         console.log(`🔚 Session ${sessionId} was DELETED - no participants remaining`);
         
+        // Clean up server video state
+        sessionVideoStates.delete(sessionId);
+        console.log(`🗑️ Removed video state for deleted session ${sessionId}`);
+        
         // Notify any remaining connections (shouldn't be any, but just in case)
         broadcastToSession(sessionId, 'session_ended', {
           reason: 'no_participants',
@@ -116,15 +120,57 @@ export default async function websocketRoutes(
     }
   };
 
+  // Server-side session video states (in-memory cache)
+  const sessionVideoStates = new Map<string, {
+    action: 'play' | 'pause' | 'seek';
+    time: number;
+    timestamp: Date;
+    lastMessageId?: string;
+  }>();
+
   // Message handlers
   const messageHandlers: Record<string, any> = {
-    video_action: async (socket: SocketStream, data: any, _userId: string, sessionId: string) => {
-      // Tüm session katılımcıları video kontrolü yapabilir
-      broadcastToSession(sessionId, 'video_sync', {
-        action: data.action,
-        time: data.time,
+    video_action: async (_socket: SocketStream, data: any, userId: string, sessionId: string) => {
+      // Server-Authoritative State Pattern: Server validates and broadcasts state
+      const { action, time, messageId } = data;
+      
+      if (!action || typeof time !== 'number') {
+        console.log(`❌ WebSocket: Invalid video_action data from ${userId}`);
+        return;
+      }
+      
+      console.log(`📨 WebSocket: Processing video_action from ${userId}: ${action} at ${time}s (messageId: ${messageId})`);
+      
+      // Get current server state
+      const currentState = sessionVideoStates.get(sessionId);
+      
+      // Deduplication: Skip if same messageId already processed
+      if (messageId && currentState?.lastMessageId === messageId) {
+        console.log(`🔄 WebSocket: Duplicate messageId ${messageId}, skipping`);
+        return;
+      }
+      
+      // Update server authoritative state
+      const newState = {
+        action: action as 'play' | 'pause' | 'seek',
+        time: Math.max(0, time), // Ensure non-negative time
         timestamp: new Date(),
-      }, socket);
+        lastMessageId: messageId,
+      };
+      
+      sessionVideoStates.set(sessionId, newState);
+      console.log(`📊 WebSocket: Server state updated for session ${sessionId}: ${action} at ${time}s`);
+      
+      // Broadcast authoritative state to ALL participants (including sender)
+      // This ensures everyone has the same state, preventing echo loops
+      broadcastToSession(sessionId, 'video_sync_authoritative', {
+        action: newState.action,
+        time: newState.time,
+        timestamp: newState.timestamp,
+        sourceUserId: userId, // For UI feedback
+      }); // NOTE: No excludeSocket - everyone gets authoritative state
+      
+      console.log(`✅ WebSocket: Authoritative state broadcasted to session ${sessionId}`);
     },
     chat: async (_socket: SocketStream, data: any, userId: string, sessionId: string) => {
       if (data.message && data.message.trim().length > 0) {
@@ -217,11 +263,21 @@ export default async function websocketRoutes(
             videoDuration: updatedSession.videoDuration,
           });
 
-          // Send current video sync state
-          sendMessage(socket, 'video_sync', {
-            action: updatedSession.lastAction,
-            time: updatedSession.lastActionTimeAsSecond,
-            timestamp: updatedSession.lastActionTimestamp,
+          // Initialize server video state if not exists and send authoritative state
+          if (!sessionVideoStates.has(sessionId)) {
+            sessionVideoStates.set(sessionId, {
+              action: updatedSession.lastAction as 'play' | 'pause' | 'seek',
+              time: updatedSession.lastActionTimeAsSecond,
+              timestamp: updatedSession.lastActionTimestamp || new Date(),
+            });
+          }
+          
+          const currentVideoState = sessionVideoStates.get(sessionId)!;
+          sendMessage(socket, 'video_sync_authoritative', {
+            action: currentVideoState.action,
+            time: currentVideoState.time,
+            timestamp: currentVideoState.timestamp,
+            sourceUserId: null, // Initial state, no source user
           });
         }
 

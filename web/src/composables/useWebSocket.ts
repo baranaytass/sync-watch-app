@@ -81,6 +81,10 @@ export const useWebSocket = (sessionId: string) => {
         handleVideoSync(message.data)
         break
         
+      case 'video_sync_authoritative':
+        handleVideoSyncAuthoritative(message.data)
+        break
+        
       case 'video_update':
         handleVideoUpdate(message.data)
         break
@@ -145,6 +149,16 @@ export const useWebSocket = (sessionId: string) => {
       action: data.action,
       time: data.time,
       timestamp: new Date(data.timestamp)
+    })
+  }
+
+  const handleVideoSyncAuthoritative = (data: any) => {
+    console.log(`🎥 WebSocket: Authoritative video sync - ${data.action} at ${data.time}s (from: ${data.sourceUserId || 'server'})`)
+    videoSyncStore.syncVideoAuthoritative({
+      action: data.action,
+      time: data.time,
+      timestamp: new Date(data.timestamp),
+      sourceUserId: data.sourceUserId
     })
   }
 
@@ -280,10 +294,16 @@ export const useWebSocket = (sessionId: string) => {
     window.removeEventListener('pagehide', handlePageHide)
   }
 
+  // Generate unique message ID for deduplication
+  const generateMessageId = (): string => {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
   // Public API
   const sendVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
-    console.log(`🎥 WebSocket: Sending video action: ${action} at ${time}s`)
-    sendMessage('video_action', { action, time })
+    const messageId = generateMessageId()
+    console.log(`🎥 WebSocket: Sending video action: ${action} at ${time}s (messageId: ${messageId})`)
+    sendMessage('video_action', { action, time, messageId })
   }
 
   const sendChatMessage = (message: string) => {

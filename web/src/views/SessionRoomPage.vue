@@ -41,6 +41,7 @@
               <button
                 @click="handleLeaveSession"
                 class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                data-testid="leave-session-button"
               >
                 <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -303,7 +304,7 @@ const handleTimeUpdate = (currentTime: number) => {
   // Sadece log level olarak tutuyoruz şimdilik
 }
 
-// Watch for video sync events and forward them to VideoPlayer
+// Watch for authoritative video sync events and forward them to VideoPlayer
 watch(
   () => videoSyncStore.lastActionTimestamp,
   (newTimestamp) => {
@@ -311,9 +312,9 @@ watch(
       const action = videoSyncStore.currentAction
       const time = videoSyncStore.currentTime
       
-      console.log(`🔄 SessionRoom: Forwarding sync to VideoPlayer - ${action} at ${time}s`)
+      console.log(`🔄 SessionRoom: Forwarding authoritative sync to VideoPlayer - ${action} at ${time}s`)
       
-      // Call syncVideo method on VideoPlayer
+      // Call syncVideo method on VideoPlayer (authoritative state from server)
       if ('syncVideo' in videoPlayerRef.value) {
         videoPlayerRef.value.syncVideo(action, time)
       }

@@ -27,6 +27,7 @@
           v-for="participant in sortedParticipants"
           :key="participant.userId"
           class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+          data-testid="participant-item"
         >
           <!-- Avatar -->
           <div class="relative flex-shrink-0">

@@ -9,7 +9,7 @@ test.describe('Auth – Guest Login/Logout', () => {
     await page.goto('/login')
 
     // Misafir giriş butonu görünür
-    const guestButton = page.locator('button:has-text("Misafir Olarak Giriş")')
+    const guestButton = page.locator('[data-testid="guest-login-button"]')
     await expect(guestButton).toBeVisible()
 
     console.log('🔑 Misafir butonuna tıklanıyor')
@@ -18,8 +18,8 @@ test.describe('Auth – Guest Login/Logout', () => {
     await page.waitForURL(/\/sessions$/)
     console.log('✅ Oturum açıldı, sessions sayfasındayız')
 
-    // Kullanıcı adını navbar'da gör
-    await expect(page.locator('nav >> text=Misafir')).toBeVisible()
+    // Kullanıcı adını navbar'da gör (text dil bağımsız kontrol)
+    await expect(page.locator('nav').locator('text=Misafir')).toBeVisible()
 
     // Cookie set edildi mi
     const cookies = await page.context().cookies()
@@ -29,7 +29,7 @@ test.describe('Auth – Guest Login/Logout', () => {
 
     // Logout
     console.log('🚪 Çıkış butonuna tıklanıyor')
-    await page.locator('text=Çıkış').click()
+    await page.locator('[data-testid="logout-button"]').click()
     await page.waitForURL('/login')
 
     // Cookie silindi mi

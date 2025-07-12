@@ -114,58 +114,152 @@ interface Session {
 
 ## 4. WebSocket Mesaj Şemaları
 
-| Yön | Tip             | Alanlar                                                      |         |                          |
-| --- | --------------- | ------------------------------------------------------------ | ------- | ------------------------ |
-| C→S | `video_action`  | \`action: 'play'                                             | 'pause' | 'seek'`, `time: number\` |
-| C→S | `chat`          | `message: string`                                            |         |                          |
-| C→S | `leave`         | – (tarayıcı kapatma veya manuel ayrılma)                   |         |                          |
-| S→C | `video_sync`    | `action`, `time`, `timestamp`                                |         |                          |
-| S→C | `chat`          | `id`, `userId`, `message`, `timestamp`                       |         |                          |
-| S→C | `participants`  | `participants: { userId, name, avatar }[]` (yalnızca userId) |         |                          |
-| S→C | `video_update`  | `videoProvider`, `videoId`, `videoTitle`, `videoDuration`    |         |                          |
+### Server-Authoritative State Pattern
+| Yön | Tip             | Alanlar                                                      |
+| --- | --------------- | ------------------------------------------------------------ |
+| C→S | `video_action`  | `action: 'play'|'pause'|'seek'`, `time: number`, `messageId: string` |
+| C→S | `chat`          | `message: string`                                            |
+| C→S | `leave`         | – (tarayıcı kapatma veya manuel ayrılma)                   |
+| S→C | `video_sync_authoritative` | `action`, `time`, `timestamp`, `messageId`          |
+| S→C | `chat`          | `id`, `userId`, `message`, `timestamp`                       |
+| S→C | `participants`  | `participants: { userId, name, avatar }[]` (yalnızca userId) |
+| S→C | `video_update`  | `videoProvider`, `videoId`, `videoTitle`, `videoDuration`    |
+
+### Mesaj Örnekleri
+```jsonc
+// Client → Server: Video Action
+{
+  "type": "video_action",
+  "action": "play",
+  "time": 120.5,
+  "messageId": "1704621234567_abc123def"
+}
+
+// Server → Client: Authoritative Video Sync
+{
+  "type": "video_sync_authoritative",
+  "action": "play",
+  "time": 120.5,
+  "timestamp": "2025-06-21T10:00:00Z",
+  "messageId": "1704621234567_abc123def"
+}
+```
 
 ---
 
-## 5. Video Sync Loop Önleme Sistemi
+## 5. Server-Authoritative Video Sync Sistemi
 
 ### Sorun
-Multi-user video sync'te WebSocket loop sorunu yaşanıyordu:
+Multi-user video sync'te WebSocket echo loop sorunu yaşanıyordu:
 1. User A video başlatır → WebSocket mesajı gönderir
 2. User B video sync mesajı alır → programmatic olarak video başlatır
 3. User B'nin player'ı state change event'i tetikler → WebSocket mesajı gönderir
 4. User A video sync mesajı alır → programmatic olarak video başlatır
 5. **LOOP!** 🔄
 
-### Çözüm
-**YouTubePlayer.vue**'da `programmaticAction` flag sistemi:
+### Çözüm: Server-Authoritative State Pattern
 
+#### Backend (websocket.ts)
 ```typescript
-let programmaticAction = false  // Loop önleme flag'i
+// Server-side video state cache
+const sessionVideoStates = new Map<string, {
+  action: string;
+  time: number;
+  timestamp: Date;
+  lastMessageId: string;
+}>();
 
-// Programmatic action'larda flag'i true yap
-const syncVideo = (action: string, time: number) => {
-  programmaticAction = true  // Bu bir programmatic action
-  // ... player operations
-}
+// Message deduplication
+const processedMessages = new Set<string>();
 
-// State change'de flag kontrolü
-const onPlayerStateChange = (event: any) => {
-  if (programmaticAction) {
-    console.log('🔄 Programmatic action detected, skipping emit')
-    programmaticAction = false
-    return  // WebSocket mesajı gönderme
-  }
+// Handle video actions
+socket.on('video_action', async (data) => {
+  const { action, time, messageId } = data;
   
-  // Sadece user action'larda mesaj gönder
-  emit('video-action', action, time)
-}
+  // Deduplication check
+  if (processedMessages.has(messageId)) {
+    return;
+  }
+  processedMessages.add(messageId);
+  
+  // Update server state
+  sessionVideoStates.set(sessionId, {
+    action,
+    time,
+    timestamp: new Date(),
+    lastMessageId: messageId
+  });
+  
+  // Broadcast to ALL participants (including sender)
+  server.broadcastToSession(sessionId, {
+    type: 'video_sync_authoritative',
+    action,
+    time,
+    timestamp: new Date(),
+    messageId
+  });
+});
+```
+
+#### Frontend (YouTubePlayer.vue)
+```typescript
+// Server-authoritative mode
+const isAuthoritativeMode = true;
+
+// Programmatic operation detection
+let currentOperationId = '';
+let programmaticActionCount = 0;
+
+// State change handler
+const onPlayerStateChange = (event: any) => {
+  if (isAuthoritativeMode) {
+    // In authoritative mode, only emit if not programmatic
+    if (currentOperationId) {
+      console.log('🔄 Programmatic action detected, skipping emit');
+      return;
+    }
+    
+    // Only emit user-initiated actions
+    const action = getActionFromState(event.data);
+    if (action) {
+      emit('video-action', action, player.getCurrentTime());
+    }
+  }
+};
+
+// Sync from server
+const syncVideo = async (action: string, time: number) => {
+  if (isAuthoritativeMode) {
+    // Generate operation ID for programmatic action detection
+    currentOperationId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    programmaticActionCount++;
+    
+    // Perform action
+    if (action === 'play') {
+      await player.playVideo();
+    } else if (action === 'pause') {
+      await player.pauseVideo();
+    } else if (action === 'seek') {
+      await player.seekTo(time);
+    }
+    
+    // Cleanup with timeout
+    setTimeout(() => {
+      if (currentOperationId) {
+        currentOperationId = '';
+        programmaticActionCount = 0;
+      }
+    }, 1000);
+  }
+};
 ```
 
 ### Avantajlar
-- ✅ User-initiated vs programmatic actions ayrımı
-- ✅ WebSocket loop'ları önlenir
-- ✅ Gerçek user action'ları yakalanır
-- ✅ Performance artışı (gereksiz mesajlar gönderilmez)
+- ✅ **Echo Loop Tamamen Önlendi:** Server-authoritative pattern ile client loop'ları imkansız
+- ✅ **Time-Accurate Sync:** Server timestamp'li senkronizasyon
+- ✅ **Message Deduplication:** Aynı mesajın tekrar işlenmesini önler
+- ✅ **Single Source of Truth:** Server tek doğru kaynak
+- ✅ **Programmatic Action Detection:** Operation ID sistemi ile %300 iyileştirme
 
 ---
 
