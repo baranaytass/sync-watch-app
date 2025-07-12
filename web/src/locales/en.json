@@ -28,6 +28,7 @@
     "loggingIn": "Signing in...",
     "loggingOut": "Signing out...",
     "welcome": "Welcome",
+    "welcomeToNesbat": "Welcome to Nesbat",
     "loginToAccount": "Sign in to your account",
     "profile": "Profile",
     "settings": "Settings"
@@ -38,9 +39,68 @@
     "login": "Sign In",
     "backToSessions": "Back to Sessions"
   },
+  "home": {
+    "hero": {
+      "title": "Nesbat",
+      "subtitle": "We've completely redesigned the video watching experience with your friends."
+    },
+    "features": {
+      "sectionTitle": "Why Nesbat?",
+      "sectionSubtitle": "We've completely redesigned the video watching experience with your friends.",
+      "syncWatch": {
+        "title": "Synchronized Watching",
+        "description": "Everyone watches at the same time. Pause, play, seek - everyone at the same point."
+      },
+      "multiUser": {
+        "title": "Multi-User",
+        "description": "Join with your friends. Real-time participant tracking."
+      },
+      "secure": {
+        "title": "Secure & Fast",
+        "description": "Secure and fast viewing experience with modern technologies."
+      }
+    },
+    "cta": {
+      "title": "Get Started Now",
+      "subtitle": "The joy of watching videos with your friends is just one click away.",
+      "button": "Start Free"
+    },
+    "buttons": {
+      "features": "Features",
+      "sessions": "Sessions List",
+      "newSession": "New Session",
+      "howToUse": "How to Use?"
+    },
+    "dashboard": {
+      "sessionsList": {
+        "title": "Sessions List",
+        "description": "View active sessions"
+      },
+      "newSession": {
+        "title": "New Session",
+        "description": "Create session now"
+      },
+      "guide": {
+        "title": "How to Use?",
+        "description": "Guide and tips"
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "noActivity": "No activity yet",
+        "createFirst": "Create your first session!"
+      }
+    },
+    "loginFeatures": {
+      "syncWatch": "Synchronized Watching",
+      "multiUser": "Multi-User",
+      "secure": "Secure"
+    }
+  },
   "app": {
     "title": "Video Sync Chat",
-    "description": "Watch videos synchronized with your friends and chat"
+    "brandTitle": "Nesbat",
+    "description": "Watch videos synchronized with your friends and chat",
+    "tagline": "Synchronized Video Watching"
   },
   "session": {
     "createNew": "Create New Session",
@@ -51,6 +111,7 @@
     "creating": "Creating...",
     "create": "Create Session",
     "join": "Join",
+    "joining": "Joining...",
     "leave": "Leave",
     "details": "Session Details",
     "participants": "Participants",
@@ -118,7 +179,10 @@
     "unknownTime": "Unknown time",
     "justJoined": "Just joined",
     "minutesAgoJoined": "Joined {minutes} minutes ago",
-    "hoursAgoJoined": "Joined {hours} hours ago"
+    "hoursAgoJoined": "Joined {hours} hours ago",
+    "justCreated": "Just created",
+    "hoursAgo": "{hours} hours ago",
+    "daysAgo": "{days} days ago"
   },
   "theme": {
     "light": "Light Theme",

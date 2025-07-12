@@ -28,6 +28,7 @@
     "loggingIn": "Giriş yapılıyor...",
     "loggingOut": "Çıkış yapılıyor...",
     "welcome": "Hoş geldin",
+    "welcomeToNesbat": "Nesbat'a Hoş Geldin",
     "loginToAccount": "Hesabınıza giriş yapın",
     "profile": "Profil",
     "settings": "Ayarlar"
@@ -38,9 +39,68 @@
     "login": "Giriş Yap",
     "backToSessions": "Oturumlara Dön"
   },
+  "home": {
+    "hero": {
+      "title": "Nesbat",
+      "subtitle": "Arkadaşlarınızla birlikte video izleme deneyimini tamamen yeniden tasarladık."
+    },
+    "features": {
+      "sectionTitle": "Neden Nesbat?",
+      "sectionSubtitle": "Arkadaşlarınızla birlikte video izleme deneyimini tamamen yeniden tasarladık.",
+      "syncWatch": {
+        "title": "Senkronize İzleme",
+        "description": "Herkes aynı anda izliyor. Duraklat, oynat, sar - herkes aynı noktada."
+      },
+      "multiUser": {
+        "title": "Çoklu Kullanıcı",
+        "description": "Arkadaşlarınızla birlikte katılın. Gerçek zamanlı katılımcı takibi."
+      },
+      "secure": {
+        "title": "Güvenli & Hızlı",
+        "description": "Modern teknolojilerle güvenli ve hızlı izleme deneyimi."
+      }
+    },
+    "cta": {
+      "title": "Hemen Başlayın",
+      "subtitle": "Arkadaşlarınızla video izleme keyfi sadece bir tık uzakta.",
+      "button": "Ücretsiz Başlayın"
+    },
+    "buttons": {
+      "features": "Özellikler",
+      "sessions": "Oturum Listesi",
+      "newSession": "Yeni Oturum",
+      "howToUse": "Nasıl Kullanılır?"
+    },
+    "dashboard": {
+      "sessionsList": {
+        "title": "Oturum Listesi",
+        "description": "Aktif oturumları görüntüle"
+      },
+      "newSession": {
+        "title": "Yeni Oturum",
+        "description": "Hemen oturum oluştur"
+      },
+      "guide": {
+        "title": "Nasıl Kullanılır?",
+        "description": "Rehber ve ipuçları"
+      },
+      "recentActivity": {
+        "title": "Son Aktiviteler",
+        "noActivity": "Henüz aktivite yok",
+        "createFirst": "İlk oturumunuzu oluşturun!"
+      }
+    },
+    "loginFeatures": {
+      "syncWatch": "Senkronize İzleme",
+      "multiUser": "Çoklu Kullanıcı",
+      "secure": "Güvenli"
+    }
+  },
   "app": {
     "title": "Video Sync Chat",
-    "description": "Videoları arkadaşlarınla senkronize izle ve sohbet et"
+    "brandTitle": "Nesbat",
+    "description": "Videoları arkadaşlarınla senkronize izle ve sohbet et",
+    "tagline": "Senkronize Video İzleme"
   },
   "session": {
     "createNew": "Yeni Oturum Oluştur",
@@ -51,6 +111,7 @@
     "creating": "Oluşturuluyor...",
     "create": "Oturum Oluştur",
     "join": "Katıl",
+    "joining": "Katılınıyor...",
     "leave": "Ayrıl",
     "details": "Oturum Bilgileri",
     "participants": "Katılımcılar",
@@ -118,7 +179,10 @@
     "unknownTime": "Bilinmeyen zaman",
     "justJoined": "Az önce katıldı",
     "minutesAgoJoined": "{minutes} dakika önce katıldı",
-    "hoursAgoJoined": "{hours} saat önce katıldı"
+    "hoursAgoJoined": "{hours} saat önce katıldı",
+    "justCreated": "Az önce oluşturuldu",
+    "hoursAgo": "{hours} saat önce",
+    "daysAgo": "{days} gün önce"
   },
   "theme": {
     "light": "Açık Tema",

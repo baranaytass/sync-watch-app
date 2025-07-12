@@ -9,10 +9,10 @@
             <img src="@/assets/nesbat-logo.svg" alt="Nesbat Logo" class="h-20 w-auto">
           </div>
           <h1 class="text-4xl md:text-6xl font-bold text-foreground mb-6">
-            {{ $t('app.title') }}
+            {{ $t('home.hero.title') }}
           </h1>
           <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            {{ $t('app.description') }}
+            {{ $t('home.hero.subtitle') }}
           </p>
           
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -26,7 +26,7 @@
               href="#features"
               class="nesbat-button-secondary text-base px-8 py-3"
             >
-              Özellikler
+              {{ $t('home.buttons.features') }}
             </a>
           </div>
         </div>
@@ -38,10 +38,10 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h2 class="text-3xl font-bold text-foreground mb-4">
-            Neden Nesbat?
+            {{ $t('home.features.sectionTitle') }}
           </h2>
           <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Arkadaşlarınızla birlikte video izleme deneyimini tamamen yeniden tasarladık.
+            {{ $t('home.features.sectionSubtitle') }}
           </p>
         </div>
         
@@ -52,9 +52,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 class="text-xl font-semibold text-foreground mb-2">Senkronize İzleme</h3>
+            <h3 class="text-xl font-semibold text-foreground mb-2">{{ $t('home.features.syncWatch.title') }}</h3>
             <p class="text-muted-foreground">
-              Herkes aynı anda izliyor. Duraklat, oynat, sar - herkes aynı noktada.
+              {{ $t('home.features.syncWatch.description') }}
             </p>
           </div>
           
@@ -64,9 +64,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 class="text-xl font-semibold text-foreground mb-2">Çoklu Kullanıcı</h3>
+            <h3 class="text-xl font-semibold text-foreground mb-2">{{ $t('home.features.multiUser.title') }}</h3>
             <p class="text-muted-foreground">
-              Arkadaşlarınızla birlikte katılın. Gerçek zamanlı katılımcı takibi.
+              {{ $t('home.features.multiUser.description') }}
             </p>
           </div>
           
@@ -76,9 +76,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h3 class="text-xl font-semibold text-foreground mb-2">Güvenli & Hızlı</h3>
+            <h3 class="text-xl font-semibold text-foreground mb-2">{{ $t('home.features.secure.title') }}</h3>
             <p class="text-muted-foreground">
-              Modern teknolojilerle güvenli ve hızlı izleme deneyimi.
+              {{ $t('home.features.secure.description') }}
             </p>
           </div>
         </div>
@@ -89,16 +89,16 @@
     <div class="py-16">
       <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-foreground mb-4">
-          Hemen Başlayın
+          {{ $t('home.cta.title') }}
         </h2>
         <p class="text-lg text-muted-foreground mb-8">
-          Arkadaşlarınızla video izleme keyfi sadece bir tık uzakta.
+          {{ $t('home.cta.subtitle') }}
         </p>
         <router-link
           to="/login"
           class="nesbat-button text-lg px-8 py-4"
         >
-          Ücretsiz Başlayın
+          {{ $t('home.cta.button') }}
         </router-link>
       </div>
     </div>
@@ -142,8 +142,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="font-semibold text-foreground">Oturum Listesi</h3>
-              <p class="text-sm text-muted-foreground">Aktif oturumları görüntüle</p>
+              <h3 class="font-semibold text-foreground">{{ $t('home.dashboard.sessionsList.title') }}</h3>
+              <p class="text-sm text-muted-foreground">{{ $t('home.dashboard.sessionsList.description') }}</p>
             </div>
           </div>
         </div>
@@ -156,8 +156,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="font-semibold text-foreground">Yeni Oturum</h3>
-              <p class="text-sm text-muted-foreground">Hemen oturum oluştur</p>
+              <h3 class="font-semibold text-foreground">{{ $t('home.dashboard.newSession.title') }}</h3>
+              <p class="text-sm text-muted-foreground">{{ $t('home.dashboard.newSession.description') }}</p>
             </div>
           </div>
         </div>
@@ -170,8 +170,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="font-semibold text-foreground">Nasıl Kullanılır?</h3>
-              <p class="text-sm text-muted-foreground">Rehber ve ipuçları</p>
+              <h3 class="font-semibold text-foreground">{{ $t('home.dashboard.guide.title') }}</h3>
+              <p class="text-sm text-muted-foreground">{{ $t('home.dashboard.guide.description') }}</p>
             </div>
           </div>
         </div>
@@ -179,13 +179,13 @@
 
       <!-- Recent Activity -->
       <div class="nesbat-card p-6">
-        <h2 class="text-lg font-semibold text-foreground mb-4">Son Aktiviteler</h2>
+        <h2 class="text-lg font-semibold text-foreground mb-4">{{ $t('home.dashboard.recentActivity.title') }}</h2>
         <div class="text-center py-8">
           <svg class="w-12 h-12 mx-auto text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          <p class="text-muted-foreground">Henüz aktivite yok</p>
-          <p class="text-sm text-muted-foreground">İlk oturumunuzu oluşturun!</p>
+          <p class="text-muted-foreground">{{ $t('home.dashboard.recentActivity.noActivity') }}</p>
+          <p class="text-sm text-muted-foreground">{{ $t('home.dashboard.recentActivity.createFirst') }}</p>
         </div>
       </div>
     </div>
