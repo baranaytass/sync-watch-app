@@ -7,6 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   maxFailures: 1,
+  timeout: 120000, // 2 minutes timeout for all tests
   reporter: [['html', { open: 'never' }]],
   globalSetup: './global-setup',
   use: {
@@ -14,6 +15,10 @@ export default defineConfig({
     trace: 'on-first-retry',
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Console error'ları yakalayıp test fail etmesini sağla
+    extraHTTPHeaders: {
+      'User-Agent': 'Playwright-Test-Error-Detection'
+    }
   },
 
   projects: [

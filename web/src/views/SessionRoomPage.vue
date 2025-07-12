@@ -223,18 +223,12 @@ const loadSession = async () => {
     loading.value = true
     error.value = null
     
-    console.log(`📋 SessionRoom: Loading session ${props.id}`)
-    
-    // Join session via API (authentication required)
-    
     // Fetch session & establish websocket connection
     await sessionsStore.joinSession(props.id)
     await connect()
     
-    console.log(`✅ SessionRoom: Session ${props.id} loaded successfully`)
-    
   } catch (err: any) {
-    console.error('❌ SessionRoom: Failed to load session:', err)
+    console.error('SessionRoom: Failed to load session:', err)
     error.value = err.response?.data?.message || t('session.errors.loadFailed')
   } finally {
     loading.value = false
@@ -243,8 +237,6 @@ const loadSession = async () => {
 
 const handleLeaveSession = async () => {
   try {
-    console.log(`🚪 SessionRoom: Leaving session ${props.id}`)
-    
     // Close WebSocket connection
     await leaveSessionWS()
     
@@ -253,10 +245,8 @@ const handleLeaveSession = async () => {
     
     // Navigate back to sessions
     await router.push('/sessions')
-    
-    console.log(`✅ SessionRoom: Left session ${props.id}`)
   } catch (err) {
-    console.error('❌ SessionRoom: Error leaving session:', err)
+    console.error('SessionRoom: Error leaving session:', err)
   }
 }
 
@@ -273,17 +263,9 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
   }
 }
 
+// Video action handler
 const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
-  console.log(`🎬 SessionRoom: Received video action from VideoPlayer - ${action} at ${time}s`)
-  
-  console.log(`🎬 SessionRoom: USER is sending video action via WebSocket - ${action} at ${time}s`)
-  
-  // Tüm kullanıcıların video action'ları WebSocket üzerinden diğer kullanıcılara gönderilir
   sendVideoAction(action, time)
-  
-  // Video sync store'u güncelle
-  videoSyncStore.setAction(action)
-  videoSyncStore.setCurrentTime(time)
 }
 
 const handleVideoReady = () => {
@@ -311,8 +293,6 @@ watch(
     if (newTimestamp && videoPlayerRef.value) {
       const action = videoSyncStore.currentAction
       const time = videoSyncStore.currentTime
-      
-      console.log(`🔄 SessionRoom: Forwarding authoritative sync to VideoPlayer - ${action} at ${time}s`)
       
       // Call syncVideo method on VideoPlayer (authoritative state from server)
       if ('syncVideo' in videoPlayerRef.value) {

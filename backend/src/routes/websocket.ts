@@ -37,8 +37,15 @@ export default async function websocketRoutes(
   // Use global broadcastToSession function
   const broadcastToSession = (fastify as any).broadcastToSession as (sessionId: string, type: string, data: any, excludeSocket?: SocketStream) => void;
 
-  console.log('🔧 WebSocket: Using global broadcastToSession decorator');
-  console.log('✅ WebSocket: Global broadcastToSession is available:', typeof broadcastToSession === 'function');
+  // Debug logging control - only for advanced tests
+  const isDebugMode = () => {
+    return process.env.NODE_ENV === 'development' || process.env.DEBUG_WEBSOCKET === 'true';
+  }
+
+  if (isDebugMode()) {
+    console.log('🔧 WebSocket: Using global broadcastToSession decorator');
+    console.log('✅ WebSocket: Global broadcastToSession is available:', typeof broadcastToSession === 'function');
+  }
 
   // Connection cleanup
   const cleanupConnection = (socket: SocketStream): void => {
@@ -66,30 +73,42 @@ export default async function websocketRoutes(
     const sessionId = socketToSession.get(socket);
     const userId = socketToUser.get(socket);
 
-    console.log(`🚪 handleUserLeave called - sessionId: ${sessionId}, userId: ${userId}`);
+    if (isDebugMode()) {
+      console.log(`🚪 handleUserLeave called - sessionId: ${sessionId}, userId: ${userId}`);
+    }
 
     if (!sessionId || !userId) {
-      console.log(`⚠️ handleUserLeave: Missing sessionId or userId`);
+      if (isDebugMode()) {
+        console.log(`⚠️ handleUserLeave: Missing sessionId or userId`);
+      }
       return;
     }
 
     try {
-      console.log(`🧹 Cleaning up connection for user ${userId} in session ${sessionId}`);
+      if (isDebugMode()) {
+        console.log(`🧹 Cleaning up connection for user ${userId} in session ${sessionId}`);
+      }
       
       // Clean up connection mapping first
       cleanupConnection(socket);
 
-      console.log(`📤 Calling sessionService.leaveSession(${sessionId}, ${userId})`);
+      if (isDebugMode()) {
+        console.log(`📤 Calling sessionService.leaveSession(${sessionId}, ${userId})`);
+      }
       
       // Remove user from session in database
       const sessionDeleted = await sessionService.leaveSession(sessionId, userId);
 
       if (sessionDeleted) {
-        console.log(`🔚 Session ${sessionId} was DELETED - no participants remaining`);
+        if (isDebugMode()) {
+          console.log(`🔚 Session ${sessionId} was DELETED - no participants remaining`);
+        }
         
         // Clean up server video state
         sessionVideoStates.delete(sessionId);
-        console.log(`🗑️ Removed video state for deleted session ${sessionId}`);
+        if (isDebugMode()) {
+          console.log(`🗑️ Removed video state for deleted session ${sessionId}`);
+        }
         
         // Notify any remaining connections (shouldn't be any, but just in case)
         broadcastToSession(sessionId, 'session_ended', {
@@ -97,12 +116,16 @@ export default async function websocketRoutes(
           message: 'Session ended - no participants remaining'
         });
       } else {
-        console.log(`✅ Session ${sessionId} still active - updating participants`);
+        if (isDebugMode()) {
+          console.log(`✅ Session ${sessionId} still active - updating participants`);
+        }
         
         // Update participant list for remaining users
         const session = await sessionService.getSessionById(sessionId);
         if (session) {
-          console.log(`📤 Broadcasting updated participants to session ${sessionId}`);
+          if (isDebugMode()) {
+            console.log(`📤 Broadcasting updated participants to session ${sessionId}`);
+          }
           broadcastToSession(sessionId, 'participants', {
             participants: session.participants.map(p => ({
               userId: p.userId,
@@ -111,7 +134,9 @@ export default async function websocketRoutes(
             })),
           });
         } else {
-          console.log(`⚠️ Could not get session ${sessionId} after leave`);
+          if (isDebugMode()) {
+            console.log(`⚠️ Could not get session ${sessionId} after leave`);
+          }
         }
       }
 
@@ -135,18 +160,24 @@ export default async function websocketRoutes(
       const { action, time, messageId } = data;
       
       if (!action || typeof time !== 'number') {
-        console.log(`❌ WebSocket: Invalid video_action data from ${userId}`);
+        if (isDebugMode()) {
+          console.log(`❌ WebSocket: Invalid video_action data from ${userId}`);
+        }
         return;
       }
       
-      console.log(`📨 WebSocket: Processing video_action from ${userId}: ${action} at ${time}s (messageId: ${messageId})`);
+      if (isDebugMode()) {
+        console.log(`📨 WebSocket: Processing video_action from ${userId}: ${action} at ${time}s (messageId: ${messageId})`);
+      }
       
       // Get current server state
       const currentState = sessionVideoStates.get(sessionId);
       
       // Deduplication: Skip if same messageId already processed
       if (messageId && currentState?.lastMessageId === messageId) {
-        console.log(`🔄 WebSocket: Duplicate messageId ${messageId}, skipping`);
+        if (isDebugMode()) {
+          console.log(`🔄 WebSocket: Duplicate messageId ${messageId}, skipping`);
+        }
         return;
       }
       
@@ -159,7 +190,9 @@ export default async function websocketRoutes(
       };
       
       sessionVideoStates.set(sessionId, newState);
-      console.log(`📊 WebSocket: Server state updated for session ${sessionId}: ${action} at ${time}s`);
+      if (isDebugMode()) {
+        console.log(`📊 WebSocket: Server state updated for session ${sessionId}: ${action} at ${time}s`);
+      }
       
       // Broadcast authoritative state to ALL participants (including sender)
       // This ensures everyone has the same state, preventing echo loops
@@ -170,7 +203,9 @@ export default async function websocketRoutes(
         sourceUserId: userId, // For UI feedback
       }); // NOTE: No excludeSocket - everyone gets authoritative state
       
-      console.log(`✅ WebSocket: Authoritative state broadcasted to session ${sessionId}`);
+      if (isDebugMode()) {
+        console.log(`✅ WebSocket: Authoritative state broadcasted to session ${sessionId}`);
+      }
     },
     chat: async (_socket: SocketStream, data: any, userId: string, sessionId: string) => {
       if (data.message && data.message.trim().length > 0) {
@@ -202,9 +237,13 @@ export default async function websocketRoutes(
       if (!token) throw new Error('No token provided');
       const decoded = fastify.jwt.verify(token) as any;
       user = { userId: decoded.userId, email: decoded.email };
-      console.log(`🔐 WebSocket auth successful for user ${user.userId} in session ${sessionId}`);
+      if (isDebugMode()) {
+        console.log(`🔐 WebSocket auth successful for user ${user.userId} in session ${sessionId}`);
+      }
     } catch (err) {
-      console.log('❌ WebSocket auth failed');
+      if (isDebugMode()) {
+        console.log('❌ WebSocket auth failed');
+      }
       sendMessage(socket, 'error', { message: 'Authentication required' });
       // Use socket.destroy() instead of connection.end()
       const ws: any = (socket as any).socket ?? socket;
@@ -220,7 +259,9 @@ export default async function websocketRoutes(
       // Check if session exists and user can join
       const session = await sessionService.getSessionById(sessionId, userId);
       if (!session) {
-        console.log(`❌ WebSocket: Session ${sessionId} not found or not accessible`);
+        if (isDebugMode()) {
+          console.log(`❌ WebSocket: Session ${sessionId} not found or not accessible`);
+        }
         sendMessage(socket, 'error', { message: 'Session not found or not accessible' });
         const ws: any = (socket as any).socket ?? socket;
         if (ws && ws.close) {
@@ -240,7 +281,9 @@ export default async function websocketRoutes(
       socketToSession.set(socket, sessionId);
       socketToUser.set(socket, userId);
 
-      console.log(`✅ WebSocket: User ${userId} connected to session ${sessionId}`);
+      if (isDebugMode()) {
+        console.log(`✅ WebSocket: User ${userId} connected to session ${sessionId}`);
+      }
 
       // Send current session state to new connection
       const updatedSession = await sessionService.getSessionById(sessionId, userId);
@@ -263,20 +306,38 @@ export default async function websocketRoutes(
             videoDuration: updatedSession.videoDuration,
           });
 
-          // Initialize server video state if not exists and send authoritative state
+          // Calculate current time based on last action and elapsed time
+          const calculateCurrentTime = (lastAction: string, lastActionTime: number, lastActionTimestamp: Date): number => {
+            if (lastAction === 'play' && lastActionTimestamp) {
+              const now = new Date();
+              const elapsedSeconds = (now.getTime() - lastActionTimestamp.getTime()) / 1000;
+              return Math.max(0, lastActionTime + elapsedSeconds);
+            }
+            return lastActionTime;
+          };
+
+          const currentTime = calculateCurrentTime(
+            updatedSession.lastAction,
+            updatedSession.lastActionTimeAsSecond,
+            updatedSession.lastActionTimestamp || new Date()
+          );
+
+          // Initialize server video state if not exists
           if (!sessionVideoStates.has(sessionId)) {
             sessionVideoStates.set(sessionId, {
               action: updatedSession.lastAction as 'play' | 'pause' | 'seek',
-              time: updatedSession.lastActionTimeAsSecond,
-              timestamp: updatedSession.lastActionTimestamp || new Date(),
+              time: currentTime,
+              timestamp: new Date(),
             });
           }
           
           const currentVideoState = sessionVideoStates.get(sessionId)!;
+          
+          // Send authoritative state with calculated current time
           sendMessage(socket, 'video_sync_authoritative', {
             action: currentVideoState.action,
-            time: currentVideoState.time,
-            timestamp: currentVideoState.timestamp,
+            time: currentTime, // Use calculated current time
+            timestamp: new Date(),
             sourceUserId: null, // Initial state, no source user
           });
         }
@@ -299,12 +360,16 @@ export default async function websocketRoutes(
             const parsed = JSON.parse(message);
             const { type, data } = parsed;
 
-            console.log(`📨 WebSocket: Received message from ${userId} in session ${sessionId}:`, { type, data });
+            if (isDebugMode()) {
+              console.log(`📨 WebSocket: Received message from ${userId} in session ${sessionId}:`, { type, data });
+            }
 
             if (messageHandlers[type]) {
               await messageHandlers[type](socket, data, userId, sessionId);
             } else {
-              console.log(`⚠️ WebSocket: Unknown message type: ${type}`);
+              if (isDebugMode()) {
+                console.log(`⚠️ WebSocket: Unknown message type: ${type}`);
+              }
             }
           } catch (error) {
             console.error('❌ WebSocket: Error handling message:', error);
@@ -313,7 +378,9 @@ export default async function websocketRoutes(
         });
 
         ws.on('close', async () => {
-          console.log(`🔌 WebSocket: Connection closed for user ${userId} in session ${sessionId}`);
+          if (isDebugMode()) {
+            console.log(`🔌 WebSocket: Connection closed for user ${userId} in session ${sessionId}`);
+          }
           await handleUserLeave(socket);
         });
 

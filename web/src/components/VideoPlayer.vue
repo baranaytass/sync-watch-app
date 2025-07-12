@@ -60,8 +60,6 @@ const playerRef = ref<InstanceType<typeof YouTubePlayer> | null>(null)
 
 // Event handlers
 const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
-  console.log(`🎬 VideoPlayer: Received video action from YouTubePlayer - ${action} at ${time}s`)
-  console.log(`🎬 VideoPlayer: Forwarding video action to parent - ${action} at ${time}s`)
   emit('video-action', action, time)
 }
 

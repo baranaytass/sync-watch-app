@@ -186,15 +186,6 @@ const onPlayerReady = (event: any) => {
   playerReady = true
   loading.value = false  // Gerçek player hazır olduğunda loading'i kapat
   
-  console.log('🎬 YouTube Player: onPlayerReady called - player is ready!')
-  console.log('🎬 YouTube Player: Player state constants available:', {
-    PLAYING: window.YT?.PlayerState?.PLAYING,
-    PAUSED: window.YT?.PlayerState?.PAUSED,
-    BUFFERING: window.YT?.PlayerState?.BUFFERING,
-    ENDED: window.YT?.PlayerState?.ENDED,
-    CUED: window.YT?.PlayerState?.CUED
-  })
-  
   // Clear load timeout
   if (loadTimeout) {
     clearTimeout(loadTimeout)
@@ -203,11 +194,13 @@ const onPlayerReady = (event: any) => {
   
   emit('video-ready')
   
+  // Process any queued sync operations
+  processSyncQueue()
+  
   // Duration bilgisini al
   setTimeout(() => {
     const duration = player?.getDuration?.() || 180
     emit('duration-change', duration)
-    console.log('🎬 YouTube Player: Duration obtained:', duration)
   }, 500)
 }
 
@@ -218,7 +211,6 @@ const onPlayerStateChange = (event: any) => {
   
   const stateChangeTime = Date.now()
   const stateName = getStateName(event.data)
-  console.log(`🎬 YouTube Player: State changed - ${stateName} (${event.data}) (programmatic count: ${programmaticActionCount}, opId: ${programmaticOperationId})`)
   
   // Enhanced cleanup: Clear programmatic flags on FINAL states (PLAYING/PAUSED)
   // These are final user-visible states, so any programmatic operations should be done
@@ -227,7 +219,6 @@ const onPlayerStateChange = (event: any) => {
     const timeSinceOpStart = stateChangeTime - (parseInt(programmaticOperationId.split('_')[0]) || 0)
     
     if (timeSinceOpStart > 500) { // If more than 500ms passed since operation start
-      console.log(`🧹 YouTube Player: Auto-clearing stale operation ID ${programmaticOperationId} (${timeSinceOpStart}ms old)`)
       programmaticOperationId = null
       programmaticActionCount = 0
     }
@@ -238,16 +229,12 @@ const onPlayerStateChange = (event: any) => {
   const isProgrammaticAction = programmaticOperationId !== null || programmaticActionCount > 0
   
   if (isProgrammaticAction) {
-    console.log(`🔄 YouTube Player: Programmatic action detected (count: ${programmaticActionCount}, opId: ${programmaticOperationId}), skipping emit`)
-    
     // More aggressive cleanup: decrement counter AND clear ID if counter reaches 0
     if (programmaticActionCount > 0) {
       programmaticActionCount = Math.max(0, programmaticActionCount - 1)
-      console.log(`🔄 YouTube Player: Programmatic count decremented to: ${programmaticActionCount}`)
       
       // Clear operation ID when counter reaches 0
       if (programmaticActionCount === 0) {
-        console.log(`🧹 YouTube Player: Clearing operation ID ${programmaticOperationId} (counter reached 0)`)
         programmaticOperationId = null
       }
     }
@@ -256,18 +243,15 @@ const onPlayerStateChange = (event: any) => {
   }
   
   // This is a USER action - emit it to trigger WebSocket message
-  console.log(`🎬 YouTube Player: Processing USER action`)
   switch (event.data) {
     case window.YT.PlayerState.PLAYING:
-      console.log('🎬 YouTube Player: User clicked PLAY, emitting video-action')
       emit('video-action', 'play', currentTime)
       break
     case window.YT.PlayerState.PAUSED:
-      console.log('⏸️ YouTube Player: User clicked PAUSE, emitting video-action')
       emit('video-action', 'pause', currentTime)
       break
     default:
-      console.log(`🎬 YouTube Player: Unknown state: ${event.data} (no action taken)`)
+      break
   }
 }
 
@@ -397,26 +381,38 @@ watch(() => props.videoId, (newVideoId, oldVideoId) => {
   }
 }, { immediate: true })
 
-// Expose methods - YouTube Player API ile gerçek kontrol
-const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
+// Sync queue for pending operations
+const syncQueue = ref<{ action: 'play' | 'pause' | 'seek', time: number }[]>([])
+
+// Process sync queue when player becomes ready
+const processSyncQueue = () => {
+  if (!player || !playerReady || syncQueue.value.length === 0) {
+    return
+  }
+  
+  // Process the last/most recent sync operation only
+  const lastOperation = syncQueue.value[syncQueue.value.length - 1]
+  syncQueue.value = [] // Clear queue
+  
+  // Execute the queued operation
+  performSyncOperation(lastOperation.action, lastOperation.time)
+}
+
+// Actual sync operation implementation
+const performSyncOperation = (action: 'play' | 'pause' | 'seek', time: number) => {
   if (!player || !playerReady) {
-    console.warn('🚫 YouTube Player: Sync çağrıldı ama player hazır değil')
     return
   }
   
   try {
-    console.log(`🔄 YouTube Player: Sync video - ${action} at ${time}s`)
-    
     // Generate unique operation ID and set counter
     const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
     programmaticOperationId = operationId
     programmaticActionCount += 2  // Reduced counter for cleaner operations
-    console.log(`🔄 YouTube Player: Programmatic operation started (ID: ${operationId}, count: ${programmaticActionCount})`)
     
     // Auto-reset counter after a shorter delay as backup
     setTimeout(() => {
       if (programmaticOperationId === operationId) {
-        console.log(`🔄 YouTube Player: Timeout cleanup for operation (ID: ${operationId}): clearing programmatic flags`)
         programmaticActionCount = 0
         programmaticOperationId = null
       }
@@ -425,15 +421,12 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
     // Player state'ini kontrol et
     const playerState = player.getPlayerState()
     const stateName = getStateName(playerState)
-    console.log(`📊 YouTube Player: Current state: ${stateName} (${playerState})`)
     
     switch (action) {
       case 'play':
         if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
-          console.log(`🎬 YouTube Player: Video UNSTARTED, loading and playing from ${time}s`)
           // Video henüz hiç başlatılmamış, loadVideoById kullan (seek + play combined)
           player.loadVideoById(props.videoId, time)
-          console.log(`▶️ YouTube Player: Loading and playing from ${time}s`)
         } else {
           // Video daha önce başlatılmış - check if seek needed
           const currentTime = player.getCurrentTime() || 0
@@ -441,15 +434,12 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
           
           if (timeDiff > 2) {
             // Significant time difference, seek first then play
-            console.log(`🎯 YouTube Player: Seeking to ${time}s (diff: ${timeDiff.toFixed(2)}s) then playing`)
             player.seekTo(time, true)
             setTimeout(() => {
               player.playVideo()
-              console.log(`▶️ YouTube Player: Play after seek to ${time}s`)
             }, 100)
           } else {
             // Minor difference or already at correct position, just play
-            console.log(`▶️ YouTube Player: Direct play (already near ${time}s)`)
             player.playVideo()
           }
         }
@@ -457,36 +447,28 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
         
       case 'pause':
         if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
-          console.log(`⏸️ YouTube Player: Video UNSTARTED, cuing to pause position ${time}s`)
           // Video henüz hiç başlatılmamış, cue et
           player.cueVideoById(props.videoId, time)
-          console.log(`⏸️ YouTube Player: Cued to ${time}s (paused state)`)
         } else {
           // FIXED: Server-authoritative pattern'da pause action doğru zamanda geliyor
           // Gereksiz seek işlemi buffering'e neden oluyor, sadece pause yapalım
-          console.log(`⏸️ YouTube Player: Clean pause (server-authoritative time: ${time}s)`)
           player.pauseVideo()
-          console.log(`⏸️ YouTube Player: Video paused cleanly`)
           
           // Optional: Only seek if there's a significant time difference
           const currentTime = player.getCurrentTime() || 0
           const timeDiff = Math.abs(currentTime - time)
           
           if (timeDiff > 2) {
-            console.log(`🎯 YouTube Player: Correcting time difference: ${timeDiff.toFixed(2)}s`)
             // Use a gentle seek after pause to avoid buffering
             setTimeout(() => {
               player.seekTo(time, false) // Use allowSeekAhead=false for gentler seek
-              console.log(`🎯 YouTube Player: Gentle time correction to ${time}s`)
             }, 100)
           }
         }
         break
         
       case 'seek':
-        console.log(`🎯 YouTube Player: Seek to ${time}s`)
         if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
-          console.log(`🎯 YouTube Player: Video UNSTARTED, cuing to seek position`)
           player.cueVideoById(props.videoId, time)
         } else {
           player.seekTo(time, true)
@@ -494,21 +476,31 @@ const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
         break
     }
   } catch (error) {
-    console.error('Video sync hatası:', error)
+    console.error('YouTube Player sync error:', error)
   }
+}
+
+// Main sync method - now with queue support
+const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
+  if (!player || !playerReady) {
+    // Player not ready - queue the operation
+    syncQueue.value.push({ action, time })
+    
+    return
+  }
+  
+  // Player ready - execute immediately
+  performSyncOperation(action, time)
 }
 
 const play = () => {
   if (player && playerReady) {
-    console.log('🎯 YouTube Player: Direct play call (authoritative)')
     const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_play`
     programmaticOperationId = operationId
     programmaticActionCount += 1
-    console.log(`🔄 YouTube Player: Direct play operation started (ID: ${operationId}, count: ${programmaticActionCount})`)
     // Auto-reset counter after a delay as backup
     setTimeout(() => {
       if (programmaticOperationId === operationId) {
-        console.log(`🔄 YouTube Player: Timeout cleanup for play operation (ID: ${operationId})`)
         programmaticActionCount = 0
         programmaticOperationId = null
       }
@@ -519,15 +511,12 @@ const play = () => {
 
 const pause = () => {
   if (player && playerReady) {
-    console.log('🎯 YouTube Player: Direct pause call (authoritative)')
     const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_pause`
     programmaticOperationId = operationId
     programmaticActionCount += 1
-    console.log(`🔄 YouTube Player: Direct pause operation started (ID: ${operationId}, count: ${programmaticActionCount})`)
     // Auto-reset counter after a delay as backup
     setTimeout(() => {
       if (programmaticOperationId === operationId) {
-        console.log(`🔄 YouTube Player: Timeout cleanup for pause operation (ID: ${operationId})`)
         programmaticActionCount = 0
         programmaticOperationId = null
       }
@@ -538,15 +527,12 @@ const pause = () => {
 
 const seekTo = (time: number) => {
   if (player && playerReady) {
-    console.log('🎯 YouTube Player: Direct seek call (authoritative)')
     const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_seek`
     programmaticOperationId = operationId
     programmaticActionCount += 1
-    console.log(`🔄 YouTube Player: Direct seek operation started (ID: ${operationId}, count: ${programmaticActionCount})`)
     // Auto-reset counter after a delay as backup
     setTimeout(() => {
       if (programmaticOperationId === operationId) {
-        console.log(`🔄 YouTube Player: Timeout cleanup for seek operation (ID: ${operationId})`)
         programmaticActionCount = 0
         programmaticOperationId = null
       }

@@ -34,9 +34,34 @@ export const useVideoSyncStore = defineStore('videoSync', () => {
   }
 
   const syncVideoAuthoritative = (event: VideoSyncAuthoritativeEvent) => {
-    console.log(`🎯 VideoSync: Applying authoritative state - ${event.action} at ${event.time}s`)
+    // Debug logging control
+    const isDebugMode = () => {
+      const userAgent = navigator.userAgent
+      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
+        (document.title.includes('advanced') || document.title.includes('Advanced'))
+      return isPlaywrightAdvanced || import.meta.env.DEV
+    }
+    
+    // If this is a play action and there's a timestamp, calculate the current time
+    // This ensures new users get the correct video time based on elapsed time
+    let calculatedTime = event.time
+    if (event.action === 'play' && event.timestamp) {
+      const now = new Date()
+      const actionTime = new Date(event.timestamp)
+      const elapsedSeconds = (now.getTime() - actionTime.getTime()) / 1000
+      calculatedTime = Math.max(0, event.time + elapsedSeconds)
+      
+      if (isDebugMode()) {
+        console.log(`🎯 VideoSync: Play action - original time: ${event.time}s, elapsed: ${elapsedSeconds.toFixed(2)}s, calculated: ${calculatedTime.toFixed(2)}s`)
+      }
+    }
+    
+    if (isDebugMode()) {
+      console.log(`🎯 VideoSync: Applying authoritative state - ${event.action} at ${calculatedTime.toFixed(2)}s`)
+    }
+    
     currentAction.value = event.action
-    currentTime.value = event.time
+    currentTime.value = calculatedTime
     lastActionTimestamp.value = event.timestamp
     
     // This is the authoritative state from server, always apply it
