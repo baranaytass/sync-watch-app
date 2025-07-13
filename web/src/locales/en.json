@@ -41,29 +41,62 @@
   },
   "home": {
     "hero": {
-      "title": "Nesbat",
-      "subtitle": "We've completely redesigned the video watching experience with your friends."
+      "title": "Nesbat 🎬",
+      "subtitle": "No more 'wait, pause it, I'm behind!' moments when watching with friends! 🍿✨"
     },
     "features": {
-      "sectionTitle": "Why Nesbat?",
-      "sectionSubtitle": "We've completely redesigned the video watching experience with your friends.",
+      "sectionTitle": "Why Everyone Will Love Nesbat? 💖",
+      "sectionSubtitle": "Because nobody has to ask 'what are you watching?' anymore!",
       "syncWatch": {
-        "title": "Synchronized Watching",
-        "description": "Everyone watches at the same time. Pause, play, seek - everyone at the same point."
+        "title": "Pixel Perfect Sync 🎯",
+        "description": "Everyone laughs together, cries together. Even eats popcorn together! 🍿"
       },
       "multiUser": {
-        "title": "Multi-User",
-        "description": "Join with your friends. Real-time participant tracking."
+        "title": "Squad Watch Mode 👥",
+        "description": "Friends + Netflix = Nesbat! Real-time 'who's here?' tracking included."
       },
       "secure": {
-        "title": "Secure & Fast",
-        "description": "Secure and fast viewing experience with modern technologies."
+        "title": "Fast & Secure 🚀",
+        "description": "No buffering, no lag, just pure fun! Super performance with modern tech."
+      },
+      "realTime": {
+        "title": "Instant Chat 💬",
+        "description": "For those who forget to say 'wooow' during epic scenes - instant chat feature!"
+      },
+      "noSignup": {
+        "title": "No Account, No Problem 🎈",
+        "description": "Just share the link, friends join. That's it!"
+      },
+      "crossPlatform": {
+        "title": "Watch Anywhere 📱💻",
+        "description": "Phone, tablet, computer... Watch from whatever device you want!"
       }
     },
     "cta": {
-      "title": "Get Started Now",
-      "subtitle": "The joy of watching videos with your friends is just one click away.",
-      "button": "Start Free"
+      "title": "Come On, Create Your First Session! 🎉",
+      "subtitle": "Video fun with friends is just 3 clicks away. Free, easy, fun! 🚀",
+      "button": "Start Now! 🔥"
+    },
+    "github": {
+      "title": "Open Source Love 💝",
+      "subtitle": "Nesbat is completely open source! If you want to contribute, you can find us on GitHub.",
+      "button": "Check on GitHub",
+      "stars": "⭐ Don't forget to star!"
+    },
+    "howItWorks": {
+      "title": "How Does It Work? 🤔",
+      "step1": {
+        "title": "1️⃣ Create Session",
+        "description": "Give it a name, send link to your friends!"
+      },
+      "step2": {
+        "title": "2️⃣ Pick Video",
+        "description": "Paste YouTube link, everyone watches the same video!"
+      },
+      "step3": {
+        "title": "3️⃣ Fun Time!",
+        "description": "Watch, chat, enjoy! Synchronization is on us! 🎊"
+      }
     },
     "buttons": {
       "features": "Features",

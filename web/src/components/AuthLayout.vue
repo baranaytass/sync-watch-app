@@ -73,9 +73,10 @@
 
             <div v-if="authStore.user" class="flex items-center space-x-3">
               <img
-                :src="authStore.user.avatar"
+                :src="authStore.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(authStore.user.name || 'User')}&background=6366f1&color=ffffff&rounded=true`"
                 :alt="authStore.user.name"
                 class="h-8 w-8 rounded-full border-2 border-border"
+                @error="$event.target.src = 'https://ui-avatars.com/api/?name=Guest&background=6366f1&color=ffffff&rounded=true'"
               />
               <div class="hidden sm:block">
                 <div class="text-sm font-medium text-foreground">{{ authStore.user.name }}</div>
@@ -147,9 +148,10 @@
           <div v-if="authStore.user" class="px-3 py-3 border-t border-border">
             <div class="flex items-center mb-3">
               <img
-                :src="authStore.user.avatar"
+                :src="authStore.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(authStore.user.name || 'User')}&background=6366f1&color=ffffff&rounded=true`"
                 :alt="authStore.user.name"
                 class="h-10 w-10 rounded-full border-2 border-border"
+                @error="$event.target.src = 'https://ui-avatars.com/api/?name=Guest&background=6366f1&color=ffffff&rounded=true'"
               />
               <div class="ml-3">
                 <div class="text-base font-medium text-foreground">{{ authStore.user.name }}</div>
