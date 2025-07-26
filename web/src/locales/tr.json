@@ -31,7 +31,8 @@
     "welcomeToNesbat": "Nesbat'a Hoş Geldin",
     "loginToAccount": "Hesabınıza giriş yapın",
     "profile": "Profil",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "guestNamePlaceholder": "Misafir adınızı girin..."
   },
   "navigation": {
     "home": "Ana Sayfa",

@@ -22,7 +22,7 @@ test.describe('Video Sync – Advanced Scenarios', () => {
     try {
       // 1. Setup: User 1 creates session, User 2 joins
       logger.step('Setting up session with 2 users')
-      await guestLogin(user1Page)
+      await guestLogin(user1Page, 'Player 1')
       const createBtn = await findCreateSessionButton(user1Page)
       await createBtn.click()
       await user1Page.locator('input#title').fill('Advanced Video Sync Test')
@@ -32,7 +32,7 @@ test.describe('Video Sync – Advanced Scenarios', () => {
       const sessionUrl = user1Page.url()
       const sessionId = sessionUrl.split('/session/')[1]
       
-      await guestLogin(user2Page)
+      await guestLogin(user2Page, 'Player 2')
       await user2Page.goto(`/session/${sessionId}`)
       await user2Page.waitForLoadState('networkidle')
       
@@ -106,7 +106,7 @@ test.describe('Video Sync – Advanced Scenarios', () => {
     try {
       // 1. Setup: User 1 creates session, User 2 joins
       logger.step('Setting up session with 2 users')
-      await guestLogin(user1Page)
+      await guestLogin(user1Page, 'Host User')
       const createBtn = await findCreateSessionButton(user1Page)
       await createBtn.click()
       await user1Page.locator('input#title').fill('Third User Join Test')
@@ -116,7 +116,7 @@ test.describe('Video Sync – Advanced Scenarios', () => {
       const sessionUrl = user1Page.url()
       const sessionId = sessionUrl.split('/session/')[1]
       
-      await guestLogin(user2Page)
+      await guestLogin(user2Page, 'Second User')
       await user2Page.goto(`/session/${sessionId}`)
       await user2Page.waitForLoadState('networkidle')
       
@@ -136,7 +136,7 @@ test.describe('Video Sync – Advanced Scenarios', () => {
       
       // 4. Third user joins while video is playing
       logger.step('Third user joining during active playback')
-      await guestLogin(user3Page)
+      await guestLogin(user3Page, 'Third User')
       await user3Page.goto(`/session/${sessionId}`)
       await user3Page.waitForLoadState('networkidle')
       

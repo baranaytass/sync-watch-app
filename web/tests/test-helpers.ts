@@ -232,18 +232,25 @@ export class TestErrorTracker {
 }
 
 // Helper function to perform guest login
-export async function guestLogin(page: Page): Promise<void> {
+export async function guestLogin(page: Page, guestName: string = 'Test User'): Promise<void> {
   const logger = TestLogger.getInstance()
   
   // Always start from login page
   await page.goto('/login')
   await page.waitForLoadState('networkidle')
   
+  const guestNameInput = page.locator('[data-testid="guest-name-input"]')
   const guestBtn = page.locator('[data-testid="guest-login-button"]')
   
-  // Check if guest button is visible
-  if (await guestBtn.isVisible()) {
+  // Check if guest name input and button are visible
+  if (await guestNameInput.isVisible() && await guestBtn.isVisible()) {
     logger.step('Performing guest login')
+    
+    // Fill guest name input
+    await guestNameInput.fill(guestName)
+    
+    // Wait for button to become enabled
+    await expect(guestBtn).toBeEnabled({ timeout: 5000 })
     
     // Click guest login button
     await guestBtn.click()
@@ -273,7 +280,7 @@ export async function guestLogin(page: Page): Promise<void> {
     
     logger.success('Guest login completed successfully')
   } else {
-    throw new Error('Guest login button not found')
+    throw new Error('Guest login input or button not found')
   }
 }
 

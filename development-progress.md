@@ -320,4 +320,23 @@ Projenin temel geliştirme fazı başarıyla tamamlanmıştır. Tüm ana hedefle
 *   Testlerin tamamı **%100 başarı** ile geçmektedir.
 *   Uygulama, TypeScript strict modu aktif ve sıfır derleme hatası ile çalışmaktadır.
 
-Proje, bu çözümler sayesinde robust (sağlam) ve güvenilir bir video senkronizasyon altyapısına kavuşmuştur. Opsiyonel geliştirmeler (sohbet sistemi, arayüz iyileştirmeleri vb.) için hazır durumdadır. 
+Proje, bu çözümler sayesinde robust (sağlam) ve güvenilir bir video senkronizasyon altyapısına kavuşmuştur.
+
+### Son Eklenen Özellik: Guest Kullanıcı İsim Belirleme (2025-01-26)
+
+**Özellik:** Guest kullanıcılar artık giriş yaparken kendi isimlerini belirleyebiliyor.
+
+**Uygulandı:**
+- **Frontend:** LoginPage'e isim input alanı eklendi (50 karakter sınırı, zorunlu alan)
+- **Auth Store:** `loginAsGuest(customName)` parametresi desteği
+- **Backend:** Zaten mevcut olan `POST /api/auth/guest` endpoint'i kullanıldı
+- **i18n:** Türkçe/İngilizce placeholder metinleri eklendi
+- **Testler:** Tüm E2E testler güncellendi ve geçiyor
+
+**Kullanıcı Deneyimi:**
+1. Guest kullanıcı login sayfasına gider
+2. İstediği ismi input alanına yazar (gerekli)
+3. Giriş butonu aktif hale gelir
+4. Oturumlarda belirlediği isim görüntülenir
+
+Opsiyonel geliştirmeler (sohbet sistemi, arayüz iyileştirmeleri vb.) için hazır durumdadır. 

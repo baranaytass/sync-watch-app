@@ -31,7 +31,8 @@
     "welcomeToNesbat": "Welcome to Nesbat",
     "loginToAccount": "Sign in to your account",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "guestNamePlaceholder": "Enter your guest name..."
   },
   "navigation": {
     "home": "Home",

@@ -39,9 +39,14 @@ const createSession = async (page: any, title: string): Promise<string> => {
 
 test.describe('Session – create & join', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/login')
+    
+    const guestNameInput = page.locator('[data-testid="guest-name-input"]')
     const guestBtn = page.locator('[data-testid="guest-login-button"]')
-    if (await guestBtn.isVisible()) {
+    
+    if (await guestNameInput.isVisible() && await guestBtn.isVisible()) {
+      await guestNameInput.fill('Session Test User')
+      await expect(guestBtn).toBeEnabled()
       await guestBtn.click()
       await page.waitForURL(/\/sessions$/)
     }
@@ -60,6 +65,6 @@ test.describe('Session – create & join', () => {
 
     // katılımcı listesinde kendimiz var mı
     console.log('🔎 Katılımcı listesinde kendimizi görüyoruz')
-    await expect(page.locator('text=Misafir')).toBeVisible()
+    await expect(page.locator('text=Session Test User')).toBeVisible()
   })
 }) 

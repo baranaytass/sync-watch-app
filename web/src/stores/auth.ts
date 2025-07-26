@@ -47,13 +47,15 @@ export const useAuthStore = defineStore('auth', () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`
   }
 
-  const loginAsGuest = async () => {
+  const loginAsGuest = async (customName?: string) => {
     try {
       loading.value = true
       error.value = null
 
+      const guestName = customName || 'Misafir Kullanıcı'
+
       const response = await axios.post(`${API_BASE_URL}/api/auth/guest`, {
-        name: 'Misafir Kullanıcı'
+        name: guestName
       }, {
         withCredentials: true
       })

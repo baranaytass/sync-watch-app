@@ -45,9 +45,9 @@ The project is a monorepo organized into three main directories: `backend`, `web
 ```typescript
 interface User {
   id: string;
-  googleId: string;
-  email: string;
-  name: string;
+  googleId: string;  // null for guest users
+  email: string;     // generated for guest users
+  name: string;      // customizable for guest users
   avatar: string;
 }
 
@@ -85,6 +85,7 @@ interface Session {
 | ------ | ------------------------- | ------------------------ |
 | GET    | /api/auth/google          | Google OAuth Redirect    |
 | GET    | /api/auth/google/callback | OAuth Callback           |
+| POST   | /api/auth/guest           | Guest login with custom name |
 | POST   | /api/auth/logout          | Logout                   |
 | GET    | /api/auth/me              | Get current user         |
 | GET    | /api/sessions             | List active sessions     |
@@ -110,7 +111,27 @@ A server-authoritative pattern is used for all real-time communication. The clie
 
 ---
 
-## 4. Core Logic: Server-Authoritative Video Sync
+## 4. Authentication System
+
+The application supports two authentication methods:
+
+### Google OAuth
+- Full OAuth 2.0 flow with Google accounts
+- Persistent user data stored in database
+- JWT tokens with 7-day expiration
+
+### Guest Login
+- **Custom Name Feature**: Users can set their own guest name during login
+- Temporary user accounts with 24-hour JWT expiration
+- Automatic cleanup after session ends
+- **UI**: Input field validates name (required, max 50 characters)
+- **Backend**: `POST /api/auth/guest` accepts `{ name: string }` payload
+
+Both methods use HTTP-only cookies for JWT storage and provide the same user experience within sessions.
+
+---
+
+## 5. Core Logic: Server-Authoritative Video Sync
 
 This system solves client-side "echo loops" and incorrect video state for users joining mid-session.
 
@@ -122,7 +143,7 @@ This system solves client-side "echo loops" and incorrect video state for users 
 
 ---
 
-## 5. Database Schema (PostgreSQL)
+## 6. Database Schema (PostgreSQL)
 
 - **`users`**: Stores persistent user data.
 - **`sessions`**: Stores active session data. Defined as an `UNLOGGED` table for high performance, as this data is transient (like a cache).
@@ -131,7 +152,7 @@ This system solves client-side "echo loops" and incorrect video state for users 
 
 ---
 
-## 6. How to Run
+## 7. How to Run
 
 ### 1. Start Services
 
@@ -160,7 +181,7 @@ The application will be available at `http://localhost:5173`.
 
 ---
 
-## 7. How to Run Tests
+## 8. How to Run Tests
 
 End-to-end tests are implemented with Playwright and run against a real backend and database instance. **Ensure the services are running (Step 6.1) before executing tests.**
 
@@ -180,14 +201,14 @@ npx playwright test
 - An HTML report is generated in `web/playwright-report/` after each run.
 
 ### Test Suites (`web/tests/`)
-- `auth.spec.ts`: Guest login and logout flow.
+- `auth.spec.ts`: Guest login with custom name and logout flow.
 - `session.spec.ts`: Session creation and participant validation.
 - `video-sync-advanced.spec.ts`: Complex multi-user sync scenarios.
 - `video-sync-join-state.spec.ts`: Critical test for ensuring users joining mid-playback sync correctly.
 
 ---
 
-## 8. Project Status
+## 9. Project Status
 
 - **🚀 PRODUCTION READY**
 - All core features are complete and stable.

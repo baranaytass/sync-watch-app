@@ -20,7 +20,7 @@ test('video sync join state bug detection', async ({ browser }) => {
   try {
     // 1. Setup: User 1 creates session
     logger.step('Setting up session')
-    await guestLogin(user1Page)
+    await guestLogin(user1Page, 'Host User')
     const createBtn = await findCreateSessionButton(user1Page)
     await createBtn.click()
     await user1Page.locator('input#title').fill('Join State Bug Detection Test')
@@ -45,7 +45,7 @@ test('video sync join state bug detection', async ({ browser }) => {
     
     // 4. User 2 joins while video is playing
     logger.step('Second user joining during active playback')
-    await guestLogin(user2Page)
+    await guestLogin(user2Page, 'Joining User')
     await user2Page.goto(`/session/${sessionId}`)
     await user2Page.waitForLoadState('networkidle')
     
