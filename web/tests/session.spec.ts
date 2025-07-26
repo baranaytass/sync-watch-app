@@ -1,38 +1,19 @@
 import { test, expect } from '@playwright/test'
 
 const createSession = async (page: any, title: string): Promise<string> => {
-  // Sessions list page
-  await page.goto('/sessions')
+  // Home page (authenticated user dashboard)
+  await page.goto('/')
   await page.waitForLoadState('networkidle')
 
-  // Loading state'in bitmesini bekle
-  await page.waitForFunction(() => {
-    const loadingElements = document.querySelectorAll('div, p')
-    for (const el of loadingElements) {
-      if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
-        return false // Hâlâ loading
-      }
-    }
-    return true // Loading bitti
-  }, { timeout: 10000 })
-
-  // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
-  const newSessionBtn = page.locator('[data-testid="create-session-button"]')
-  const firstSessionBtn = page.locator('[data-testid="create-first-session-button"]')
+  // Authenticated homepage'de "Yeni Oturum Oluştur" butonunu bul
+  const createSessionBtn = page.locator('[data-testid="create-session-button"]')
   
-  // Hangisi görünürse onu kullan
-  const btn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
-    ? newSessionBtn 
-    : firstSessionBtn
+  await expect(createSessionBtn).toBeVisible({ timeout: 8000 })
   
-  await expect(btn).toBeVisible({ timeout: 8000 })
-  await btn.click()
+  // Butona tıkla - doğrudan quick session oluşturur ve yönlendirir
+  await createSessionBtn.click()
 
-  // Modal içindeki başlık inputu doldur
-  await page.locator('input#title').fill(title)
-  await page.locator('button[type="submit"]').click()
-
-  // Yönlendirme
+  // Session sayfasına yönlendirme bekle
   await page.waitForURL(/\/session\//)
   return page.url()
 }
@@ -48,14 +29,14 @@ test.describe('Session – create & join', () => {
       await guestNameInput.fill('Session Test User')
       await expect(guestBtn).toBeEnabled()
       await guestBtn.click()
-      await page.waitForURL(/\/sessions$/)
+      await page.waitForURL(/\/$/)
     }
     console.log('🎬 SESSION TEST – Misafir login')
   })
 
   test('user can create and join a session', async ({ page }) => {
     console.log('🏗️  Oturum oluşturma başlıyor')
-    const url = await createSession(page, 'Playwright Test Session')
+    const url = await createSession(page, 'Quick Session') // title artık kullanılmıyor ama compatibility için bırakıyoruz
     console.log('✅ Oturum oluşturuldu:', url)
 
     // Session room yüklendi mi
@@ -66,5 +47,47 @@ test.describe('Session – create & join', () => {
     // katılımcı listesinde kendimiz var mı
     console.log('🔎 Katılımcı listesinde kendimizi görüyoruz')
     await expect(page.locator('text=Session Test User')).toBeVisible()
+  })
+
+  test('sessions are listed correctly in dashboard', async ({ page }) => {
+    console.log('📋 Session listing test başlıyor')
+    
+    // İlk oturum oluştur
+    const url1 = await createSession(page, 'Test Session 1')
+    console.log('✅ İlk oturum oluşturuldu:', url1)
+    
+    // Home'a dön
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    
+    // Sessions panelini aç
+    const browseSessions = page.locator('text=Browse Sessions')
+    await expect(browseSessions).toBeVisible()
+    await browseSessions.click()
+    
+    // Loading spinner'ı bekle ve geç
+    await page.waitForTimeout(2000)
+    
+    // Oluşturduğumuz oturumun listede görünmesi lazım
+    await expect(page.locator('text=Quick Session')).toBeVisible({ timeout: 10000 })
+    console.log('✅ Oturum listede görünüyor')
+    
+    // İkinci oturum oluştur
+    const createBtn = page.locator('[data-testid="create-session-button"]')
+    await createBtn.click()
+    await page.waitForURL(/\/session\//)
+    
+    // Home'a tekrar dön
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    
+    // Sessions panelini tekrar aç
+    await browseSessions.click()
+    await page.waitForTimeout(2000)
+    
+    // İki oturum da görünmeli
+    const sessionItems = page.locator('[data-for="session in sessionsStore.sessions"]')
+    await expect(sessionItems).toHaveCount(2, { timeout: 10000 })
+    console.log('✅ İki oturum da listede görünüyor')
   })
 }) 
