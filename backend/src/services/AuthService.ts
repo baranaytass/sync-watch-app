@@ -91,6 +91,23 @@ export class AuthService {
     return newUser;
   }
 
+  async findOrCreateGuestUser(): Promise<User> {
+    const guestEmail = 'guest@example.com';
+    let guestUser = await this.userModel.findByEmail(guestEmail);
+
+    if (guestUser) {
+      return guestUser;
+    }
+
+    const newGuest = await this.userModel.create({
+      googleId: `guest_${Date.now()}`,
+      email: guestEmail,
+      name: 'Misafir Kullanıcı',
+    });
+
+    return newGuest;
+  }
+
   async getGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo> {
     try {
       const response = await axios.get(

@@ -29,6 +29,21 @@ export const useSessionsStore = defineStore('sessions', () => {
     return currentSession.value?.participants || []
   })
 
+  // Helper function to create request headers with auth token
+  const createAuthHeaders = (): HeadersInit => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+    
+    // Add Authorization header if token exists in localStorage
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
+    return headers
+  }
+
   // Helper function to transform date strings
   const transformDates = (session: any): Session => ({
     ...session,
@@ -62,6 +77,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch('/api/sessions', {
         method: 'GET',
+        headers: createAuthHeaders(),
         credentials: 'include',
       })
 
@@ -99,6 +115,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}`, {
         method: 'GET',
+        headers: createAuthHeaders(),
         credentials: 'include',
       })
 
@@ -142,9 +159,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch('/api/sessions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: createAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify(data),
       })
@@ -196,6 +211,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/join`, {
         method: 'POST',
+        headers: createAuthHeaders(),
         credentials: 'include',
       })
 
@@ -258,9 +274,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/video`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: createAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify(data),
       })
@@ -403,16 +417,24 @@ export const useSessionsStore = defineStore('sessions', () => {
       console.log('👤 Sessions Store: Setting participants (guest mode)')
     }
     if (currentSession.value) {
-      // Direct assignment for guest mode
-      currentSession.value.participants = participantsList.map(p => ({
+      // Create new participants array to trigger reactivity
+      const newParticipants = participantsList.map(p => ({
         sessionId: currentSession.value!.id,
         userId: p.id || p.userId,
         name: p.name,
         avatar: p.avatar || '',
-        joinedAt: new Date(),
+        joinedAt: new Date(p.joinedAt || new Date()),
         isOnline: true,
         lastSeen: new Date(),
       }))
+      
+      // Force reactive update by creating new session object
+      currentSession.value = {
+        ...currentSession.value,
+        participants: newParticipants
+      }
+      
+      console.log(`👤 Sessions Store: Set ${newParticipants.length} participants for session ${currentSession.value.id}`)
     }
   }
 

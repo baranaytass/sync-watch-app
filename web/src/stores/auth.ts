@@ -26,6 +26,21 @@ export const useAuthStore = defineStore('auth', () => {
   // Getters
   const isAuthenticated = computed(() => !!user.value)
 
+  // Helper function to create request headers with auth token
+  const createAuthHeaders = (): { [key: string]: string } => {
+    const headers: { [key: string]: string } = {
+      'Content-Type': 'application/json',
+    }
+    
+    // Add Authorization header if token exists in localStorage
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
+    return headers
+  }
+
   // Initialize user from localStorage on store creation
   const initializeAuth = () => {
     const storedUser = localStorage.getItem('user')
@@ -48,31 +63,40 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const loginAsGuest = async () => {
+    loading.value = true
+    error.value = null
+    
     try {
-      loading.value = true
-      error.value = null
-
+      // Call backend to get JWT token for guest user
       const response = await axios.post(`${API_BASE_URL}/api/auth/guest`, {
-        name: 'Misafir Kullanıcı'
-      }, {
-        withCredentials: true
+        name: 'Misafir Kullanıcı',
+        email: 'guest@example.com',
+        guestId: 'guest-' + Date.now()
       })
-
+      
       if (response.data.success && response.data.data) {
-        const guestUser: User = response.data.data
+        const guestUser = response.data.data
+        const token = response.data.token
+        
+        // Store user data
         user.value = guestUser
         localStorage.setItem('user', JSON.stringify(guestUser))
-
+        
+        // Store token for WebSocket use
+        localStorage.setItem('auth_token', token)
+        
+        loading.value = false
+        
         // Redirect to sessions page after login
         window.location.href = '/sessions'
       } else {
         throw new Error('Guest login failed')
       }
-    } catch (err) {
+      
+    } catch (err: any) {
+      loading.value = false
       error.value = 'Guest login failed'
       console.error('Guest login error:', err)
-    } finally {
-      loading.value = false
     }
   }
 
@@ -81,23 +105,26 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true
       error.value = null
       await axios.post(`${API_BASE_URL}/api/auth/logout`)
+      user.value = null
+      localStorage.removeItem('user')
+      localStorage.removeItem('auth_token') // Also remove token
     } catch (err) {
       error.value = 'Logout failed'
       console.error('Logout error:', err)
     } finally {
-      user.value = null
-      localStorage.removeItem('user')
       loading.value = false
     }
   }
 
   const fetchUser = async () => {
-    // Always verify session with backend to ensure cookie is valid
-    
     try {
       loading.value = true
       error.value = null
-      const response = await axios.get(`${API_BASE_URL}/api/auth/me`)
+      
+      const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
+        headers: createAuthHeaders(),
+      })
+      
       if (response.data.success && response.data.data) {
         user.value = response.data.data
         localStorage.setItem('user', JSON.stringify(response.data.data))
@@ -105,6 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err: any) {
       user.value = null
       localStorage.removeItem('user')
+      localStorage.removeItem('auth_token')
       if (err.response?.status !== 401) {
         console.error('Fetch user error:', err)
       }

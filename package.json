@@ -16,6 +16,7 @@
     "build:backend": "npm run build --workspace=backend",
     "build:web": "npm run build --workspace=web",
     "test": "npm run test --workspaces",
+    "test:e2e": "concurrently --kill-others-on-fail \"pnpm dev\" \"wait-on http://localhost:3000/health http://localhost:5173 && pnpm --filter web run test:real-sync\"",
     "lint": "npm run lint --workspaces",
     "lint:fix": "npm run lint:fix --workspaces",
     "clean": "npm run clean --workspaces && rm -rf node_modules",
@@ -26,7 +27,8 @@
     "docker:db:logs": "docker-compose logs -f postgres"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "wait-on": "^8.0.3"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -41,5 +43,6 @@
   "dependencies": {
     "node-fetch": "^3.3.2",
     "ws": "^8.18.2"
-  }
+  },
+  "keywords": []
 }

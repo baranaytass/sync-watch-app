@@ -5,18 +5,17 @@
       <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{ $t('navigation.sessions') }}</h1>
-            <p class="text-gray-600 mt-1">{{ $t('app.description') }}</p>
+            <h1 class="text-2xl font-bold text-gray-900">Aktif Oturumlar</h1>
+            <p class="text-gray-600 mt-1">Katılabileceğiniz video senkronizasyon oturumları</p>
           </div>
           <button
             @click="showCreateModal = true"
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            data-testid="create-session-button"
           >
             <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            {{ $t('session.createNew') }}
+            Yeni Oturum
           </button>
         </div>
       </div>
@@ -35,7 +34,7 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                :placeholder="$t('session.search')"
+                placeholder="Oturum ara..."
                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
@@ -49,14 +48,14 @@
                 class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label for="has-video" class="ml-2 block text-sm text-gray-900">
-                {{ $t('session.onlyWithVideo') }}
+                Sadece videolu oturumlar
               </label>
             </div>
           </div>
           
           <!-- Stats -->
           <div class="text-sm text-gray-500">
-            <span>{{ filteredSessions.length }} {{ $t('session.found') }}</span>
+            <span>{{ filteredSessions.length }} oturum bulundu</span>
           </div>
         </div>
       </div>
@@ -68,7 +67,7 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p class="mt-2 text-gray-600">{{ $t('session.loadingSessions') }}</p>
+          <p class="mt-2 text-gray-600">Oturumlar yükleniyor...</p>
         </div>
       </div>
 
@@ -80,7 +79,7 @@
             </svg>
           </div>
           <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">{{ $t('common.error') }}</h3>
+            <h3 class="text-sm font-medium text-red-800">Hata</h3>
             <p class="text-sm text-red-700 mt-1">{{ sessionsStore.error }}</p>
           </div>
           <div class="ml-auto pl-3">
@@ -88,7 +87,7 @@
               @click="loadSessions"
               class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
-              {{ $t('common.retry') }}
+              Tekrar Dene
             </button>
           </div>
         </div>
@@ -99,20 +98,19 @@
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7v2m0 0v2m0-2h2m-2 0h-2m-7 12a3 3 0 01-3-3V5a3 3 0 013-3h2a3 3 0 013 3v11a3 3 0 01-3 3h-2z" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">{{ $t('session.noSessions') }}</h3>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Aktif oturum yok</h3>
         <p class="mt-1 text-sm text-gray-500">
-          {{ searchQuery || filterByVideo ? $t('session.noSearchResults') : $t('session.noActiveYet') }}
+          {{ searchQuery || filterByVideo ? 'Arama kriterlerinize uygun oturum bulunamadı.' : 'Henüz aktif bir oturum bulunmuyor.' }}
         </p>
         <div class="mt-6">
           <button
             @click="showCreateModal = true"
             class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            data-testid="create-first-session-button"
           >
             <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            {{ $t('session.createFirstSession') }}
+            İlk Oturumu Oluştur
           </button>
         </div>
       </div>
@@ -187,12 +185,13 @@ const filteredSessions = computed(() => {
 
 // Methods
 const loadSessions = async () => {
+  console.log('📋 Loading sessions for user:', authStore.user?.googleId || 'unknown')
   await sessionsStore.fetchSessions()
 }
 
 const handleCreateSession = async (sessionData: CreateSessionRequest) => {
   try {
-    // Create session via API
+    // All users (including guests) use the same API
     const newSession = await sessionsStore.createSession(sessionData)
     showCreateModal.value = false
     router.push(`/session/${newSession.id}`)

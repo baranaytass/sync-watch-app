@@ -196,7 +196,7 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ---
 
-## 10. Video Synchronization ✅
+## 10. Video Synchronization
 
 ### 10.1 YouTube Integration
 - [✅] YouTube API kurulumu
@@ -207,19 +207,13 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 ### 10.2 Video Sync Logic
 - [✅] Video player controls
 - [✅] Play/pause synchronization
-- [✅] Seek synchronization
+- [🚧] Seek synchronization
 - [✅] Time calculation logic
-- [✅] **NEW:** Real-time position calculation for new users
-- [✅] **NEW:** Echo loop prevention with server-authoritative pattern
-- [✅] **NEW:** Queue system for player not ready scenarios
 
 ### 10.3 WebSocket Integration
 - [✅] Video action broadcasting
 - [✅] Video sync event handling
 - [✅] Real-time synchronization test
-- [✅] **NEW:** Server-authoritative state pattern
-- [✅] **NEW:** Message deduplication system
-- [✅] **NEW:** Critical error detection and recovery
 
 ---
 
@@ -300,24 +294,41 @@ Bu döküman, projenin geliştirme sürecinde takip edilecek adımları ve her a
 
 ---
 
-## Proje Durumu: Tamamlandı ve Production-Ready
+## Güncel Durum
+**Son güncelleme:** 21 Haziran 2025
+**Aktif adım:** 12.2 - Full-Stack Integration Testing & Docker Setup
+**Tamamlanan adımlar:** 
+- **Video Player Bug Fixes:** YouTube video player görüntü problemi çözüldü (origin, enablejsapi parametreleri eklendi, CSS positioning düzeltildi)
+- **Session Management Bug Fixes:** Leave session handling düzeltildi (WebSocket leave message gönderimi, sessions list refresh, participant count mock data kaldırıldı)
+- **11.1 Session Auto-Cleanup:** Tamamlandı! Session lifecycle management tamamen çalışıyor
+- **10.x Video Synchronization:** YouTube Integration ve Video Player tamamen implementeli
+- **WebSocket Integration:** Real-time video sync, participant tracking, session management çalışıyor
+- **Build Status:** Tüm değişiklikler build edildi ve test edilebilir durumda 
 
-Projenin temel geliştirme fazı başarıyla tamamlanmıştır. Tüm ana hedeflere ulaşılmış olup, uygulama stabil, test edilmiş ve production ortamına hazır durumdadır.
+---
 
-### Çözülen Kritik Sorunlar ve Uygulanan Mimariler
+## 📝 OTURUM NOTU (21 Haziran 2025)
 
-1.  **WebSocket Echo Loop (Yankı Döngüsü) Sorunu ve Çözümü:**
-    *   **Sorun:** Bir kullanıcının video oynatma eylemi (play/pause), zincirleme bir reaksiyonla diğer istemcilerde de aynı eylemin tetiklenmesine ve sunucuya sürekli aynı isteğin gönderilmesine neden oluyordu. Bu durum, kontrolsüz bir döngü yaratıyordu.
-    *   **Çözüm:** **Server-Authoritative State Pattern** mimarisi benimsendi. Artık istemciler, kendi eylemlerini doğrudan video oynatıcısına yansıtmıyor. Bunun yerine, eylemlerini sunucuya bildiriyorlar. Sunucu, durumu güncelleyip **tek doğru kaynak (single source of truth)** olarak tüm istemcilere yetkili bir `video_sync_authoritative` mesajı yayınlıyor. İstemciler yalnızca bu yetkili mesaja göre kendi video oynatıcılarını güncelliyor. Bu sayede yankı döngüsü tamamen ortadan kaldırıldı.
+### Bu Oturumda Tamamlananlar ✅
+- **Test Config:** Playwright'e `maxFailures: 1` eklendi
+- **Test Selector Fix:** Tüm testlerdeki button selector hatası düzeltildi ("Ayarla" button)
+- **Docker Setup:** Backend Dockerfile + docker-compose.yml güncellemesi
+- **Integration Tests:** Full-stack test framework kuruldu (`web/tests/integration/`)
+- **Documentation:** Development.md test strategy section
 
-2.  **Yeni Katılımcı Senkronizasyon Sorunu ve Çözümü:**
-    *   **Sorun:** Aktif bir video oynatımı sırasında oturuma yeni bir kullanıcı katıldığında, video oturumun başlangıçtaki "play" komutunun zamanından başlıyor, mevcut anlık zamandan başlamıyordu. Bu, tüm kullanıcıların videosunun geriye sarmasına neden olan kritik bir hataydı.
-    *   **Çözüm:** Backend tarafında **gerçek zamanlı pozisyon hesaplama** mantığı geliştirildi. Yeni bir kullanıcı bağlandığında, sunucu son "play" eyleminden bu yana ne kadar süre geçtiğini hesaplayıp (`(Date.now() - lastActionTimestamp) / 1000`), videonun olması gereken *gerçek* zamanını bularak yeni kullanıcıya bu bilgiyi gönderiyor. Bu sayede, yeni katılımcılar mevcut akışa sorunsuz bir şekilde senkronize oluyor.
+### 🚧 Yarım Kalan İş - Kaldığımız Nokta
+**Çok Oturumlu E2E Test Senaryosu:**
+- Integration test framework kuruldu ✅
+- Backend Docker setup yapıldı ✅
+- Single user flow test hazır ✅
+- **Multi-session scenario testi eksik** ❌
 
-### Test ve Stabilite
+**Hedef:** Backend + Frontend birlikte çalışırken, aynı anda birden fazla kullanıcının aynı session'a katıldığı, video sync ve WebSocket iletişiminin gerçek zamanlı test edildiği e2e senaryo.
 
-*   Tüm bu senaryoları kapsayan (yankı döngüsü, yeni katılımcı senkronizasyonu, çok kullanıcılı karmaşık eylem sıralamaları) **6 adet uçtan uca (E2E) Playwright testi** yazılmıştır.
-*   Testlerin tamamı **%100 başarı** ile geçmektedir.
-*   Uygulama, TypeScript strict modu aktif ve sıfır derleme hatası ile çalışmaktadır.
+**Eksikler:** 
+- Multiple browser context management
+- Concurrent user video sync validation  
+- Real-time WebSocket message broadcasting test
+- Backend service Docker'da stable çalışması
 
-Proje, bu çözümler sayesinde robust (sağlam) ve güvenilir bir video senkronizasyon altyapısına kavuşmuştur. Opsiyonel geliştirmeler (sohbet sistemi, arayüz iyileştirmeleri vb.) için hazır durumdadır. 
+**Sonraki Oturum:** Backend Docker fix + çok oturumlu e2e test implementation 

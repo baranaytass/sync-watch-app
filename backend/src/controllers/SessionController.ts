@@ -1,33 +1,26 @@
-// import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { SessionService } from '../services/SessionService';
 import { YouTubeService } from '../services/YouTubeService';
 import { CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types';
 
-interface AuthenticatedRequest {
+interface AuthenticatedRequest extends FastifyRequest {
   user: {
     userId: string;
     email: string;
   };
-  params: any;
-  body: any;
 }
 
 export class SessionController {
   private sessionService: SessionService;
   private youtubeService: YouTubeService;
-  private fastify: any;
 
-  constructor(fastify: any, sessionService: SessionService, youtubeService: YouTubeService) {
-    console.log('🏗️ SessionController: Constructor called');
-    console.log('🏗️ SessionController: fastify instance decorators:', Object.keys(fastify));
-    console.log('🏗️ SessionController: hasDecorator broadcastToSession:', fastify.hasDecorator('broadcastToSession'));
-    this.fastify = fastify;
+  constructor(sessionService: SessionService, youtubeService: YouTubeService) {
     this.sessionService = sessionService;
     this.youtubeService = youtubeService;
   }
 
-  // GET /api/sessions - Get active sessions (both user's sessions and public listing)
-  async getSessions(_request: AuthenticatedRequest, reply: any): Promise<void> {
+  // GET /api/sessions - Get active sessions (public listing, no auth required)
+  async getSessions(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
       const sessions = await this.sessionService.getAllActiveSessions();
       
@@ -52,7 +45,7 @@ export class SessionController {
   }
 
   // POST /api/sessions - Create new session
-  async createSession(request: AuthenticatedRequest, reply: any): Promise<void> {
+  async createSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
     try {
       const body = request.body as CreateSessionRequest;
       
@@ -104,7 +97,7 @@ export class SessionController {
   }
 
   // GET /api/sessions/:id - Get specific session
-  async getSession(request: AuthenticatedRequest, reply: any): Promise<void> {
+  async getSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       
@@ -163,7 +156,7 @@ export class SessionController {
   }
 
   // POST /api/sessions/:id/join - Join session
-  async joinSession(request: AuthenticatedRequest, reply: any): Promise<void> {
+  async joinSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       
@@ -215,7 +208,7 @@ export class SessionController {
   }
 
   // POST /api/sessions/:id/video - Set session video
-  async setSessionVideo(request: AuthenticatedRequest, reply: any): Promise<void> {
+  async setSessionVideo(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       const body = request.body as SetSessionVideoRequest;
@@ -286,41 +279,6 @@ export class SessionController {
       
       console.log(`📋 SessionController: Video set successfully for session ${id}: "${videoMetadata.title}"`);
       
-      // Broadcast video update & sync to all session participants via WebSocket if decorator exists
-      const broadcaster = (this.fastify as any).broadcastToSession;
-      console.log(`📡 SessionController: broadcastToSession exists: ${typeof broadcaster}`);
-      console.log(`📡 SessionController: fastify decorators:`, Object.keys(this.fastify));
-      console.log(`📡 SessionController: fastify hasDecorator broadcastToSession:`, this.fastify.hasDecorator('broadcastToSession'));
-      
-      if (typeof broadcaster === 'function') {
-        console.log(`📡 Broadcasting video_update to session ${id}`);
-        try {
-          broadcaster(id, 'video_update', {
-            videoProvider: 'youtube',
-            videoId: videoData.videoId,
-            videoTitle: videoData.videoTitle,
-            videoDuration: videoData.videoDuration,
-          });
-          console.log(`✅ video_update broadcast successful`);
-        } catch (error) {
-          console.error(`❌ video_update broadcast failed:`, error);
-        }
-
-        console.log(`📡 Broadcasting video_sync to session ${id}`);
-        try {
-          broadcaster(id, 'video_sync', {
-            action: 'pause',
-            time: 0,
-            timestamp: new Date(),
-          });
-          console.log(`✅ video_sync broadcast successful`);
-        } catch (error) {
-          console.error(`❌ video_sync broadcast failed:`, error);
-        }
-      } else {
-        console.log(`❌ SessionController: broadcastToSession decorator not available`);
-      }
-
       const response: ApiResponse = {
         success: true,
         data: session

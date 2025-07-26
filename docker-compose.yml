@@ -1,7 +1,8 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: sync-watch-postgres
     environment:
       POSTGRES_DB: videosync
       POSTGRES_USER: videosync_user
@@ -11,38 +12,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U videosync_user -d videosync"]
       interval: 10s
       timeout: 5s
       retries: 5
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: sync-watch-backend
-    environment:
-      NODE_ENV: development
-      PORT: 3000
-      HOST: 0.0.0.0
-      DATABASE_URL: postgres://videosync_user:videosync_pass@postgres:5432/videosync
-      JWT_SECRET: supersecret
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
-      FRONTEND_URL: http://localhost:5173
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "3000:3000"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
 volumes:
   postgres_data: 

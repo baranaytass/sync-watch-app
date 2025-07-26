@@ -1,47 +1,11 @@
-# Sync Watch App - Technical Specification
+# Realtime Video Sync Chat App – Teknik Tasarım Dokümanı (güncel 2 Tem 2025)
 
-**Project Overview:** A real-time video synchronization application enabling users to watch YouTube videos together. It features a Fastify backend (REST API + WebSocket) and a Vue 3 frontend. The core feature is a server-authoritative sync system to ensure seamless playback across all clients.
-
----
-
-## 1. Project Structure
-
-The project is a monorepo organized into three main directories: `backend`, `web`, and `packages`.
-
-```
-/
-├── backend/              # Fastify API and WebSocket Server
-│   ├── database/         # PostgreSQL initialization scripts (init.sql)
-│   ├── src/
-│   │   ├── config/       # Environment variables and database connection
-│   │   ├── controllers/  # Request handlers for REST API routes (e.g., AuthController)
-│   │   ├── models/       # Database entity definitions (User, Session)
-│   │   ├── routes/       # API route definitions (auth, sessions, websocket)
-│   │   ├── services/     # Core business logic (AuthService, SessionService)
-│   │   ├── types/        # TypeScript type declarations specific to the backend
-│   │   └── server.ts     # Main server entry point
-│   └── Dockerfile        # Docker definition for the backend service
-│
-├── web/                  # Vue 3 Frontend Application
-│   ├── src/
-│   │   ├── assets/       # Global styles, fonts, and images
-│   │   ├── components/   # Reusable Vue components (VideoPlayer, SessionCard, etc.)
-│   │   ├── composables/  # Reusable stateful logic (e.g., useWebSocket)
-│   │   ├── router/       # Vue Router configuration and routes
-│   │   ├── stores/       # Pinia state management modules (auth, sessions, videoSync)
-│   │   ├── views/        # Page-level components (HomePage, SessionRoomPage)
-│   │   └── main.ts       # Main Vue application entry point
-│   └── tests/            # Playwright E2E test suites
-│
-├── packages/
-│   └── shared-types/     # TypeScript types shared between frontend and backend
-│
-└── docker-compose.yml    # Docker configuration to run services (Postgres, backend)
-```
+**Özet:** Bu proje, YouTube videolarını farklı kullanıcıların tarayıcılarında aynı anda senkronize oynatmayı ve gerçek zamanlı sohbet etmeyi amaçlayan bir web uygulamasıdır. Kullanıcılar Google hesabıyla veya misafir olarak oturum açar, bir oturum (session) oluşturur veya mevcut bir oturuma katılır. Sunucu, Fastify tabanlı REST API ve WebSocket üzerinden oynatma eylemlerini ve mesajları dağıtır. Ön yüz Vue 3 + Pinia + Vite ile geliştirilmiş olup, **Shadcn UI** bileşen kütüphanesi kullanılarak modern ve erişilebilir bir tasarım sunar.
 
 ---
 
-## 2. Data Models
+## 1. Veri Modelleri
+
 ```typescript
 interface User {
   id: string;
@@ -49,153 +13,368 @@ interface User {
   email: string;
   name: string;
   avatar: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface SessionParticipant {
+  sessionId: string;
   userId: string;
   name: string;
   avatar: string;
+  joinedAt: Date;
   isOnline: boolean;
+  lastSeen: Date;
 }
 
 interface Session {
   id: string;
   title: string;
+  description?: string;
   hostId: string;
   videoProvider: 'youtube' | null;
   videoId: string | null;
   videoTitle: string | null;
   videoDuration: number;
-  // Core state for sync
   lastAction: 'play' | 'pause' | 'seek';
   lastActionTimeAsSecond: number;
   lastActionTimestamp: Date;
   isActive: boolean;
   participants: SessionParticipant[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
 ---
 
-## 3. API & Communication
+## 2. REST API Uç Noktaları
 
-### REST API
+| Metot | Yol                       | Amaç                     |
+| ----- | ------------------------- | ------------------------ |
+| GET   | /api/auth/google          | Google OAuth yönlendirme |
+| GET   | /api/auth/google/callback | OAuth callback           |
+| POST  | /api/auth/guest           | Misafir kullanıcı girişi |
+| POST  | /api/auth/logout          | Oturum sonlandırma       |
+| GET   | /api/auth/me              | Oturum bilgisini getir   |
+| GET   | /api/sessions             | Aktif oturumları listele |
+| POST  | /api/sessions             | Oturum oluştur           |
+| GET   | /api/sessions/\:id        | Belirli oturumu getir    |
+| POST  | /api/sessions/\:id/join   | Oturuma katıl            |
+| POST  | /api/sessions/\:id/video  | Oturum videosunu ayarla  |
 
-| Method | Path                      | Purpose                  |
-| ------ | ------------------------- | ------------------------ |
-| GET    | /api/auth/google          | Google OAuth Redirect    |
-| GET    | /api/auth/google/callback | OAuth Callback           |
-| POST   | /api/auth/logout          | Logout                   |
-| GET    | /api/auth/me              | Get current user         |
-| GET    | /api/sessions             | List active sessions     |
-| POST   | /api/sessions             | Create session           |
-| GET    | /api/sessions/:id         | Get session details      |
-| POST   | /api/sessions/:id/join    | Join session             |
-| POST   | /api/sessions/:id/video   | Set video for session    |
+### WebSocket Endpoints
 
-### WebSocket API
-
-| Method    | Endpoint                 | Description                        |
-| --------- | ------------------------ | ---------------------------------- |
-| WebSocket | `/ws/session/:sessionId` | Real-time connection for a session |
-
-A server-authoritative pattern is used for all real-time communication. The client sends actions, and the server broadcasts the canonical state to all participants.
-
-| Direction | Type                       | Payload Fields                                               |
-| --------- | -------------------------- | ------------------------------------------------------------ |
-| C→S       | `video_action`             | `action: 'play'\|'pause'\|'seek'`, `time: number`, `messageId: string` |
-| S→C       | `video_sync_authoritative` | `action`, `time`, `timestamp`, `messageId`                   |
-| S→C       | `participants`             | `participants: SessionParticipant[]`                         |
-| S→C       | `video_update`             | `videoProvider`, `videoId`, `videoTitle`, `videoDuration`    |
+| Method | Endpoint | Açıklama |
+|--------|----------|----------|
+| WebSocket | `/ws/session/:sessionId` | Session'a özel WebSocket bağlantısı |
 
 ---
 
-## 4. Core Logic: Server-Authoritative Video Sync
+## 3. İstek ⁄ Yanıt Şemaları
 
-This system solves client-side "echo loops" and incorrect video state for users joining mid-session.
+```jsonc
+// POST /api/sessions  İstek
+{
+  "title": "Movie Night",
+}
 
-- **Server as Single Source of Truth:** The backend maintains the canonical video state (action, time, timestamp) for each session.
-- **Authoritative Broadcast:** Clients send `video_action` messages. The server updates its state and broadcasts a `video_sync_authoritative` message to all clients. Clients **only** react to these messages.
-- **Real-time Position Calculation:** When a new user joins, the backend calculates the current video position by adding the elapsed time since the last "play" action, ensuring new users sync to the correct moment.
-- **Frontend Logic:** The player is in a "listen-only" mode. It only emits `video_action` for genuine user interactions and ignores state changes triggered programmatically by the server, preventing echo loops.
-- **Message Deduplication:** The server uses a `messageId` from the client to prevent processing the same action more than once.
-
----
-
-## 5. Database Schema (PostgreSQL)
-
-- **`users`**: Stores persistent user data.
-- **`sessions`**: Stores active session data. Defined as an `UNLOGGED` table for high performance, as this data is transient (like a cache).
-- **`session_participants`**: Maps users to sessions. Also an `UNLOGGED` table.
-- **Automatic Cleanup**: Sessions are marked as inactive when the last participant leaves.
-
----
-
-## 6. How to Run
-
-### 1. Start Services
-
-The backend and database run in Docker containers.
-
-```bash
-# Start the backend and postgres services in detached mode
-docker-compose up -d backend postgres
+// Yanıt (201)
+{
+  "success": true,
+  "data": {
+    "id": "session_123",
+    "title": "Movie Night",
+    "hostId": "user_123",
+    "videoProvider": null,
+    "videoId": null,
+    "videoTitle": null,
+    "videoDuration": 0,
+    "lastAction": "pause",
+    "lastActionTimeAsSecond": 0,
+    "lastActionTimestamp": "2025-06-21T10:00:00Z",
+    "isActive": true,
+    "participants": [
+      {
+        "sessionId": "session_123",
+        "userId": "user_123",
+        "name": "John Doe",
+        "avatar": "https://example.com/avatar.jpg",
+        "joinedAt": "2025-06-21T10:00:00Z",
+        "isOnline": true,
+        "lastSeen": "2025-06-21T10:00:00Z"
+      }
+    ],
+    "createdAt": "2025-06-21T10:00:00Z",
+    "updatedAt": "2025-06-21T10:00:00Z"
+  }
+}
 ```
 
-### 2. Run Frontend
+---
 
-The frontend development server must be run separately.
+## 4. WebSocket Mesaj Şemaları
 
+| Yön | Tip             | Alanlar                                                      |         |                          |
+| --- | --------------- | ------------------------------------------------------------ | ------- | ------------------------ |
+| C→S | `video_action`  | \`action: 'play'                                             | 'pause' | 'seek'`, `time: number\` |
+| C→S | `chat`          | `message: string`                                            |         |                          |
+| C→S | `leave`         | – (tarayıcı kapatma veya manuel ayrılma)                   |         |                          |
+| S→C | `video_sync`    | `action`, `time`, `timestamp`                                |         |                          |
+| S→C | `chat`          | `id`, `userId`, `message`, `timestamp`                       |         |                          |
+| S→C | `participants`  | `participants: { userId, name, avatar }[]` (yalnızca userId) |         |                          |
+| S→C | `video_update`  | `videoProvider`, `videoId`, `videoTitle`, `videoDuration`    |         |                          |
+
+---
+
+## 5. Veritabanı Şeması (PostgreSQL)
+
+```sql
+-- users (kalıcı veri)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  google_id VARCHAR(255) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  avatar TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- sessions (cache data - UNLOGGED)
+CREATE UNLOGGED TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  host_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
+  video_provider VARCHAR(50),
+  video_id VARCHAR(255),
+  video_title VARCHAR(500),
+  video_duration INTEGER DEFAULT 0,
+  last_action VARCHAR(20) DEFAULT 'pause',
+  last_action_time_as_second INTEGER DEFAULT 0,
+  last_action_timestamp TIMESTAMP DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- session_participants (cache data - UNLOGGED)
+CREATE UNLOGGED TABLE session_participants (
+  session_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
+  user_id UUID NOT NULL, -- Foreign key constraint kaldırıldı UNLOGGED için
+  joined_at TIMESTAMP DEFAULT NOW(),
+  is_online BOOLEAN DEFAULT TRUE,
+  last_seen TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (session_id, user_id)
+);
+```
+
+**Önemli Notlar:**
+- `sessions` ve `session_participants` tabloları **UNLOGGED** olarak tanımlandı çünkü bunlar cache verisidir
+- UNLOGGED tablolar foreign key constraint'leri desteklemediği için direkt referanslar kaldırıldı
+- Participants bilgisi Session modelinde otomatik olarak dahil edilir
+- Leave session işleminde participant sayısı 0'a düştüğünde session otomatik deaktif edilir
+- Host ayrıldığında ve başka participants varsa ilk participant yeni host olur
+
+---
+
+## 6. Vue 3 + Pinia Katmanı
+
+```typescript
+// stores/auth.ts
+export const useAuthStore = defineStore('auth', {
+  state: () => ({
+    user: null as User | null,
+    isAuthenticated: false,
+    loading: false
+  }),
+  actions: {
+    loginWithGoogle() {},
+    loginAsGuest() {},
+    logout() {},
+    fetchUser() {}
+  }
+});
+
+// stores/sessions.ts
+export const useSessionsStore = defineStore('sessions', {
+  state: () => ({
+    sessions: [] as Session[],
+    currentSession: null as Session | null,
+    participants: [] as SessionParticipant[],
+    isHost: false,
+    loading: false
+  }),
+  actions: {
+    fetchSessions() {},
+    createSession() {},
+    joinSession() {},
+    leaveSession() {},
+    setSessionVideo() {},
+    updateParticipants() {}
+  }
+});
+
+// stores/videoSync.ts
+export const useVideoSyncStore = defineStore('videoSync', {
+  state: () => ({
+    currentAction: 'pause' as VideoAction,
+    currentTime: 0,
+    lastActionTimestamp: null as Date | null
+  }),
+  actions: {
+    syncVideo() {},
+    calculateCurrentTime() {}
+  }
+});
+```
+
+---
+
+## 7. Docker PostgreSQL Kurulumu
+
+Geliştirme ortamında PostgreSQL Docker konteynerinde çalıştırılacaktır:
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: videosync
+      POSTGRES_USER: videosync_user
+      POSTGRES_PASSWORD: videosync_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+**Kullanım:**
 ```bash
-# Navigate to the web directory
+# Veritabanını başlatma
+docker-compose up -d postgres
+
+# Veritabanını durdurma
+docker-compose down
+```
+
+---
+
+## 8. Ortam Değişkenleri
+
+```
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
+DATABASE_URL=postgresql://videosync_user:videosync_pass@localhost:5432/videosync
+JWT_SECRET=your-jwt-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+YOUTUBE_API_KEY=your-youtube-api-key
+FRONTEND_URL=http://localhost:5173
+```
+
+---
+
+## 9. Hata Yanıt Sözleşmesi
+
+| HTTP Kodu | `error`             | `message`                                     |
+| --------- | ------------------- | --------------------------------------------- |
+| 400       | `invalid_video_id`  | YouTube video not found or private            |
+| 400       | `invalid_input`     | Required fields missing or invalid format     |
+| 403       | `not_session_host`  | Only session host can perform this action     |
+| 403       | `unauthorized`      | User not authorized for this action           |
+| 404       | `session_not_found` | Session does not exist or is no longer active |
+| 404       | `user_not_found`    | User does not exist                           |
+| 500       | `session_create_error` | Failed to create session                   |
+| 500       | `session_join_error`   | Failed to join session                     |
+
+---
+
+## 10. Test Sistemi
+
+### Test Kategorileri
+
+#### 🔗 E2E Integration Test (Real Video Sync)
+Gerçek backend ile tam entegrasyon testi:
+```bash
 cd web
-
-# Install dependencies (if you haven't already)
-npm install
-
-# Start the frontend dev server
-npm run dev
+npm run test:real-sync
 ```
-The application will be available at `http://localhost:5173`.
 
----
+**Test Senaryosu:**
+1. **2 Guest User**: Misafir olarak authentication
+2. **Session Creation**: User1 oturum oluşturur ve video setler
+3. **Session Join**: User2 aynı oturuma katılır  
+4. **WebSocket Sync**: User1 video başlatır, User2'de otomatik başlar
+5. **Participants Tracking**: Real-time katılımcı takibi
 
-## 7. How to Run Tests
+#### 🧪 Unit Tests (Frontend Mock)
+Frontend mantığını test eden birim testleri:
+```bash
+cd web
+npm run test
+```
 
-End-to-end tests are implemented with Playwright and run against a real backend and database instance. **Ensure the services are running (Step 6.1) before executing tests.**
+### Test Konfigürasyonları
 
-### Run All Tests
+#### playwright.config.ts (Unit Tests)
+- **Amaç**: Hızlı frontend testleri
+- **Backend**: Mock data
+- **Timeout**: 30 saniye
+
+#### playwright.config.integration.ts (E2E Tests)  
+- **Amaç**: Gerçek backend entegrasyonu
+- **Backend**: localhost:3000
+- **Timeout**: 60 saniye
+- **Health Check**: Backend hazırlık kontrolü
+
+### Docker Test Runner
 
 ```bash
-# Navigate to the web directory
-cd web
+# Full Docker setup ile test
+./run-e2e-test.sh
 
-# Run all Playwright tests
-npx playwright test
+# Manuel setup ile test
+docker-compose up -d postgres
+cd backend && npm run dev
+cd web && npm run test:real-sync
 ```
-
-### Test Configuration (`web/playwright.config.ts`)
-- Tests run serially (`workers: 1`) and fail fast (`maxFailures: 1`) to provide clear results.
-- A global setup script pings the backend to ensure it's healthy before tests start.
-- An HTML report is generated in `web/playwright-report/` after each run.
-
-### Test Suites (`web/tests/`)
-- `auth.spec.ts`: Guest login and logout flow.
-- `session.spec.ts`: Session creation and participant validation.
-- `video-sync-advanced.spec.ts`: Complex multi-user sync scenarios.
-- `video-sync-join-state.spec.ts`: Critical test for ensuring users joining mid-playback sync correctly.
 
 ---
 
-## 8. Project Status
+## 11. Monorepo Klasör Yerleşimi
 
-- **🚀 PRODUCTION READY**
-- All core features are complete and stable.
-- The critical "new user join" sync bug is fixed and covered by tests.
-- Echo loop issue is resolved by the server-authoritative architecture.
-- All 6 end-to-end tests are passing (100% success rate).
+```
+packages/                       # Ortak bağımlılıklar (paylaşılan tipler)
+└─ shared-types/                # Backend ve frontend arasında paylaşılan TS tipleri
 
-**Optional Enhancements:**
-- Chat system implementation
-- UI/UX improvements
-- Mobile responsiveness
+backend/                        # Node.js Fastify API & WebSocket sunucusu
+└─ src/
+   ├─ config/                   # Ortam değişkenleri ve uygulama ayarları
+   ├─ controllers/              # HTTP isteklerini karşılayan controller katmanı
+   ├─ routes/                   # Fastify route tanımları ve plugin'ler
+   ├─ services/                 # Use‑case / iş kuralları mantığı
+   ├─ models/                   # Domain modelleri & ORM şemaları
+   ├─ utils/                    # Ortak yardımcı fonksiyonlar
+   └─ types/                    # Backend'e özel tip tanımları
+
+web/                            # Vue 3 + Vite SPA (Shadcn UI tasarım kiti)
+└─ src/
+   ├─ assets/                   # Statik varlıklar (ikon, görsel, font)
+   ├─ components/               # UI bileşenleri (atomic design yaklaşımı)
+   ├─ composables/              # Reusable Composition API hooks (`useX` kalıbı)
+   ├─ stores/                   # Pinia global state tanımları
+   ├─ views/                    # Route'a bağlı sayfa bileşenleri
+   ├─ router/                   # Vue Router konfigürasyonu
+   ├─ utils/                    # Front‑end yardımcı fonksiyonlar
+   └─ types/                    # Frontend'e özel tip tanımları
+```

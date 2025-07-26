@@ -4,37 +4,38 @@
     <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-medium text-gray-900 dark:text-white">
-          {{ $t('session.participants') }} ({{ participants.length }})
+          Katılımcılar ({{ participants.length }})
         </h3>
         <div class="flex items-center">
           <div class="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ onlineCount }} {{ $t('common.online') }}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ onlineCount }} çevrimiçi</span>
         </div>
       </div>
     </div>
 
     <!-- Participants List -->
-    <div class="max-h-64 overflow-y-auto">
-      <div v-if="participants.length === 0" class="p-4 text-center">
+    <div class="max-h-64 overflow-y-auto" data-testid="participants-container">
+      <div v-if="participants.length === 0" class="p-4 text-center" data-testid="no-participants">
         <svg class="h-8 w-8 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('session.noParticipants') }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Henüz katılımcı yok</p>
       </div>
       
-      <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
+      <div v-else class="divide-y divide-gray-100 dark:divide-gray-700" data-testid="participants-list">
         <div
           v-for="participant in sortedParticipants"
           :key="participant.userId"
-          class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
-          data-testid="participant-item"
+          :data-testid="`participant-${participant.userId}`"
+          class="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 participant-item"
         >
           <!-- Avatar -->
           <div class="relative flex-shrink-0">
             <img
               :src="participant.avatar || defaultAvatar"
               :alt="participant.name"
-              class="h-8 w-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-600"
+              :data-testid="`avatar-${participant.userId}`"
+              class="h-8 w-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-600 user-avatar"
             />
             <!-- Online indicator -->
             <div
@@ -46,7 +47,10 @@
           <!-- User Info -->
           <div class="ml-3 flex-1 min-w-0">
             <div class="flex items-center">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p 
+                class="text-sm font-medium text-gray-900 dark:text-white truncate participant-name"
+                :data-testid="`name-${participant.userId}`"
+              >
                 {{ participant.name }}
               </p>
               <!-- Host Badge -->
@@ -79,7 +83,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from '@/composables/useI18n'
 
 interface Participant {
   userId: string
@@ -95,9 +98,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-// i18n setup
-const { t } = useI18n()
 
 // Default avatar for users without profile picture
 const defaultAvatar = 'https://ui-avatars.com/api/?name=User&background=e5e7eb&color=6b7280'
@@ -128,18 +128,18 @@ const formatJoinTime = (joinedAt: Date | string): string => {
   const joined = typeof joinedAt === 'string' ? new Date(joinedAt) : joinedAt
   
   if (isNaN(joined.getTime())) {
-    return t('date.unknownTime')
+    return 'Bilinmeyen zaman'
   }
   
   const diffInMinutes = Math.floor((now.getTime() - joined.getTime()) / (1000 * 60))
   
   if (diffInMinutes < 1) {
-    return t('date.justJoined')
+    return 'Az önce katıldı'
   } else if (diffInMinutes < 60) {
-    return t('date.minutesAgoJoined', { minutes: diffInMinutes })
+    return `${diffInMinutes} dakika önce katıldı`
   } else {
     const diffInHours = Math.floor(diffInMinutes / 60)
-    return t('date.hoursAgoJoined', { hours: diffInHours })
+    return `${diffInHours} saat önce katıldı`
   }
 }
 </script> 
