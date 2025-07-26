@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import type { Session, SessionParticipant, CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types'
 import { useAuthStore } from './auth'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 export const useSessionsStore = defineStore('sessions', () => {
   // State
   const sessions = ref<Session[]>([])
@@ -60,7 +62,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/sessions', {
+      const response = await fetch(`${API_BASE_URL}/api/sessions`, {
         method: 'GET',
         credentials: 'include',
       })
@@ -97,7 +99,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}`, {
         method: 'GET',
         credentials: 'include',
       })
@@ -140,7 +142,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/sessions', {
+      const response = await fetch(`${API_BASE_URL}/api/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +196,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/join`, {
+      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/join`, {
         method: 'POST',
         credentials: 'include',
       })
@@ -256,7 +258,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/video`, {
+      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/video`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
