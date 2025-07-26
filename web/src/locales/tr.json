@@ -1,0 +1,133 @@
+{
+  "common": {
+    "loading": "Yükleniyor...",
+    "retry": "Tekrar Dene",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "error": "Hata",
+    "success": "Başarılı",
+    "confirm": "Onayla",
+    "yes": "Evet",
+    "no": "Hayır",
+    "or": "veya",
+    "and": "ve",
+    "online": "çevrimiçi",
+    "offline": "çevrimdışı",
+    "people": "kişi",
+    "minutes": "dakika",
+    "seconds": "saniye",
+    "hours": "saat"
+  },
+  "auth": {
+    "loginWithGoogle": "Google ile Giriş Yap",
+    "loginAsGuest": "Misafir Olarak Giriş",
+    "logout": "Çıkış Yap",
+    "loggingIn": "Giriş yapılıyor...",
+    "loggingOut": "Çıkış yapılıyor...",
+    "welcome": "Hoş geldin",
+    "loginToAccount": "Hesabınıza giriş yapın",
+    "profile": "Profil",
+    "settings": "Ayarlar"
+  },
+  "navigation": {
+    "home": "Ana Sayfa",
+    "sessions": "Oturumlar",
+    "login": "Giriş Yap",
+    "backToSessions": "Oturumlara Dön"
+  },
+  "app": {
+    "title": "Video Sync Chat",
+    "description": "Videoları arkadaşlarınla senkronize izle ve sohbet et"
+  },
+  "session": {
+    "createNew": "Yeni Oturum Oluştur",
+    "title": "Oturum Başlığı",
+    "description": "Açıklama (isteğe bağlı)",
+    "titlePlaceholder": "Örn: Film Gecesi",
+    "descriptionPlaceholder": "Bu oturum hakkında kısa bir açıklama...",
+    "creating": "Oluşturuluyor...",
+    "create": "Oturum Oluştur",
+    "join": "Katıl",
+    "leave": "Ayrıl",
+    "details": "Oturum Bilgileri",
+    "participants": "Katılımcılar",
+    "noParticipants": "Henüz katılımcı yok",
+    "loading": "Oturum yükleniyor...",
+    "notFound": "Oturum Bulunamadı",
+    "loadingSessions": "Oturumlar yükleniyor...",
+    "noSessions": "Henüz aktif oturum yok",
+    "createFirstSession": "İlk oturumunuzu oluşturun",
+    "search": "Oturum ara...",
+    "onlyWithVideo": "Sadece videolu oturumlar",
+    "found": "oturum bulundu",
+    "noSearchResults": "Arama kriterlerinize uygun oturum bulunamadı.",
+    "noActiveYet": "Henüz aktif bir oturum bulunmuyor.",
+    "info": {
+      "allUsersCanSet": "Tüm kullanıcılar ayarlayabilir",
+      "lastAction": "Son eylem",
+      "noVideoSelected": "Henüz video seçilmedi",
+      "videoNotSelectedDesc": "Host tarafından video seçilmesi bekleniyor"
+    },
+    "errors": {
+      "titleRequired": "Oturum başlığı gerekli",
+      "titleMinLength": "Oturum başlığı en az 3 karakter olmalı",
+      "titleMaxLength": "Oturum başlığı en fazla 100 karakter olabilir",
+      "loadFailed": "Oturum yüklenemedi",
+      "createFailed": "Oturum oluşturulamadı",
+      "joinFailed": "Oturuma katılınamadı"
+    }
+  },
+  "video": {
+    "loading": "Video yükleniyor...",
+    "loadFailed": "Video yüklenemedi",
+    "setVideo": "Ayarla",
+    "setting": "Ayarlanıyor...",
+    "youtubeUrl": "YouTube Video URL",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlHelper": "YouTube video URL'sini yapıştırın. Video tüm katılımcılar için senkronize edilecek.",
+    "invalidUrl": "Geçerli bir YouTube URL'si girin",
+    "setError": "Video ayarlanırken bir hata oluştu",
+    "noVideo": "Video Henüz Seçilmedi",
+    "unsupportedProvider": "Desteklenmeyen Video Sağlayıcısı",
+    "comingSoon": "Henüz desteklenmiyor",
+    "actions": {
+      "play": "Oynat",
+      "pause": "Duraklat", 
+      "seek": "Atlama"
+    },
+    "errors": {
+      "invalidVideoId": "Geçersiz video ID",
+      "html5Error": "HTML5 player hatası",
+      "videoNotFound": "Video bulunamadı",
+      "embedNotAllowed": "Video gömme izni yok",
+      "unknownError": "Video hatası"
+    }
+  },
+  "chat": {
+    "title": "Sohbet",
+    "comingSoon": "Chat özelliği yakında",
+    "typeMessage": "Mesaj yazın...",
+    "send": "Gönder"
+  },
+  "date": {
+    "noDate": "Tarih yok",
+    "invalidDate": "Geçersiz tarih",
+    "unknownTime": "Bilinmeyen zaman",
+    "justJoined": "Az önce katıldı",
+    "minutesAgoJoined": "{minutes} dakika önce katıldı",
+    "hoursAgoJoined": "{hours} saat önce katıldı"
+  },
+  "theme": {
+    "light": "Açık Tema",
+    "dark": "Koyu Tema",
+    "toggle": "Tema Değiştir"
+  },
+  "language": {
+    "turkish": "Türkçe",
+    "english": "English",
+    "switch": "Dil Değiştir"
+  }
+} 

@@ -39,16 +39,16 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   
-  // Eğer kullanıcı bilgisi yoksa ve authentication gerektiren bir sayfaya gidiyorsa
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    // Önce kullanıcı bilgisini almaya çalış (session'dan)
+  // Oturum doğrulama: Eğer kullanıcı bilgisi mevcutsa (localStorage),
+  // backend ile tekrar doğrulayarak cookie geçerliliğini kontrol et.
+  if (authStore.isAuthenticated) {
     await authStore.fetchUser()
-    
-    // Hala authenticated değilse login sayfasına yönlendir
-    if (!authStore.isAuthenticated) {
-      next('/login')
-      return
-    }
+  }
+
+  // Authentication gerektiren route'a yetkisiz giriş kontrolü
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next('/login')
+    return
   }
   
   // Eğer zaten authenticated ve login sayfasına gidiyorsa ana sayfaya yönlendir

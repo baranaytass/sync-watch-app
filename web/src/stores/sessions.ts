@@ -59,7 +59,18 @@ export const useSessionsStore = defineStore('sessions', () => {
 
   // Actions
   const fetchSessions = async (): Promise<void> => {
-    console.log('📋 Sessions Store: Fetching sessions')
+    // Debug logging control
+    const isDebugMode = () => {
+      const userAgent = navigator.userAgent
+      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
+        (document.title.includes('advanced') || document.title.includes('Advanced'))
+      return isPlaywrightAdvanced || import.meta.env.DEV
+    }
+    
+    if (isDebugMode()) {
+      console.log('📋 Sessions Store: Fetching sessions')
+    }
+    
     loading.value = true
     error.value = null
 
@@ -78,10 +89,12 @@ export const useSessionsStore = defineStore('sessions', () => {
 
       if (result.success && Array.isArray(result.data)) {
         sessions.value = result.data.map(transformDates)
-        console.log(`📋 Sessions Store: Loaded ${sessions.value.length} sessions`)
-        sessions.value.forEach(session => {
-          console.log(`📋 Sessions Store: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`)
-        })
+        if (isDebugMode()) {
+          console.log(`📋 Sessions Store: Loaded ${sessions.value.length} sessions`)
+          sessions.value.forEach(session => {
+            console.log(`📋 Sessions Store: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`)
+          })
+        }
       } else {
         throw new Error(result.error?.message || 'Failed to fetch sessions')
       }
@@ -128,7 +141,18 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const createSession = async (data: CreateSessionRequest): Promise<Session | null> => {
-    console.log('➕ Sessions Store: Creating new session:', data.title)
+    // Debug logging control
+    const isDebugMode = () => {
+      const userAgent = navigator.userAgent
+      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
+        (document.title.includes('advanced') || document.title.includes('Advanced'))
+      return isPlaywrightAdvanced || import.meta.env.DEV
+    }
+    
+    if (isDebugMode()) {
+      console.log('➕ Sessions Store: Creating new session:', data.title)
+    }
+    
     loading.value = true
     error.value = null
 
@@ -148,7 +172,9 @@ export const useSessionsStore = defineStore('sessions', () => {
 
       if (result.success && result.data) {
         const newSession = transformDates(result.data)
-        console.log(`➕ Sessions Store: Created session ${newSession.id}: "${newSession.title}"`)
+        if (isDebugMode()) {
+          console.log(`➕ Sessions Store: Created session ${newSession.id}: "${newSession.title}"`)
+        }
         
         // Add to sessions list
         sessions.value.unshift(newSession)
@@ -167,7 +193,18 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const joinSession = async (sessionId: string): Promise<Session | null> => {
-    console.log(`🚪 Sessions Store: Joining session ${sessionId}`)
+    // Debug logging control
+    const isDebugMode = () => {
+      const userAgent = navigator.userAgent
+      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
+        (document.title.includes('advanced') || document.title.includes('Advanced'))
+      return isPlaywrightAdvanced || import.meta.env.DEV
+    }
+    
+    if (isDebugMode()) {
+      console.log(`🚪 Sessions Store: Joining session ${sessionId}`)
+    }
+    
     loading.value = true
     error.value = null
 
@@ -186,7 +223,9 @@ export const useSessionsStore = defineStore('sessions', () => {
 
       if (result.success && result.data) {
         const joinedSession = transformDates(result.data)
-        console.log(`🚪 Sessions Store: Joined session ${sessionId} with ${joinedSession.participants.length} participants`)
+        if (isDebugMode()) {
+          console.log(`🚪 Sessions Store: Joined session ${sessionId} with ${joinedSession.participants.length} participants`)
+        }
         
         // Update current session
         currentSession.value = joinedSession
@@ -211,7 +250,24 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const setSessionVideo = async (sessionId: string, data: SetSessionVideoRequest): Promise<Session | null> => {
-    console.log(`🎥 Sessions Store: Setting video for session ${sessionId}:`, data.videoId)
+    // Debug logging control
+    function shouldLogCriticalOnly(): boolean {
+      const isPlaywright = typeof window !== 'undefined' && 
+        window.navigator.userAgent.includes('Playwright')
+      
+      if (!isPlaywright) return false
+      
+      const title = document.title || ''
+      const isVideoSyncTest = title.includes('video-sync') || title.includes('Video Sync')
+      return isVideoSyncTest && !title.includes('advanced')
+    }
+    
+    if (shouldLogCriticalOnly()) {
+      console.log(`🎥 Setting video: ${data.videoId}`)
+    } else if (import.meta.env.DEV) {
+      console.log(`🎥 Sessions Store: Setting video for session ${sessionId}:`, data.videoId)
+    }
+    
     loading.value = true
     error.value = null
 
@@ -259,20 +315,58 @@ export const useSessionsStore = defineStore('sessions', () => {
 
   const updateCurrentSession = (updatedSession: Partial<Session>): void => {
     if (currentSession.value) {
-      console.log(`🔄 Sessions Store: Updating current session ${currentSession.value.id}`)
+      // Debug logging control
+      function shouldLogCriticalOnly(): boolean {
+        const isPlaywright = typeof window !== 'undefined' && 
+          window.navigator.userAgent.includes('Playwright')
+        
+        if (!isPlaywright) return false
+        
+        const title = document.title || ''
+        const isVideoSyncTest = title.includes('video-sync') || title.includes('Video Sync')
+        return isVideoSyncTest && !title.includes('advanced')
+      }
+      
+      if (!shouldLogCriticalOnly() && import.meta.env.DEV) {
+        console.log(`🔄 Sessions Store: Updating current session ${currentSession.value.id}`)
+        console.log(`🔄 Sessions Store: Update data:`, updatedSession)
+        console.log(`🔄 Sessions Store: Current session before update:`, currentSession.value.videoId)
+      }
+      
       currentSession.value = { ...currentSession.value, ...updatedSession }
+      
+      if (!shouldLogCriticalOnly() && import.meta.env.DEV) {
+        console.log(`🔄 Sessions Store: Current session after update:`, currentSession.value.videoId)
+      }
       
       // Also update in sessions list if exists
       const sessionIndex = sessions.value.findIndex(s => s.id === currentSession.value!.id)
       if (sessionIndex >= 0) {
         sessions.value[sessionIndex] = currentSession.value
+        if (!shouldLogCriticalOnly() && import.meta.env.DEV) {
+          console.log(`🔄 Sessions Store: Also updated session in list`)
+        }
       }
-    }
+          } else {
+        if (import.meta.env.DEV) {
+          console.warn(`🔄 Sessions Store: Cannot update - no current session`)
+        }
+      }
   }
 
   const updateParticipants = (participantsList: Array<{ userId: string; name: string; avatar: string }>): void => {
     if (currentSession.value) {
-      console.log(`👥 Sessions Store: Updating participants (${participantsList.length} users)`)
+      // Debug logging control
+      const isDebugMode = () => {
+        const userAgent = navigator.userAgent
+        const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
+          (document.title.includes('advanced') || document.title.includes('Advanced'))
+        return isPlaywrightAdvanced || import.meta.env.DEV
+      }
+      
+      if (isDebugMode()) {
+        console.log(`👥 Sessions Store: Updating participants (${participantsList.length} users)`)
+      }
       
       // Convert WebSocket participant format to SessionParticipant format
       const updatedParticipants: SessionParticipant[] = participantsList.map(p => {
@@ -294,13 +388,17 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const leaveSession = (): void => {
-    console.log('🚪 Sessions Store: Leaving current session')
+    if (import.meta.env.DEV) {
+      console.log('🚪 Sessions Store: Leaving current session')
+    }
     currentSession.value = null
     error.value = null
   }
 
   const clearSessions = (): void => {
-    console.log('🗑️ Sessions Store: Clearing all sessions')
+    if (import.meta.env.DEV) {
+      console.log('🗑️ Sessions Store: Clearing all sessions')
+    }
     sessions.value = []
     currentSession.value = null
     error.value = null
@@ -308,12 +406,16 @@ export const useSessionsStore = defineStore('sessions', () => {
 
   // Guest user için direct set metodları
   const setCurrentSession = (session: any): void => {
-    console.log('👤 Sessions Store: Setting current session (guest mode)')
+    if (import.meta.env.DEV) {
+      console.log('👤 Sessions Store: Setting current session (guest mode)')
+    }
     currentSession.value = session
   }
 
   const setParticipants = (participantsList: any[]): void => {
-    console.log('👤 Sessions Store: Setting participants (guest mode)')
+    if (import.meta.env.DEV) {
+      console.log('👤 Sessions Store: Setting participants (guest mode)')
+    }
     if (currentSession.value) {
       // Create new participants array to trigger reactivity
       const newParticipants = participantsList.map(p => ({

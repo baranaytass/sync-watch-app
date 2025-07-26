@@ -22,6 +22,8 @@
     "clean": "npm run clean --workspaces && rm -rf node_modules",
     "docker:db:up": "docker-compose up -d postgres",
     "docker:db:down": "docker-compose down",
+    "docker:stack:up": "docker-compose up -d backend postgres",
+    "docker:stack:down": "docker-compose down",
     "docker:db:logs": "docker-compose logs -f postgres"
   },
   "devDependencies": {

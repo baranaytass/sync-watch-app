@@ -1,4 +1,4 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+// import { FastifyRequest, FastifyReply } from 'fastify';
 
 export interface JWTPayload {
   userId: string;
@@ -8,8 +8,8 @@ export interface JWTPayload {
 }
 
 export async function authenticateJWT(
-  request: FastifyRequest,
-  reply: FastifyReply
+  request: any,
+  reply: any
 ): Promise<void> {
   try {
     // Try to get token from cookie first

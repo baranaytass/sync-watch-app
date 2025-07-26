@@ -4,10 +4,10 @@
     <div class="max-w-md w-full space-y-8">
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Video Sync Chat
+          {{ $t('app.title') }}
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600">
-          Videoları arkadaşlarınla senkronize izle ve sohbet et
+          {{ $t('app.description') }}
         </p>
       </div>
       
@@ -16,7 +16,7 @@
           to="/login"
           class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          Giriş Yap
+          {{ $t('navigation.login') }}
         </router-link>
       </div>
     </div>
@@ -35,7 +35,7 @@
             />
           </div>
           <h3 class="text-lg font-medium text-gray-900">
-            Hoş geldin, {{ authStore.user?.name }}!
+            {{ $t('auth.welcome') }}, {{ authStore.user?.name }}!
           </h3>
           <p class="text-sm text-gray-600 mb-6">{{ authStore.user?.email }}</p>
           
@@ -43,7 +43,7 @@
             to="/sessions"
             class="inline-flex justify-center py-3 px-6 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Oturumları Görüntüle
+            {{ $t('navigation.sessions') }}
           </router-link>
         </div>
       </div>

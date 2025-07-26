@@ -3,7 +3,7 @@
     <!-- Session Details -->
     <div class="mb-4">
       <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-medium text-gray-900 dark:text-white">Oturum Bilgileri</h3>
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white">{{ $t('session.details') }}</h3>
         <div class="text-xs text-gray-500 dark:text-gray-400">
           {{ formatDate(session.createdAt) }}
         </div>
@@ -21,27 +21,27 @@
             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ session.videoTitle }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
               {{ formatDuration(session.videoDuration) }} • 
-              Son eylem: {{ formatLastAction(session.lastAction) }}
+              {{ $t('session.info.lastAction') }}: {{ formatLastAction(session.lastAction) }}
             </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Video URL Input (Only for host) -->
-    <div v-if="isHost" class="space-y-3">
+    <!-- Video URL Input (All users) -->
+    <div class="space-y-3">
       <div class="flex items-center justify-between">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          YouTube Video URL
+          {{ $t('video.youtubeUrl') }}
         </label>
-        <span class="text-xs text-gray-500 dark:text-gray-400">Sadece host ayarlayabilir</span>  
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $t('session.info.allUsersCanSet') }}</span>  
       </div>
       
       <div class="flex gap-2">
         <input
           v-model="videoUrl"
           type="url"
-          placeholder="https://www.youtube.com/watch?v=..."
+          :placeholder="$t('video.urlPlaceholder')"
           class="flex-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           :class="{ 'border-red-300 dark:border-red-500': urlError }"
         />
@@ -49,38 +49,39 @@
           @click="handleSetVideo"
           :disabled="loading || !videoUrl.trim()"
           class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          data-testid="set-video-button"
         >
           <svg v-if="loading" class="animate-spin -ml-1 mr-1 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          {{ loading ? 'Ayarlanıyor...' : 'Ayarla' }}
+          {{ loading ? $t('video.setting') : $t('video.setVideo') }}
         </button>
       </div>
       
       <p v-if="urlError" class="text-sm text-red-600 dark:text-red-400">{{ urlError }}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">
-        YouTube video URL'sini yapıştırın. Video tüm katılımcılar için senkronize edilecek.
+        {{ $t('video.urlHelper') }}
       </p>
     </div>
 
-    <!-- Not Host Message -->
-    <div v-else-if="!session.videoId" class="text-center py-4">
+    <!-- No Video Message -->
+    <div v-if="!session.videoId" class="text-center py-4">
       <svg class="h-8 w-8 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
       </svg>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Host tarafından video seçilmesi bekleniyor</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('session.info.noVideoSelected') }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from '@/composables/useI18n'
 import type { Session } from '@/stores/sessions'
 
 interface Props {
   session: Session
-  isHost: boolean
 }
 
 const props = defineProps<Props>()
@@ -88,6 +89,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'set-video': [data: { videoId: string }]
 }>()
+
+// i18n setup
+const { t } = useI18n()
 
 // Reactive state
 const videoUrl = ref('')
@@ -108,7 +112,7 @@ const handleSetVideo = async () => {
     
     const videoId = extractVideoId(videoUrl.value)
     if (!videoId) {
-      urlError.value = 'Geçerli bir YouTube URL\'si girin'
+      urlError.value = t('video.invalidUrl')
       return
     }
     
@@ -117,7 +121,7 @@ const handleSetVideo = async () => {
     
   } catch (error) {
     console.error('Failed to set video:', error)
-    urlError.value = 'Video ayarlanırken bir hata oluştu'
+    urlError.value = t('video.setError')
   } finally {
     loading.value = false
   }
@@ -125,13 +129,13 @@ const handleSetVideo = async () => {
 
 const formatDate = (date: Date | string | undefined | null): string => {
   if (!date) {
-    return 'Tarih yok'
+    return t('date.noDate')
   }
   
   const dateObj = typeof date === 'string' ? new Date(date) : date
   
   if (!dateObj || isNaN(dateObj.getTime())) {
-    return 'Geçersiz tarih'
+    return t('date.invalidDate')
   }
   
   return dateObj.toLocaleString('tr-TR', {
@@ -157,11 +161,11 @@ const formatDuration = (seconds: number): string => {
 const formatLastAction = (action: string): string => {
   switch (action) {
     case 'play':
-      return 'Oynat'
+      return t('video.actions.play')
     case 'pause':
-      return 'Duraklat'
+      return t('video.actions.pause')
     case 'seek':
-      return 'Atlama'
+      return t('video.actions.seek')
     default:
       return action
   }

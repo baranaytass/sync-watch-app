@@ -26,14 +26,14 @@
               </div>
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
-                  Yeni Oturum Oluştur
+                  {{ $t('session.createNew') }}
                 </h3>
                 
                 <div class="space-y-4">
                   <!-- Session Title -->
                   <div>
                     <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
-                      Oturum Başlığı
+                      {{ $t('session.title') }}
                     </label>
                     <input
                       id="title"
@@ -41,7 +41,7 @@
                       type="text"
                       required
                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                      placeholder="Örn: Film Gecesi"
+                      :placeholder="$t('session.titlePlaceholder')"
                       :class="{ 'border-red-300': errors.title }"
                     />
                     <p v-if="errors.title" class="mt-1 text-sm text-red-600">{{ errors.title }}</p>
@@ -50,14 +50,14 @@
                   <!-- Session Description -->
                   <div>
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-                      Açıklama (isteğe bağlı)
+                      {{ $t('session.description') }}
                     </label>
                     <textarea
                       id="description"
                       v-model="formData.description"
                       rows="3"
                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                      placeholder="Bu oturum hakkında kısa bir açıklama..."
+                      :placeholder="$t('session.descriptionPlaceholder')"
                     ></textarea>
                   </div>
                 </div>
@@ -76,7 +76,7 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {{ loading ? 'Oluşturuluyor...' : 'Oturum Oluştur' }}
+              {{ loading ? $t('session.creating') : $t('session.create') }}
             </button>
             <button
               type="button"
@@ -84,7 +84,7 @@
               :disabled="loading"
               class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
             >
-              İptal
+              {{ $t('common.cancel') }}
             </button>
           </div>
         </form>
@@ -95,6 +95,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from '@/composables/useI18n'
 import type { CreateSessionRequest } from '@/stores/sessions'
 
 interface Props {
@@ -108,6 +109,9 @@ const emit = defineEmits<{
   close: []
   'create-session': [data: CreateSessionRequest]
 }>()
+
+// i18n setup
+const { t } = useI18n()
 
 const formData = ref<CreateSessionRequest>({
   title: '',
@@ -128,17 +132,17 @@ const validateForm = (): boolean => {
   errors.value = {}
   
   if (!formData.value.title.trim()) {
-    errors.value.title = 'Oturum başlığı gerekli'
+    errors.value.title = t('session.errors.titleRequired')
     return false
   }
   
   if (formData.value.title.length < 3) {
-    errors.value.title = 'Oturum başlığı en az 3 karakter olmalı'
+    errors.value.title = t('session.errors.titleMinLength')
     return false
   }
   
   if (formData.value.title.length > 100) {
-    errors.value.title = 'Oturum başlığı en fazla 100 karakter olabilir'
+    errors.value.title = t('session.errors.titleMaxLength')
     return false
   }
   

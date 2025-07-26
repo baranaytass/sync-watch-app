@@ -133,7 +133,7 @@ export class SessionService {
   }
 
   /**
-   * Set video for a session (host only)
+   * Set video for a session (all participants)
    */
   async setSessionVideo(
     sessionId: string, 
@@ -150,9 +150,10 @@ export class SessionService {
       throw new Error('Session not found or not active');
     }
 
-    // Check if user is the host
-    if (session.hostId !== userId) {
-      throw new Error('Only the host can set the video');
+    // Check if user is a participant (no longer checking for host)
+    const isParticipant = await this.sessionModel.isUserParticipant(sessionId, userId);
+    if (!isParticipant) {
+      throw new Error('Only session participants can set the video');
     }
 
     // Update session video

@@ -4,20 +4,20 @@
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center text-white z-10">
       <div class="text-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-        <p class="text-sm">Video yükleniyor...</p>
+        <p class="text-sm">{{ $t('video.loading') }}</p>
       </div>
     </div>
 
     <!-- Error -->
     <div v-else-if="error" class="absolute inset-0 flex items-center justify-center text-white p-4 z-10">
       <div class="text-center max-w-md">
-        <p class="text-red-400 mb-2">❌ Video yüklenemedi</p>
+        <p class="text-red-400 mb-2">❌ {{ $t('video.loadFailed') }}</p>
         <p class="text-sm text-gray-300 mb-4">{{ error }}</p>
         <button 
           @click="retry" 
           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
         >
-          Tekrar Dene
+          {{ $t('common.retry') }}
         </button>
       </div>
     </div>
@@ -44,6 +44,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { useI18n } from '@/composables/useI18n'
 
 // YouTube Player API TypeScript tanımları
 declare global {
@@ -64,12 +65,10 @@ declare global {
 
 interface Props {
   videoId: string
-  isHost?: boolean
   showControls?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isHost: false,
   showControls: true
 })
 
@@ -81,12 +80,18 @@ const emit = defineEmits<{
   'duration-change': [duration: number]
 }>()
 
+// i18n setup
+const { t } = useI18n()
+
 // State
 const loading = ref(true)
 const error = ref<string | null>(null)
 let loadTimeout: number | null = null
 let player: any = null
 let playerReady = false
+let isAuthoritativeMode = false  // Allow user actions to be emitted
+let programmaticActionCount = 0  // Counter to detect programmatic vs user actions
+let programmaticOperationId: string | null = null  // Unique ID for each programmatic operation
 
 // Computed iframe URL - YouTube Player API ile düzeltilmiş
 const iframeUrl = computed(() => {
@@ -189,6 +194,9 @@ const onPlayerReady = (event: any) => {
   
   emit('video-ready')
   
+  // Process any queued sync operations
+  processSyncQueue()
+  
   // Duration bilgisini al
   setTimeout(() => {
     const duration = player?.getDuration?.() || 180
@@ -200,29 +208,87 @@ const onPlayerReady = (event: any) => {
 const onPlayerStateChange = (event: any) => {
   const currentTime = player?.getCurrentTime?.() || 0
   emit('time-update', currentTime)
+  
+  const stateChangeTime = Date.now()
+  const stateName = getStateName(event.data)
+  
+  // Enhanced cleanup: Clear programmatic flags on FINAL states (PLAYING/PAUSED)
+  // These are final user-visible states, so any programmatic operations should be done
+  if ((event.data === window.YT.PlayerState.PLAYING || event.data === window.YT.PlayerState.PAUSED) && programmaticOperationId) {
+    // Check if this could be the end of a programmatic operation
+    const timeSinceOpStart = stateChangeTime - (parseInt(programmaticOperationId.split('_')[0]) || 0)
+    
+    if (timeSinceOpStart > 500) { // If more than 500ms passed since operation start
+      programmaticOperationId = null
+      programmaticActionCount = 0
+    }
+  }
+  
+  // Server-Authoritative Pattern: Check if this is a programmatic action
+  // FIXED: More strict detection - both ID and counter must be clear
+  const isProgrammaticAction = programmaticOperationId !== null || programmaticActionCount > 0
+  
+  if (isProgrammaticAction) {
+    // More aggressive cleanup: decrement counter AND clear ID if counter reaches 0
+    if (programmaticActionCount > 0) {
+      programmaticActionCount = Math.max(0, programmaticActionCount - 1)
+      
+      // Clear operation ID when counter reaches 0
+      if (programmaticActionCount === 0) {
+        programmaticOperationId = null
+      }
+    }
+    
+    return
+  }
+  
+  // This is a USER action - emit it to trigger WebSocket message
+  switch (event.data) {
+    case window.YT.PlayerState.PLAYING:
+      emit('video-action', 'play', currentTime)
+      break
+    case window.YT.PlayerState.PAUSED:
+      emit('video-action', 'pause', currentTime)
+      break
+    default:
+      break
+  }
+}
+
+// Helper function to get state name for logging
+const getStateName = (state: number): string => {
+  switch (state) {
+    case window.YT?.PlayerState?.UNSTARTED: return 'UNSTARTED'
+    case window.YT?.PlayerState?.ENDED: return 'ENDED'
+    case window.YT?.PlayerState?.PLAYING: return 'PLAYING'
+    case window.YT?.PlayerState?.PAUSED: return 'PAUSED'
+    case window.YT?.PlayerState?.BUFFERING: return 'BUFFERING'
+    case window.YT?.PlayerState?.CUED: return 'CUED'
+    default: return `UNKNOWN(${state})`
+  }
 }
 
 // Player hata verdiğinde
 const onPlayerError = (event: any) => {
   const errorCode = event.data || 'UNKNOWN_ERROR'
-  let errorMessage = 'Video yüklenirken bir hata oluştu'
+  let errorMessage = t('video.loadFailed')
   
   switch (errorCode) {
     case 2:
-      errorMessage = 'Geçersiz video ID'
+      errorMessage = t('video.errors.invalidVideoId')
       break
     case 5:
-      errorMessage = 'HTML5 player hatası'
+      errorMessage = t('video.errors.html5Error')
       break
     case 100:
-      errorMessage = 'Video bulunamadı'
+      errorMessage = t('video.errors.videoNotFound')
       break
     case 101:
     case 150:
-      errorMessage = 'Video gömme izni yok'
+      errorMessage = t('video.errors.embedNotAllowed')
       break
     default:
-      errorMessage = `Video hatası (Kod: ${errorCode})`
+      errorMessage = `${t('video.errors.unknownError')} (${t('common.error')}: ${errorCode})`
   }
   
   loading.value = false
@@ -315,41 +381,162 @@ watch(() => props.videoId, (newVideoId, oldVideoId) => {
   }
 }, { immediate: true })
 
-// Expose methods - YouTube Player API ile gerçek kontrol
-const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
-  if (!player || !playerReady) return
+// Sync queue for pending operations
+const syncQueue = ref<{ action: 'play' | 'pause' | 'seek', time: number }[]>([])
+
+// Process sync queue when player becomes ready
+const processSyncQueue = () => {
+  if (!player || !playerReady || syncQueue.value.length === 0) {
+    return
+  }
+  
+  // Process the last/most recent sync operation only
+  const lastOperation = syncQueue.value[syncQueue.value.length - 1]
+  syncQueue.value = [] // Clear queue
+  
+  // Execute the queued operation
+  performSyncOperation(lastOperation.action, lastOperation.time)
+}
+
+// Actual sync operation implementation
+const performSyncOperation = (action: 'play' | 'pause' | 'seek', time: number) => {
+  if (!player || !playerReady) {
+    return
+  }
   
   try {
+    // Generate unique operation ID and set counter
+    const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
+    programmaticOperationId = operationId
+    programmaticActionCount += 2  // Reduced counter for cleaner operations
+    
+    // Auto-reset counter after a shorter delay as backup
+    setTimeout(() => {
+      if (programmaticOperationId === operationId) {
+        programmaticActionCount = 0
+        programmaticOperationId = null
+      }
+    }, 1500)  // Reduced to 1.5 seconds for faster cleanup
+    
+    // Player state'ini kontrol et
+    const playerState = player.getPlayerState()
+    const stateName = getStateName(playerState)
+    
     switch (action) {
       case 'play':
-        player.playVideo()
+        if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
+          // Video henüz hiç başlatılmamış, loadVideoById kullan (seek + play combined)
+          player.loadVideoById(props.videoId, time)
+        } else {
+          // Video daha önce başlatılmış - check if seek needed
+          const currentTime = player.getCurrentTime() || 0
+          const timeDiff = Math.abs(currentTime - time)
+          
+          if (timeDiff > 2) {
+            // Significant time difference, seek first then play
+            player.seekTo(time, true)
+            setTimeout(() => {
+              player.playVideo()
+            }, 100)
+          } else {
+            // Minor difference or already at correct position, just play
+            player.playVideo()
+          }
+        }
         break
+        
       case 'pause':
-        player.pauseVideo()
+        if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
+          // Video henüz hiç başlatılmamış, cue et
+          player.cueVideoById(props.videoId, time)
+        } else {
+          // FIXED: Server-authoritative pattern'da pause action doğru zamanda geliyor
+          // Gereksiz seek işlemi buffering'e neden oluyor, sadece pause yapalım
+          player.pauseVideo()
+          
+          // Optional: Only seek if there's a significant time difference
+          const currentTime = player.getCurrentTime() || 0
+          const timeDiff = Math.abs(currentTime - time)
+          
+          if (timeDiff > 2) {
+            // Use a gentle seek after pause to avoid buffering
+            setTimeout(() => {
+              player.seekTo(time, false) // Use allowSeekAhead=false for gentler seek
+            }, 100)
+          }
+        }
         break
+        
       case 'seek':
-        player.seekTo(time, true)
+        if (playerState === window.YT.PlayerState.UNSTARTED || playerState === -1) {
+          player.cueVideoById(props.videoId, time)
+        } else {
+          player.seekTo(time, true)
+        }
         break
     }
   } catch (error) {
-    console.error('Video sync hatası:', error)
+    console.error('YouTube Player sync error:', error)
   }
+}
+
+// Main sync method - now with queue support
+const syncVideo = (action: 'play' | 'pause' | 'seek', time: number) => {
+  if (!player || !playerReady) {
+    // Player not ready - queue the operation
+    syncQueue.value.push({ action, time })
+    
+    return
+  }
+  
+  // Player ready - execute immediately
+  performSyncOperation(action, time)
 }
 
 const play = () => {
   if (player && playerReady) {
+    const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_play`
+    programmaticOperationId = operationId
+    programmaticActionCount += 1
+    // Auto-reset counter after a delay as backup
+    setTimeout(() => {
+      if (programmaticOperationId === operationId) {
+        programmaticActionCount = 0
+        programmaticOperationId = null
+      }
+    }, 1000)
     player.playVideo()
   }
 }
 
 const pause = () => {
   if (player && playerReady) {
+    const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_pause`
+    programmaticOperationId = operationId
+    programmaticActionCount += 1
+    // Auto-reset counter after a delay as backup
+    setTimeout(() => {
+      if (programmaticOperationId === operationId) {
+        programmaticActionCount = 0
+        programmaticOperationId = null
+      }
+    }, 1000)
     player.pauseVideo()
   }
 }
 
 const seekTo = (time: number) => {
   if (player && playerReady) {
+    const operationId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_seek`
+    programmaticOperationId = operationId
+    programmaticActionCount += 1
+    // Auto-reset counter after a delay as backup
+    setTimeout(() => {
+      if (programmaticOperationId === operationId) {
+        programmaticActionCount = 0
+        programmaticOperationId = null
+      }
+    }, 1000)
     player.seekTo(time, true)
   }
 }
