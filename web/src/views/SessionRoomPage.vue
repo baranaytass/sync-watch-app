@@ -143,14 +143,10 @@
           
           <!-- Chat Area -->
           <div class="flex-1 border-t border-gray-200 dark:border-gray-700">
-            <div class="h-full flex items-center justify-center">
-              <div class="text-center text-gray-500 dark:text-gray-400">
-                <svg class="h-8 w-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <p class="text-sm">Chat özelliği yakında</p>
-              </div>
-            </div>
+            <ChatPanel 
+              :connected="websocketConnected"
+              @send-message="handleSendChatMessage"
+            />
           </div>
         </div>
       </div>
@@ -165,21 +161,25 @@ import { useSessionsStore } from '@/stores/sessions'
 import { useAuthStore } from '@/stores/auth'
 import { useVideoSyncStore } from '@/stores/videoSync'
 import { useThemeStore } from '@/stores/theme'
+import { useChatStore } from '@/stores/chat'
 import ParticipantsList from '@/components/ParticipantsList.vue'
 import SessionInfo from '@/components/SessionInfo.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import ChatPanel from '@/components/ChatPanel.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
+import type { Props } from 'vue'
 
-interface Props {
+interface ComponentProps {
   id: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<ComponentProps>()
 const router = useRouter()
 const sessionsStore = useSessionsStore()
 const authStore = useAuthStore()
 const videoSyncStore = useVideoSyncStore()
 const themeStore = useThemeStore()
+const chatStore = useChatStore()
 
 // Reactive state
 const loading = ref(true)
@@ -191,6 +191,7 @@ const {
   participants: wsParticipants, 
   connect, 
   sendVideoAction,
+  sendChatMessage,
   leaveSession: leaveSessionWS
 } = useWebSocket(props.id)
 
@@ -210,7 +211,8 @@ const loadSession = async () => {
     // The getSessionById will fetch all necessary session data.
     // The join operation is now implicitly handled by the backend
     // when a user with a valid token accesses a session.
-    const session = await sessionsStore.getSessionById(props.id)
+    await sessionsStore.getSessionById(props.id)
+    const session = sessionsStore.currentSession
     if (session) {
       if (session.videoId && session.videoProvider === 'youtube') {
         videoUrl.value = `https://www.youtube.com/embed/${session.videoId}`
@@ -285,9 +287,28 @@ const handleTimeUpdate = (currentTime: number) => {
   // Sadece log level olarak tutuyoruz şimdilik
 }
 
+const handleSendChatMessage = (message: string) => {
+  console.log(`🔥 SessionRoom: handleSendChatMessage called with: "${message}"`)
+  console.log(`🔥 SessionRoom: WebSocket connected: ${websocketConnected.value}`)
+  if (websocketConnected.value && message.trim()) {
+    console.log(`🔥 SessionRoom: Calling sendChatMessage`)
+    sendChatMessage(message)
+  } else {
+    console.log(`🔥 SessionRoom: Not sending - connected: ${websocketConnected.value}, message: "${message}"`)
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   await loadSession()
+  
+  // Connect to WebSocket after session is loaded
+  try {
+    await connect()
+    console.log('🔌 SessionRoom: WebSocket connected successfully')
+  } catch (error) {
+    console.error('❌ SessionRoom: Failed to connect WebSocket:', error)
+  }
 })
 
 onUnmounted(() => {

@@ -19,19 +19,25 @@ function startSessionCleanupJob(sessionService: SessionService): void {
   
   const runCleanup = async (): Promise<void> => {
     try {
+      console.log('🧹 Running cleanup job...');
+      
       // Clean up empty sessions
+      console.log('🗑️ Cleaning up empty sessions...');
       const emptySessionsDeleted = await sessionService.cleanupEmptySessions();
+      console.log(`🗑️ Empty sessions deleted: ${emptySessionsDeleted}`);
       
       // Clean up sessions inactive for more than 30 minutes
+      console.log('⏰ Cleaning up inactive sessions...');
       const inactiveSessionsDeleted = await sessionService.cleanupInactiveSessions(30);
+      console.log(`⏰ Inactive sessions deleted: ${inactiveSessionsDeleted}`);
       
       // Clean up guest users older than 24 hours
+      console.log('👤 Cleaning up old guest users...');
       const guestUsersDeleted = await cleanupGuestUsers();
+      console.log(`👤 Guest users deleted: ${guestUsersDeleted}`);
       
       const totalDeleted = emptySessionsDeleted + inactiveSessionsDeleted;
-      if (totalDeleted > 0 || guestUsersDeleted > 0) {
-        console.log(`🧹 Cleanup completed: ${totalDeleted} sessions deleted, ${guestUsersDeleted} guest users deleted`);
-      }
+      console.log(`🧹 Cleanup completed: ${totalDeleted} sessions deleted, ${guestUsersDeleted} guest users deleted`);
     } catch (error) {
       console.error('❌ Session cleanup job failed:', error);
     }
@@ -49,6 +55,32 @@ function stopSessionCleanupJob(): void {
     clearInterval(cleanupInterval);
     cleanupInterval = null;
     console.log('🧹 Session cleanup job stopped');
+  }
+}
+
+// Database startup cleanup function
+async function cleanupDatabaseOnStartup(dbPool: any): Promise<void> {
+  try {
+    console.log('🧹 Starting database cleanup on server startup...');
+    
+    // Clean session_participants first (foreign key dependency)
+    const participantsResult = await dbPool.query('DELETE FROM session_participants');
+    const participantsDeleted = participantsResult.rowCount || 0;
+    console.log(`🗑️ Deleted ${participantsDeleted} session participants`);
+    
+    // Clean sessions
+    const sessionsResult = await dbPool.query('DELETE FROM sessions');
+    const sessionsDeleted = sessionsResult.rowCount || 0;
+    console.log(`🗑️ Deleted ${sessionsDeleted} sessions`);
+    
+    // Clean ALL users (including guest and non-guest users)
+    const allUsersResult = await dbPool.query('DELETE FROM users');
+    const allUsersDeleted = allUsersResult.rowCount || 0;
+    console.log(`👤 Deleted ${allUsersDeleted} users (all users including guests)`);
+    
+    console.log('✅ Database startup cleanup completed successfully');
+  } catch (error) {
+    console.error('❌ Database startup cleanup failed:', error);
   }
 }
 
@@ -116,6 +148,9 @@ async function start(): Promise<void> {
     
     await server.listen({ port, host });
     console.log(`Server listening on ${host}:${port}`);
+
+    // Clean all tables on startup
+    await cleanupDatabaseOnStartup(db.getPool());
 
     // Start session cleanup job
     const sessionService = new SessionService(db.getPool());

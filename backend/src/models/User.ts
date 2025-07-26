@@ -48,10 +48,11 @@ export class UserModel {
     email: string;
     name: string;
     avatar?: string;
+    isGuest?: boolean;
   }): Promise<User> {
     const query = `
-      INSERT INTO users (google_id, email, name, avatar)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO users (google_id, email, name, avatar, is_guest)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING 
         id, google_id as "googleId", email, name, avatar, 
         created_at as "createdAt", updated_at as "updatedAt"
@@ -62,6 +63,7 @@ export class UserModel {
       userData.email,
       userData.name,
       userData.avatar || null,
+      userData.isGuest || false,
     ]);
     
     return result.rows[0];

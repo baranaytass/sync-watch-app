@@ -74,21 +74,32 @@ export const useAuthStore = defineStore('auth', () => {
         guestId: 'guest-' + Date.now()
       })
       
+      console.log(`🔥 Auth: Guest login API response:`, response.data)
+      
       if (response.data.success && response.data.data) {
         const guestUser = response.data.data
         const token = response.data.token
         
+        console.log(`🔥 Auth: Guest user data:`, guestUser)
+        console.log(`🔥 Auth: Guest token:`, token ? 'YES (length=' + token.length + ')' : 'NO')
+        
         // Store user data
         user.value = guestUser
         localStorage.setItem('user', JSON.stringify(guestUser))
+        console.log(`🔥 Auth: Stored user data in localStorage`)
         
-        // Store token for WebSocket use
-        localStorage.setItem('auth_token', token)
+        // Store token for WebSocket use (backend sends it in response)
+        if (token) {
+          localStorage.setItem('auth_token', token)
+          console.log(`🔥 Auth: Stored token in localStorage: ${token.substring(0, 20)}...`)
+        } else {
+          console.log(`🔥 Auth: No token received from backend!`)
+        }
         
         loading.value = false
         
-        // Redirect to sessions page after login
-        window.location.href = '/sessions'
+        // Store success state - let the component handle navigation
+        console.log('✅ Guest authentication successful, token stored')
       } else {
         throw new Error('Guest login failed')
       }
@@ -102,17 +113,28 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
+      console.log(`🔥 Auth: Starting logout process`)
       loading.value = true
       error.value = null
+      
+      // Check what we have before logout
+      const userBefore = localStorage.getItem('user')
+      const tokenBefore = localStorage.getItem('auth_token')
+      console.log(`🔥 Auth: Before logout - user: ${userBefore ? 'YES' : 'NO'}, token: ${tokenBefore ? 'YES' : 'NO'}`)
+      
       await axios.post(`${API_BASE_URL}/api/auth/logout`)
+      console.log(`🔥 Auth: Logout API call successful`)
+      
       user.value = null
       localStorage.removeItem('user')
       localStorage.removeItem('auth_token') // Also remove token
+      console.log(`🔥 Auth: Cleared user data and token from localStorage`)
     } catch (err) {
+      console.error('🔥 Auth: Logout error:', err)
       error.value = 'Logout failed'
-      console.error('Logout error:', err)
     } finally {
       loading.value = false
+      console.log(`🔥 Auth: Logout process completed`)
     }
   }
 

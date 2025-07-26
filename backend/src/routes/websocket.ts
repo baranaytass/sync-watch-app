@@ -139,20 +139,41 @@ export default async function websocketRoutes(
       }
     },
 
-    chat: async (_connection: any, data: any, userId: string, sessionId: string) => {
+    chat: async (connection: any, data: any, userId: string, sessionId: string) => {
+      console.log(`💬 WebSocket: Received chat message from user ${userId} in session ${sessionId}:`, data);
+      
       if (data.message && data.message.trim().length > 0) {
         const user = await userModel.findById(userId);
+        console.log(`👤 WebSocket: Found user for chat:`, user ? user.name : 'NOT FOUND');
+        
         if (user) {
           const chatMessage = {
             id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             userId: user.id,
             userName: user.name,
+            userAvatar: user.avatar,
             message: data.message.trim(),
             timestamp: new Date(),
           };
 
-          broadcastToSession(sessionId, 'chat', chatMessage);
+          console.log(`📤 WebSocket: Broadcasting chat message to all users including sender:`, chatMessage);
+          // Chat messages should be sent to ALL users including the sender - don't exclude anyone
+          const sessionConnections = connections.get(sessionId);
+          if (sessionConnections) {
+            const message = JSON.stringify({ type: 'chat', data: chatMessage });
+            sessionConnections.forEach(conn => {
+              try {
+                if (conn.readyState === WebSocket.OPEN) {
+                  conn.send(message);
+                }
+              } catch (error) {
+                console.error('❌ WebSocket: Error sending chat message:', error);
+              }
+            });
+          }
         }
+      } else {
+        console.log(`⚠️ WebSocket: Invalid chat message data:`, data);
       }
     }
   };
@@ -190,7 +211,11 @@ export default async function websocketRoutes(
       } catch (error) {
         console.log(`❌ WebSocket auth failed:`, error);
         sendMessage(connection, 'error', { message: 'Authentication required' });
-        connection.close();
+        if (connection.close) {
+          connection.close();
+        } else {
+          connection.end();
+        }
         return;
       }
   
@@ -200,7 +225,11 @@ export default async function websocketRoutes(
         const hasAccess = await sessionService.validateUserSessionAccess(sessionId, user.userId);
         if (!hasAccess) {
           sendMessage(connection, 'error', { message: 'You do not have access to this session' });
-          connection.close();
+          if (connection.close) {
+            connection.close();
+          } else {
+            connection.end();
+          }
           return;
         }
   
@@ -208,7 +237,11 @@ export default async function websocketRoutes(
         if (!userDetails) {
           console.log(`❌ WebSocket: User ${user.userId} not found in database`);
           sendMessage(connection, 'error', { message: 'User not found' });
-          connection.close();
+          if (connection.close) {
+            connection.close();
+          } else {
+            connection.end();
+          }
           return;
         }
   
@@ -224,7 +257,11 @@ export default async function websocketRoutes(
         const session = await sessionService.getSessionById(sessionId);
         if (!session) {
           sendMessage(connection, 'error', { message: 'Session not found' });
-          connection.close();
+          if (connection.close) {
+            connection.close();
+          } else {
+            connection.end();
+          }
           return;
         }
   
@@ -255,15 +292,22 @@ export default async function websocketRoutes(
   
         connection.on('message', async (message: Buffer) => {
           try {
+            console.log(`📨 WebSocket: Raw message received:`, message.toString());
             const parsedMessage = JSON.parse(message.toString());
+            console.log(`📨 WebSocket: Parsed message:`, parsedMessage);
             const handler = messageHandlers[parsedMessage.type as keyof typeof messageHandlers];
             
             if (handler) {
               const currentUserId = socketToUser.get(connection);
               const currentSessionId = socketToSession.get(connection);
+              console.log(`📨 WebSocket: Handler found for ${parsedMessage.type}, user: ${currentUserId}, session: ${currentSessionId}`);
               if (currentUserId && currentSessionId) {
                 await handler(connection, parsedMessage.data, currentUserId, currentSessionId);
+              } else {
+                console.log(`❌ WebSocket: Missing userId or sessionId for message ${parsedMessage.type}`);
               }
+            } else {
+              console.log(`❌ WebSocket: No handler found for message type: ${parsedMessage.type}`);
             }
           } catch (err) {
             console.error('❌ WebSocket: Error processing message:', err);
@@ -285,7 +329,11 @@ export default async function websocketRoutes(
         if (socketToSession.has(connection)) {
           handleUserLeave(connection);
         }
-        connection.close();
+        if (connection.close) {
+          connection.close();
+        } else {
+          connection.end();
+        }
       }
     }
   } as any);

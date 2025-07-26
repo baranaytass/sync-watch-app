@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import type { Session, SessionParticipant, CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types'
 import { useAuthStore } from './auth'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 export const useSessionsStore = defineStore('sessions', () => {
   // State
   const sessions = ref<Session[]>([])
@@ -37,8 +39,16 @@ export const useSessionsStore = defineStore('sessions', () => {
     
     // Add Authorization header if token exists in localStorage
     const token = localStorage.getItem('auth_token')
+    console.log(`🔥 Sessions: createAuthHeaders - token from localStorage: ${token ? 'YES (length=' + token.length + ')' : 'NO'}`)
+    
+    // Debug: Also check what authStore has
+    console.log(`🔥 Sessions: createAuthHeaders - authStore.user: ${authStore.user ? 'YES' : 'NO'}`)
+    
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
+      console.log(`🔥 Sessions: createAuthHeaders - Added Authorization header: Bearer ${token.substring(0, 20)}...`)
+    } else {
+      console.log(`🔥 Sessions: createAuthHeaders - No token found, no Authorization header added`)
     }
     
     return headers
@@ -64,7 +74,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/sessions', {
+      const response = await fetch(`${API_BASE_URL}/api/sessions`, {
         method: 'GET',
         headers: createAuthHeaders(),
         credentials: 'include',
@@ -100,7 +110,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}`, {
         method: 'GET',
         headers: createAuthHeaders(),
         credentials: 'include',
@@ -133,7 +143,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/sessions', {
+      const response = await fetch(`${API_BASE_URL}/api/sessions`, {
         method: 'POST',
         headers: createAuthHeaders(),
         credentials: 'include',
@@ -172,7 +182,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/join`, {
+      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/join`, {
         method: 'POST',
         headers: createAuthHeaders(),
         credentials: 'include',
@@ -216,7 +226,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/video`, {
+      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/video`, {
         method: 'POST',
         headers: createAuthHeaders(),
         credentials: 'include',
@@ -350,6 +360,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     // Actions
     fetchSessions,
     fetchSession,
+    getSessionById: fetchSession, // Alias for compatibility
     createSession,
     joinSession,
     setSessionVideo,

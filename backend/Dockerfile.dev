@@ -1,0 +1,26 @@
+FROM node:18-alpine
+
+# Install Python, Make, and G++ for native dependencies
+RUN apk add --no-cache python3 make g++
+
+# Set the working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy root package.json, workspace config and shared types
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/shared-types ./packages/shared-types/
+
+# Copy backend package.json
+COPY backend/package.json ./backend/
+
+# Install dependencies for all workspaces
+RUN pnpm install
+
+# Expose the port
+EXPOSE 3000
+
+# Use tsx watch for development hot reload
+CMD ["pnpm", "--filter", "@sync-watch-app/backend", "dev"]

@@ -62,11 +62,18 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
         });
 
-      return reply.send({
+      console.log('🔑 Auth Route: Token generated:', token);
+      console.log('🔑 Auth Route: Sending guest response with token:', token ? 'YES' : 'NO');
+      
+      const responseData = {
         success: true,
         data: guestUser,
         token, // Also return token for WebSocket use
-      });
+      };
+      
+      console.log('🔑 Auth Route: Response data:', JSON.stringify(responseData));
+      
+      return reply.send(responseData);
     } catch (error) {
       console.error('Guest auth error:', error);
       return reply.status(500).send({

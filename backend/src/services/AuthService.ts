@@ -102,6 +102,7 @@ export class AuthService {
       googleId: `guest_${Date.now()}`,
       email: guestEmail,
       name: 'Misafir Kullanıcı',
+      isGuest: true,
     });
 
     return newGuest;

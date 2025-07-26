@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useVideoSyncStore } from '@/stores/videoSync'
 import { useSessionsStore } from '@/stores/sessions'
+import { useChatStore } from '@/stores/chat'
 import type { SessionParticipant } from '@sync-watch-app/shared-types'
 
 interface WebSocketMessage {
@@ -14,6 +15,7 @@ export const useWebSocket = (sessionId: string) => {
   const authStore = useAuthStore()
   const videoSyncStore = useVideoSyncStore()
   const sessionsStore = useSessionsStore()
+  const chatStore = useChatStore()
   const router = useRouter()
   
   // State
@@ -44,6 +46,7 @@ export const useWebSocket = (sessionId: string) => {
     
     connected.value = false
     participants.value = []
+    chatStore.clearMessages()
     reconnectAttempts = 0
   }
 
@@ -87,6 +90,10 @@ export const useWebSocket = (sessionId: string) => {
         
       case 'session_ended':
         handleSessionEnded(message.data)
+        break
+        
+      case 'chat':
+        handleChatMessage(message.data)
         break
         
       case 'error':
@@ -166,6 +173,18 @@ export const useWebSocket = (sessionId: string) => {
     sessionsStore.leaveSession()
     cleanup()
     router.push('/sessions')
+  }
+
+  const handleChatMessage = (data: any) => {
+    console.log(`💬 WebSocket: Chat message from ${data.userName}`)
+    chatStore.addMessage({
+      id: data.id,
+      userId: data.userId,
+      userName: data.userName,
+      userAvatar: data.userAvatar || '',
+      message: data.message,
+      timestamp: new Date(data.timestamp)
+    })
   }
 
   // Connection management
@@ -285,7 +304,9 @@ export const useWebSocket = (sessionId: string) => {
   }
 
   const sendChatMessage = (message: string) => {
-    console.log(`💬 WebSocket: Sending chat message`)
+    console.log(`💬 WebSocket: Sending chat message: "${message}"`)
+    console.log(`💬 WebSocket: Connected status: ${connected.value}`)
+    console.log(`💬 WebSocket: WS ready state: ${ws?.readyState}`)
     sendMessage('chat', { message })
   }
 

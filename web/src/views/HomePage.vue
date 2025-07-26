@@ -1,6 +1,9 @@
 <template>
   <!-- Not authenticated users - standalone layout -->
-  <div v-if="!authStore.isAuthenticated" class="min-h-screen flex items-center justify-center bg-gray-50">
+  <div
+    v-if="!authStore.isAuthenticated"
+    class="min-h-screen flex items-center justify-center bg-gray-50"
+  >
     <div class="max-w-md w-full space-y-8">
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -32,12 +35,14 @@
               :src="authStore.user?.avatar" 
               :alt="authStore.user?.name"
               class="w-16 h-16 rounded-full"
-            />
+            >
           </div>
           <h3 class="text-lg font-medium text-gray-900">
             Hoş geldin, {{ authStore.user?.name }}!
           </h3>
-          <p class="text-sm text-gray-600 mb-6">{{ authStore.user?.email }}</p>
+          <p class="text-sm text-gray-600 mb-6">
+            {{ authStore.user?.email }}
+          </p>
           
           <router-link
             to="/sessions"

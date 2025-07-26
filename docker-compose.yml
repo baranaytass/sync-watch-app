@@ -19,5 +19,24 @@ services:
       retries: 5
     restart: unless-stopped
 
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://videosync_user:videosync_pass@postgres:5432/videosync
+      JWT_SECRET: your-secret-jwt-key
+      FRONTEND_URL: http://localhost:5173
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
 volumes:
   postgres_data: 
