@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --background: 0 0% 97.69%;
+    --foreground: 334 55% 1%;
+    --muted: 0 0% 93.85%;
+    --muted-foreground: 0 0% 10.2%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --popover-foreground: 0 0% 10.2%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 13.73%;
+    --border: 0 0% 80.78%;
+    --input: 0 0% 80.78%;
+    --primary: 211.29 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 85.49%;
+    --secondary-foreground: 334 0% 10%;
+    --accent: 211.29 100% 50%;
+    --accent-foreground: 334 0% 100%;
+    --destructive: 3.19 100% 59.41%;
+    --destructive-foreground: 18 0% 100%;
+    --ring: 0 0% 60%;
     --radius: 0.5rem;
   }
  
@@ -52,8 +52,54 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+  
   body {
     @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+  
+  .dark body {
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  }
+}
+
+/* Apple-style design elements */
+@layer components {
+  .nesbat-card {
+    @apply bg-card border border-border rounded-lg shadow-sm backdrop-blur-sm;
+    background: hsla(var(--card), 0.95);
+  }
+  
+  .nesbat-button {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+    backdrop-filter: blur(8px);
+  }
+  
+  .nesbat-button-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+    backdrop-filter: blur(8px);
+  }
+  
+  .nesbat-input {
+    @apply block w-full px-3 py-2 bg-background border border-input rounded-md text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring;
+    backdrop-filter: blur(8px);
+  }
+  
+  .nesbat-nav {
+    @apply bg-card/95 backdrop-blur-sm border-b border-border;
+  }
+  
+  .nesbat-sidebar {
+    @apply bg-card/95 backdrop-blur-sm border-l border-border;
   }
 } 

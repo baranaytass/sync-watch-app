@@ -28,6 +28,7 @@
     "loggingIn": "Giriş yapılıyor...",
     "loggingOut": "Çıkış yapılıyor...",
     "welcome": "Hoş geldin",
+    "welcomeToNesbat": "Nesbat'a Hoş Geldin",
     "loginToAccount": "Hesabınıza giriş yapın",
     "profile": "Profil",
     "settings": "Ayarlar"
@@ -38,9 +39,225 @@
     "login": "Giriş Yap",
     "backToSessions": "Oturumlara Dön"
   },
+  "home": {
+    "hero": {
+      "title": "Nesbat",
+      "subtitle": "Arkadaşlarınızla perfect sync video izleme deneyimi",
+      "description": "Real-time senkronizasyonla arkadaşlarınızla aynı anda, aynı saniyede video izleyin. Modern web teknolojileri ile güçlendirilmiş profesyonel platform."
+    },
+    "features": {
+      "realtime": {
+        "title": "Real-time Sync",
+        "description": "Milisaniye hassasiyetinde senkronizasyon"
+      },
+      "multiuser": {
+        "title": "Multi-user Sessions",
+        "description": "Unlimited arkadaş, single experience"
+      },
+      "secure": {
+        "title": "Enterprise Security",
+        "description": "Modern encryption ve privacy protection"
+      }
+    },
+    "demo": {
+      "title": "Nasıl Çalışır",
+      "steps": {
+        "create": {
+          "title": "Create Session",
+          "description": "Oturum oluşturun ve arkadaşlarınızı davet edin"
+        },
+        "sync": {
+          "title": "Perfect Sync",
+          "description": "Video URL'sini yapıştırın, otomatik senkronizasyon başlar"
+        },
+        "enjoy": {
+          "title": "Watch Together",
+          "description": "Aynı anda izleyin, real-time chat yapın"
+        }
+      }
+    },
+    "tech": {
+      "title": "Teknoloji Yığını 🛠️",
+      "subtitle": "Modern Web Development'in En İyileriyle",
+      "frontend": {
+        "title": "Frontend",
+        "stack": "Vue 3 + TypeScript + Pinia + Tailwind CSS + Vite"
+      },
+      "backend": {
+        "title": "Backend", 
+        "stack": "Fastify + TypeScript + PostgreSQL + WebSocket + JWT"
+      },
+      "features": {
+        "title": "Özellikler",
+        "stack": "Real-time Sync + E2E Testing + Docker + CI/CD"
+      },
+      "architecture": {
+        "title": "Mimari Yaklaşım",
+        "description": "Server-authoritative pattern ile echo loop prevention, message deduplication ve real-time position calculation.",
+        "details": [
+          "🎯 Single Source of Truth - Server canonical state",
+          "⚡ WebSocket-based real-time communication", 
+          "🔄 Automatic session cleanup and management",
+          "🛡️ Message deduplication for stable connections",
+          "📱 Cross-platform responsive design"
+        ]
+      }
+    },
+    "portfolio": {
+      "title": "Portfolio Projesi 💼",
+      "subtitle": "Full-Stack Development Showcase",
+      "description": "Bu proje, modern web development teknolojilerinin kapsamlı kullanımını sergileyen bir portfolio çalışmasıdır. Real-time applications, complex state management, ve enterprise-level architecture patterns'ın pratik uygulamasını gösterir.",
+      "highlights": [
+        "🎬 Complex real-time video synchronization",
+        "🏗️ Scalable monorepo architecture", 
+        "🧪 Comprehensive E2E testing with Playwright",
+        "🔒 Secure authentication & session management",
+        "🌐 I18n support with multiple languages",
+        "🎨 Modern UI/UX with dark/light themes"
+      ]
+    },
+    "blog": {
+      "title": "AI Destekli Geliştirme 🤖",
+      "subtitle": "Claude AI ile Pair Programming",
+      "description": "Bu proje Claude AI ile birlikte geliştirildi. Modern AI-assisted development'ın gerçek deneyimlerini yakında blog yazısında paylaşacağım!",
+      "announcement": "Blog yazısı çok yakında! 📝✨"
+    },
+    "providers": {
+      "title": "Video Platformları 🎬",
+      "subtitle": "Desteklenen ve Planlanan Platformlar",
+      "current": {
+        "title": "Şu Anda Desteklenen 🚀",
+        "youtube": "YouTube - Tam senkronizasyon desteği"
+      },
+      "planned": {
+        "title": "Yakında Gelecek 🔜",
+        "platforms": [
+          "Netflix - Geliştirilme aşamasında",
+          "Twitch - Canlı yayın senkronizasyonu",
+          "Vimeo - Premium video desteği",
+          "Custom URL - Doğrudan video linkleri"
+        ]
+      }
+    },
+    "github": {
+      "title": "GitHub'da Buluşalım! 🐙💝",
+      "subtitle": "Kodu İncele, Klonla, Beraber Geliştir!",
+      "description": "Nesbat'ın tüm kodları GitHub'da! Merak ediyorsan nasıl çalıştığını, katkıda bulunmak istiyorsan da kapımız herkese açık. Star atmayı unutma, moralimiz bozulmasın! ⭐",
+      "funnyWarning": "Uyarı: Kodları görünce 'ben de böyle projeler yapabilirim' sendromuna yakalanabilirsinin. Yan etkileri: Ani motivasyon artışı, keyboard'a aşırı bağlılık, ve 'nasıl böyle düşünememiştim' anları.",
+      "clone": {
+        "title": "Hemen Klonla ve Çalıştır! 🚀",
+        "subtitle": "4 basit adımda senin bilgisayarında çalışsın:",
+        "steps": [
+          "git clone https://github.com/baranaytas/sync-watch-app-3.git",
+          "npm install  # 📦 Paketleri indir (biraz bekle, değer)",
+          "npm run docker:db:up  # 🐳 Database'i ayaklandır",
+          "npm run dev  # 🎉 Ve tadaaaa! localhost:5173'te seni bekliyor"
+        ],
+        "encouragement": "Çalıştıramadın mı? Issue aç, beraber çözelim! 🤝"
+      },
+      "contribute": {
+        "title": "Katkıda Bulunur musun? 🙏",
+        "description": "Bug buldun? Feature önerisine var? Kod geliştirmek istiyorsun? Her türlü katkı hoş gelir! Issues, pull requests ve hatta 'çok güzel olmuş' yorumları bile moral veriyor! 💪",
+        "types": [
+          "🐛 Bug Report - Bir şey çalışmıyorsa haber ver",
+          "💡 Feature Request - Kafanda harika fikirler varsa paylaş", 
+          "📝 Documentation - Döküman iyileştirmeleri",
+          "🎨 UI/UX - Tasarım önerileri",
+          "🧪 Testing - Daha fazla test senaryosu",
+          "⭐ Star - En kolay katkı şekli!"
+        ]
+      }
+    },
+    "features": {
+      "sectionTitle": "Neden Herkes Nesbat'ı Sevecek? 💖",
+      "sectionSubtitle": "Çünkü kimse 'sen ne izliyorsun?' diye sormak zorunda kalmayacak artık!",
+      "syncWatch": {
+        "title": "Pixel Perfect Senkron 🎯",
+        "description": "Herkes aynı anda güler, aynı anda ağlar. Hatta aynı anda patlamış mısır yer! 🍿"
+      },
+      "multiUser": {
+        "title": "Çete Halinde İzleme 👥",
+        "description": "Arkadaş grubu + Netflix = Nesbat! Gerçek zamanlı 'kim burda?' takibi dahil."
+      },
+      "secure": {
+        "title": "Hızlı & Güvenli 🚀",
+        "description": "Buffering yok, gecikme yok, sadece keyif var! Modern teknoloji ile süper performans."
+      },
+      "realTime": {
+        "title": "Anlık Sohbet 💬",
+        "description": "Video izlerken 'wooow' demeyi unutanlara özel anlık sohbet özelliği!"
+      },
+      "noSignup": {
+        "title": "Hesap Yok, Dert Yok 🎈",
+        "description": "Sadece link paylaş, arkadaşların katılsın. Bu kadar basit!"
+      },
+      "crossPlatform": {
+        "title": "Her Yerden Erişim 📱💻",
+        "description": "Telefon, tablet, bilgisayar... Hangi cihazdan istersen izle!"
+      }
+    },
+    "cta": {
+      "title": "Hadi, İlk Oturumunu Oluştur! 🎉",
+      "subtitle": "Arkadaşlarınla video keyfi sadece 3 tık uzakta. Ücretsiz, kolay, eğlenceli! 🚀",
+      "button": "Hemen Başla! 🔥"
+    },
+    "github": {
+      "title": "Açık Kaynak Sevgisi 💝",
+      "subtitle": "Nesbat tamamen açık kaynak! Katkıda bulunmak istersen GitHub'da bizi bulabilirsin.",
+      "button": "GitHub'da İncele",
+      "stars": "⭐ Star'lamayı unutma!"
+    },
+    "howItWorks": {
+      "title": "Nasıl Çalışıyor? 🤔",
+      "step1": {
+        "title": "1️⃣ Oturum Oluştur",
+        "description": "Bir isim ver, arkadaşlarına link gönder!"
+      },
+      "step2": {
+        "title": "2️⃣ Video Seç",
+        "description": "YouTube linkini yapıştır, herkes aynı videoyu izlesin!"
+      },
+      "step3": {
+        "title": "3️⃣ Keyif Zamanı!",
+        "description": "İzle, sohbet et, eğlen! Senkronizasyon bizden! 🎊"
+      }
+    },
+    "buttons": {
+      "features": "Özellikler",
+      "sessions": "Oturum Listesi",
+      "newSession": "Yeni Oturum",
+      "howToUse": "Nasıl Kullanılır?"
+    },
+    "dashboard": {
+      "sessionsList": {
+        "title": "Oturum Listesi",
+        "description": "Aktif oturumları görüntüle"
+      },
+      "newSession": {
+        "title": "Yeni Oturum",
+        "description": "Hemen oturum oluştur"
+      },
+      "guide": {
+        "title": "Nasıl Kullanılır?",
+        "description": "Rehber ve ipuçları"
+      },
+      "recentActivity": {
+        "title": "Son Aktiviteler",
+        "noActivity": "Henüz aktivite yok",
+        "createFirst": "İlk oturumunuzu oluşturun!"
+      }
+    },
+    "loginFeatures": {
+      "syncWatch": "Senkronize İzleme",
+      "multiUser": "Çoklu Kullanıcı",
+      "secure": "Güvenli"
+    }
+  },
   "app": {
     "title": "Video Sync Chat",
-    "description": "Videoları arkadaşlarınla senkronize izle ve sohbet et"
+    "brandTitle": "Nesbat",
+    "description": "Videoları arkadaşlarınla senkronize izle ve sohbet et",
+    "tagline": "Senkronize Video İzleme"
   },
   "session": {
     "createNew": "Yeni Oturum Oluştur",
@@ -51,6 +268,7 @@
     "creating": "Oluşturuluyor...",
     "create": "Oturum Oluştur",
     "join": "Katıl",
+    "joining": "Katılınıyor...",
     "leave": "Ayrıl",
     "details": "Oturum Bilgileri",
     "participants": "Katılımcılar",
@@ -118,7 +336,10 @@
     "unknownTime": "Bilinmeyen zaman",
     "justJoined": "Az önce katıldı",
     "minutesAgoJoined": "{minutes} dakika önce katıldı",
-    "hoursAgoJoined": "{hours} saat önce katıldı"
+    "hoursAgoJoined": "{hours} saat önce katıldı",
+    "justCreated": "Az önce oluşturuldu",
+    "hoursAgo": "{hours} saat önce",
+    "daysAgo": "{days} gün önce"
   },
   "theme": {
     "light": "Açık Tema",

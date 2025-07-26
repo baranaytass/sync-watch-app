@@ -28,6 +28,7 @@
     "loggingIn": "Signing in...",
     "loggingOut": "Signing out...",
     "welcome": "Welcome",
+    "welcomeToNesbat": "Welcome to Nesbat",
     "loginToAccount": "Sign in to your account",
     "profile": "Profile",
     "settings": "Settings"
@@ -38,9 +39,101 @@
     "login": "Sign In",
     "backToSessions": "Back to Sessions"
   },
+  "home": {
+    "hero": {
+      "title": "Nesbat 🎬",
+      "subtitle": "No more 'wait, pause it, I'm behind!' moments when watching with friends! 🍿✨"
+    },
+    "features": {
+      "sectionTitle": "Why Everyone Will Love Nesbat? 💖",
+      "sectionSubtitle": "Because nobody has to ask 'what are you watching?' anymore!",
+      "syncWatch": {
+        "title": "Pixel Perfect Sync 🎯",
+        "description": "Everyone laughs together, cries together. Even eats popcorn together! 🍿"
+      },
+      "multiUser": {
+        "title": "Squad Watch Mode 👥",
+        "description": "Friends + Netflix = Nesbat! Real-time 'who's here?' tracking included."
+      },
+      "secure": {
+        "title": "Fast & Secure 🚀",
+        "description": "No buffering, no lag, just pure fun! Super performance with modern tech."
+      },
+      "realTime": {
+        "title": "Instant Chat 💬",
+        "description": "For those who forget to say 'wooow' during epic scenes - instant chat feature!"
+      },
+      "noSignup": {
+        "title": "No Account, No Problem 🎈",
+        "description": "Just share the link, friends join. That's it!"
+      },
+      "crossPlatform": {
+        "title": "Watch Anywhere 📱💻",
+        "description": "Phone, tablet, computer... Watch from whatever device you want!"
+      }
+    },
+    "cta": {
+      "title": "Come On, Create Your First Session! 🎉",
+      "subtitle": "Video fun with friends is just 3 clicks away. Free, easy, fun! 🚀",
+      "button": "Start Now! 🔥"
+    },
+    "github": {
+      "title": "Open Source Love 💝",
+      "subtitle": "Nesbat is completely open source! If you want to contribute, you can find us on GitHub.",
+      "button": "Check on GitHub",
+      "stars": "⭐ Don't forget to star!"
+    },
+    "howItWorks": {
+      "title": "How Does It Work? 🤔",
+      "step1": {
+        "title": "1️⃣ Create Session",
+        "description": "Give it a name, send link to your friends!"
+      },
+      "step2": {
+        "title": "2️⃣ Pick Video",
+        "description": "Paste YouTube link, everyone watches the same video!"
+      },
+      "step3": {
+        "title": "3️⃣ Fun Time!",
+        "description": "Watch, chat, enjoy! Synchronization is on us! 🎊"
+      }
+    },
+    "buttons": {
+      "features": "Features",
+      "sessions": "Sessions List",
+      "newSession": "New Session",
+      "howToUse": "How to Use?"
+    },
+    "dashboard": {
+      "sessionsList": {
+        "title": "Sessions List",
+        "description": "View active sessions"
+      },
+      "newSession": {
+        "title": "New Session",
+        "description": "Create session now"
+      },
+      "guide": {
+        "title": "How to Use?",
+        "description": "Guide and tips"
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "noActivity": "No activity yet",
+        "createFirst": "Create your first session!"
+      }
+    },
+    "loginFeatures": {
+      "syncWatch": "Synchronized Watching",
+      "multiUser": "Multi-User",
+      "secure": "Secure"
+    }
+  },
   "app": {
     "title": "Video Sync Chat",
-    "description": "Watch videos synchronized with your friends and chat"
+    "brandTitle": "Nesbat",
+    "description": "Watch videos synchronized with your friends and chat",
+    "tagline": "Synchronized Video Watching"
   },
   "session": {
     "createNew": "Create New Session",
@@ -51,6 +144,7 @@
     "creating": "Creating...",
     "create": "Create Session",
     "join": "Join",
+    "joining": "Joining...",
     "leave": "Leave",
     "details": "Session Details",
     "participants": "Participants",
@@ -118,7 +212,10 @@
     "unknownTime": "Unknown time",
     "justJoined": "Just joined",
     "minutesAgoJoined": "Joined {minutes} minutes ago",
-    "hoursAgoJoined": "Joined {hours} hours ago"
+    "hoursAgoJoined": "Joined {hours} hours ago",
+    "justCreated": "Just created",
+    "hoursAgo": "{hours} hours ago",
+    "daysAgo": "{days} days ago"
   },
   "theme": {
     "light": "Light Theme",

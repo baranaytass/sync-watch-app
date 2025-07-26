@@ -2,15 +2,15 @@
   <AuthLayout>
     <div class="px-4 py-6 sm:px-0">
       <!-- Header -->
-      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div class="flex items-center justify-between">
+      <div class="nesbat-card p-6 mb-6">
+        <div class="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{ $t('navigation.sessions') }}</h1>
-            <p class="text-gray-600 mt-1">{{ $t('app.description') }}</p>
+            <h1 class="text-2xl font-bold text-foreground">{{ $t('navigation.sessions') }}</h1>
+            <p class="text-muted-foreground mt-1">{{ $t('app.description') }}</p>
           </div>
           <button
             @click="showCreateModal = true"
-            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="nesbat-button px-4 py-2 text-sm"
             data-testid="create-session-button"
           >
             <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,14 +21,14 @@
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <!-- Search and Filters -->
+      <div class="nesbat-card p-4 mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-4 flex-1">
             <!-- Search -->
-            <div class="relative flex-1 sm:max-w-xs">
+            <div class="relative flex-1 max-w-md">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -36,7 +36,7 @@
                 v-model="searchQuery"
                 type="text"
                 :placeholder="$t('session.search')"
-                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                class="nesbat-input pl-10 pr-3 py-2 text-sm"
               />
             </div>
             
@@ -46,47 +46,48 @@
                 id="has-video"
                 v-model="filterByVideo"
                 type="checkbox"
-                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                class="h-4 w-4 text-primary focus:ring-primary border-input rounded"
               />
-              <label for="has-video" class="ml-2 block text-sm text-gray-900">
+              <label for="has-video" class="ml-2 block text-sm text-foreground">
                 {{ $t('session.onlyWithVideo') }}
               </label>
             </div>
           </div>
           
           <!-- Stats -->
-          <div class="text-sm text-gray-500">
+          <div class="text-sm text-muted-foreground">
             <span>{{ filteredSessions.length }} {{ $t('session.found') }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Sessions List -->
-      <div v-if="sessionsStore.loading" class="flex items-center justify-center py-12">
+      <!-- Loading State -->
+      <div v-if="sessionsStore.loading" class="nesbat-card p-12">
         <div class="text-center">
-          <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" fill="none" viewBox="0 0 24 24">
+          <svg class="animate-spin h-8 w-8 text-primary mx-auto" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p class="mt-2 text-gray-600">{{ $t('session.loadingSessions') }}</p>
+          <p class="mt-2 text-muted-foreground">{{ $t('session.loadingSessions') }}</p>
         </div>
       </div>
 
-      <div v-else-if="sessionsStore.error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-        <div class="flex">
+      <!-- Error State -->
+      <div v-else-if="sessionsStore.error" class="nesbat-card p-6 mb-6 bg-destructive/5 border-destructive/20">
+        <div class="flex items-start gap-3">
           <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="h-5 w-5 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">{{ $t('common.error') }}</h3>
-            <p class="text-sm text-red-700 mt-1">{{ sessionsStore.error }}</p>
+          <div class="flex-1">
+            <h3 class="text-sm font-medium text-destructive">{{ $t('common.error') }}</h3>
+            <p class="text-sm text-destructive/80 mt-1">{{ sessionsStore.error }}</p>
           </div>
-          <div class="ml-auto pl-3">
+          <div class="flex-shrink-0">
             <button
               @click="loadSessions"
-              class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              class="nesbat-button-secondary px-3 py-1 text-sm"
             >
               {{ $t('common.retry') }}
             </button>
@@ -95,18 +96,20 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredSessions.length === 0" class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7v2m0 0v2m0-2h2m-2 0h-2m-7 12a3 3 0 01-3-3V5a3 3 0 013-3h2a3 3 0 013 3v11a3 3 0 01-3 3h-2z" />
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">{{ $t('session.noSessions') }}</h3>
-        <p class="mt-1 text-sm text-gray-500">
-          {{ searchQuery || filterByVideo ? $t('session.noSearchResults') : $t('session.noActiveYet') }}
-        </p>
-        <div class="mt-6">
+      <div v-else-if="filteredSessions.length === 0" class="nesbat-card p-12">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="h-8 w-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7v2m0 0v2m0-2h2m-2 0h-2m-7 12a3 3 0 01-3-3V5a3 3 0 013-3h2a3 3 0 013 3v11a3 3 0 01-3 3h-2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-foreground mb-2">{{ $t('session.noSessions') }}</h3>
+          <p class="text-muted-foreground mb-6">
+            {{ searchQuery || filterByVideo ? $t('session.noSearchResults') : $t('session.noActiveYet') }}
+          </p>
           <button
             @click="showCreateModal = true"
-            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="nesbat-button px-6 py-3"
             data-testid="create-first-session-button"
           >
             <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
