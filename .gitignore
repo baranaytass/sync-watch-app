@@ -152,4 +152,16 @@ playwright-report/
 *-debug.png
 *-debug.jpg
 debug-*.png
-debug-*.jpg 
+debug-*.jpg
+
+# AI Documentation and Tools (keep private)
+.cursor/
+*.cursor-rules
+*.md.cursor
+ai-docs/
+ai-prompts/
+ai-context/
+.ai/
+*.ai-*
+cursor-rules/
+.cursor-settings/ 

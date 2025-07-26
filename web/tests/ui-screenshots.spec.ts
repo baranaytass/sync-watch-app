@@ -1,39 +1,39 @@
 import { test, expect } from '@playwright/test'
 
-// UI Screenshot Test - Guest kullanıcı olarak tüm sayfaları gezip ekran görüntüsü alma
+// UI Screenshot Test - Take screenshots of all pages as guest user
 
 test.describe('UI Screenshots - Guest User Journey', () => {
   test('capture screenshots of all pages as guest user', async ({ page }) => {
-    console.log('📸 UI Screenshots test başlatılıyor...')
+    console.log('📸 Starting UI Screenshots test...')
     
-    // 1. Login Page - Giriş sayfası
-    console.log('🏠 Login sayfasına gidiliyor')
+    // 1. Login Page
+    console.log('🏠 Navigating to login page')
     await page.goto('/login')
     await page.waitForLoadState('networkidle')
     await page.screenshot({ 
       path: 'web/screenshots/01-login-page.png', 
       fullPage: true 
     })
-    console.log('✅ Login page screenshot alındı')
+    console.log('✅ Login page screenshot taken')
 
-    // 2. Guest Login - Misafir girişi
-    console.log('🔑 Misafir girişi yapılıyor')
+    // 2. Guest Login
+    console.log('🔑 Performing guest login')
     const guestButton = page.locator('[data-testid="guest-login-button"]')
     await expect(guestButton).toBeVisible()
     await guestButton.click()
     await page.waitForURL(/\/sessions$/)
     
-    // 3. Sessions Page - Oturumlar sayfası
-    console.log('📋 Sessions sayfası screenshot alınıyor')
+    // 3. Sessions Page
+    console.log('📋 Taking sessions page screenshot')
     await page.waitForLoadState('networkidle')
     await page.screenshot({ 
       path: 'web/screenshots/02-sessions-page.png', 
       fullPage: true 
     })
-    console.log('✅ Sessions page screenshot alındı')
+    console.log('✅ Sessions page screenshot taken')
 
-    // 4. Create Session Modal - Oturum oluşturma modalı
-    console.log('➕ Create Session modal açılıyor')
+    // 4. Create Session Modal
+    console.log('➕ Opening Create Session modal')
     const createButton = page.locator('[data-testid="create-session-button"]').first()
     await createButton.click()
     await page.waitForSelector('[data-testid="create-session-modal"]')
@@ -41,9 +41,9 @@ test.describe('UI Screenshots - Guest User Journey', () => {
       path: 'web/screenshots/03-create-session-modal.png', 
       fullPage: true 
     })
-    console.log('✅ Create Session modal screenshot alındı')
+    console.log('✅ Create Session modal screenshot taken')
 
-    // Modal'ı kapat
+    // Close modal
     await page.keyboard.press('Escape')
     await page.waitForTimeout(500)
 
@@ -56,13 +56,13 @@ test.describe('UI Screenshots - Guest User Journey', () => {
         path: 'web/screenshots/04-home-page.png', 
         fullPage: true 
       })
-      console.log('✅ Home page screenshot alındı')
+      console.log('✅ Home page screenshot taken')
     } catch (error) {
-      console.log('⚠️ Home page bulunamadı veya erişilemedi')
+      console.log('⚠️ Home page not found or inaccessible')
     }
 
-    // 6. Mobile responsive - Mobil görünüm testi
-    console.log('📱 Mobil görünüm test ediliyor')
+    // 6. Mobile responsive - Mobile view test
+    console.log('📱 Testing mobile view')
     await page.setViewportSize({ width: 375, height: 667 }) // iPhone SE size
     await page.goto('/')
     await page.waitForLoadState('networkidle')
@@ -70,17 +70,17 @@ test.describe('UI Screenshots - Guest User Journey', () => {
       path: 'web/screenshots/05-home-mobile.png', 
       fullPage: true 
     })
-    console.log('✅ Mobile sessions screenshot alındı')
+    console.log('✅ Mobile sessions screenshot taken')
 
-    // Tablet görünüm
+    // Tablet view
     await page.setViewportSize({ width: 768, height: 1024 }) // iPad size
     await page.screenshot({ 
       path: 'web/screenshots/06-sessions-tablet.png', 
       fullPage: true 
     })
-    console.log('✅ Tablet sessions screenshot alındı')
+    console.log('✅ Tablet sessions screenshot taken')
 
-    // Desktop'a geri dön
+    // Return to desktop
     await page.setViewportSize({ width: 1280, height: 720 })
 
     // 7. Dark/Light theme test (varsa)
@@ -100,11 +100,11 @@ test.describe('UI Screenshots - Guest User Journey', () => {
       console.log('⚠️ Theme toggle bulunamadı')
     }
 
-    console.log('🎉 Tüm screenshotlar başarıyla alındı!')
+    console.log('🎉 All screenshots taken successfully!')
   })
 
   test('capture detailed component screenshots', async ({ page }) => {
-    console.log('🔍 Detaylı component screenshotları alınıyor...')
+    console.log('🔍 Taking detailed component screenshots...')
     
     // Login olup session room'a gir
     await page.goto('/login')
@@ -112,7 +112,7 @@ test.describe('UI Screenshots - Guest User Journey', () => {
     await guestButton.click()
     await page.waitForURL(/\/sessions$/)
 
-    // Test session oluştur
+    // Create test session
     const createButton = page.locator('[data-testid="create-session-button"]').first()
     await createButton.click()
     
@@ -126,48 +126,48 @@ test.describe('UI Screenshots - Guest User Journey', () => {
     const submitButton = page.locator('[data-testid="create-session-submit"]')
     await submitButton.click()
     
-    // Session room'a yönlendir
+    // Navigate to session room
     await page.waitForURL(/\/session\//)
     await page.waitForLoadState('networkidle')
     
-    // 8. Session Room - Oturum odası
-    console.log('🎬 Session room screenshot alınıyor')
+    // 8. Session Room
+    console.log('🎬 Taking session room screenshot')
     await page.screenshot({ 
       path: 'web/screenshots/08-session-room.png', 
       fullPage: true 
     })
-    console.log('✅ Session room screenshot alındı')
+    console.log('✅ Session room screenshot taken')
 
-    // 9. Video player area - Video oynatıcı alanı
-    console.log('🎥 Video player area screenshot alınıyor')
+    // 9. Video player area
+    console.log('🎥 Taking video player area screenshot')
     const videoArea = page.locator('[data-testid="video-player-container"]').first()
     if (await videoArea.isVisible()) {
       await videoArea.screenshot({ 
         path: 'web/screenshots/09-video-player-area.png'
       })
-      console.log('✅ Video player area screenshot alındı')
+      console.log('✅ Video player area screenshot taken')
     }
 
-    // 10. Chat area - Sohbet alanı
-    console.log('💬 Chat area screenshot alınıyor')
+    // 10. Chat area
+    console.log('💬 Taking chat area screenshot')
     const chatArea = page.locator('[data-testid="chat-container"]').first()
     if (await chatArea.isVisible()) {
       await chatArea.screenshot({ 
         path: 'web/screenshots/10-chat-area.png'
       })
-      console.log('✅ Chat area screenshot alındı')
+      console.log('✅ Chat area screenshot taken')
     }
 
-    // 11. Participants list - Katılımcılar listesi
-    console.log('👥 Participants list screenshot alınıyor')
+    // 11. Participants list
+    console.log('👥 Taking participants list screenshot')
     const participantsList = page.locator('[data-testid="participants-list"]').first()
     if (await participantsList.isVisible()) {
       await participantsList.screenshot({ 
         path: 'web/screenshots/11-participants-list.png'
       })
-      console.log('✅ Participants list screenshot alındı')
+      console.log('✅ Participants list screenshot taken')
     }
 
-    console.log('🎊 Tüm detaylı screenshotlar tamamlandı!')
+    console.log('🎊 All detailed screenshots completed!')
   })
 })

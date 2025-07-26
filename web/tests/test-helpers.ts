@@ -120,7 +120,7 @@ export class TestErrorTracker {
             'Session not found',
             'Video sync failed',
             'Player initialization failed',
-            'Sync çağrıldı ama player hazır değil',
+            'Sync called but player not ready',
             'YouTube Player API not loaded',
             'Cannot read properties of null',
             'Cannot read properties of undefined',
@@ -255,8 +255,8 @@ export async function guestLogin(page: Page, guestName: string = 'Test User'): P
     // Click guest login button
     await guestBtn.click()
     
-    // Wait for navigation to sessions page
-    await page.waitForURL(/\/sessions$/, { timeout: 10000 })
+    // Wait for navigation to home page
+    await page.waitForURL(/\/$/, { timeout: 10000 })
     
     // Wait for page to fully load
     await page.waitForLoadState('networkidle')
@@ -267,11 +267,11 @@ export async function guestLogin(page: Page, guestName: string = 'Test User'): P
       throw new Error(`Expected to be on home page, but got: ${currentUrl}`)
     }
     
-    // Wait for session list to load (check for loading spinner to disappear)
+    // Wait for page to load completely
     await page.waitForFunction(() => {
       const loadingElements = document.querySelectorAll('div, p')
       for (const el of loadingElements) {
-        if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
+        if (el.textContent && (el.textContent.includes('Loading') || el.textContent.includes('Yükleniyor'))) {
           return false
         }
       }
@@ -302,7 +302,7 @@ export async function findCreateSessionButton(page: Page): Promise<any> {
   await page.waitForFunction(() => {
     const loadingElements = document.querySelectorAll('div, p')
     for (const el of loadingElements) {
-      if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
+      if (el.textContent && (el.textContent.includes('Loading') || el.textContent.includes('Yükleniyor'))) {
         return false
       }
     }
@@ -314,11 +314,12 @@ export async function findCreateSessionButton(page: Page): Promise<any> {
   logger.info('Page URL: ' + page.url())
 
   const createBtnSelectors = [
+    page.getByRole('button', { name: /Create.*Session/i }).first(),
+    page.getByRole('button', { name: /New.*Session/i }).first(),
     page.getByRole('button', { name: /Yeni Oturum/i }).first(),
     page.getByRole('button', { name: /İlk Oturumu Oluştur/i }).first(),
     page.getByRole('button', { name: /Oturum Oluştur/i }).first(),
-    page.getByRole('button', { name: /Create Session/i }).first(),
-    page.locator('button').filter({ hasText: /Oturum/i }).first(),
+    page.locator('button').filter({ hasText: /Session|Oturum/i }).first(),
     page.locator('[data-testid="create-session-button"]').first(),
     page.locator('[data-testid="create-first-session-button"]').first()
   ]
