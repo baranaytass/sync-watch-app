@@ -16,12 +16,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false }
   },
   {
-    path: '/sessions',
-    name: 'Sessions',
-    component: () => import('@/views/SessionsPage.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/session/:id',
     name: 'SessionRoom',
     component: () => import('@/views/SessionRoomPage.vue'),

@@ -25,10 +25,10 @@ test.describe('Auth – Guest Login/Logout', () => {
     await expect(guestButton).toBeEnabled()
 
     console.log('🔑 Misafir butonuna tıklanıyor')
-    // Tıkla ve yönlendirme bekle
+    // Tıkla ve yönlendirme bekle (artık home page'e yönlendiriliyor)
     await guestButton.click()
-    await page.waitForURL(/\/sessions$/)
-    console.log('✅ Oturum açıldı, sessions sayfasındayız')
+    await page.waitForURL(/\/$/)
+    console.log('✅ Oturum açıldı, authenticated home page\'deyiz')
 
     // Kullanıcı adını navbar'da gör (text dil bağımsız kontrol)
     await expect(page.locator('nav').locator('text=Test Misafiri').first()).toBeVisible()
@@ -42,7 +42,14 @@ test.describe('Auth – Guest Login/Logout', () => {
     // Logout
     console.log('🚪 Çıkış butonuna tıklanıyor')
     await page.locator('[data-testid="logout-button"]').click()
-    await page.waitForURL('/login')
+    
+    // Logout işlemi tamamlanmasını bekle (user auth state cleared olmalı)
+    await page.waitForFunction(() => {
+      return !localStorage.getItem('user')
+    }, { timeout: 10000 })
+    
+    // Login sayfasına yönlendirmeyi bekle
+    await page.waitForURL('/login', { timeout: 15000 })
 
     // Cookie silindi mi
     const cookiesAfter = await page.context().cookies()

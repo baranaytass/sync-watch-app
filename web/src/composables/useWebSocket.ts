@@ -170,7 +170,7 @@ export const useWebSocket = (sessionId: string) => {
     error.value = data.message || 'Session ended'
     sessionsStore.leaveSession()
     cleanup()
-    router.push('/sessions')
+    router.push('/')
   }
 
   // Connection management

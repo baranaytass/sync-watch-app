@@ -64,10 +64,10 @@ test.describe('UI Screenshots - Guest User Journey', () => {
     // 6. Mobile responsive - Mobil görünüm testi
     console.log('📱 Mobil görünüm test ediliyor')
     await page.setViewportSize({ width: 375, height: 667 }) // iPhone SE size
-    await page.goto('/sessions')
+    await page.goto('/')
     await page.waitForLoadState('networkidle')
     await page.screenshot({ 
-      path: 'web/screenshots/05-sessions-mobile.png', 
+      path: 'web/screenshots/05-home-mobile.png', 
       fullPage: true 
     })
     console.log('✅ Mobile sessions screenshot alındı')

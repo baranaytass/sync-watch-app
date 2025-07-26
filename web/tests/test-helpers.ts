@@ -261,10 +261,10 @@ export async function guestLogin(page: Page, guestName: string = 'Test User'): P
     // Wait for page to fully load
     await page.waitForLoadState('networkidle')
     
-    // Verify we're actually on sessions page and authenticated
+    // Verify we're actually on home page and authenticated
     const currentUrl = page.url()
-    if (!currentUrl.includes('/sessions')) {
-      throw new Error(`Expected to be on sessions page, but got: ${currentUrl}`)
+    if (!currentUrl.includes('://localhost') || currentUrl.includes('/login')) {
+      throw new Error(`Expected to be on home page, but got: ${currentUrl}`)
     }
     
     // Wait for session list to load (check for loading spinner to disappear)
@@ -288,11 +288,11 @@ export async function guestLogin(page: Page, guestName: string = 'Test User'): P
 export async function findCreateSessionButton(page: Page): Promise<any> {
   const logger = TestLogger.getInstance()
   
-  // Ensure we're on the sessions page (but don't navigate if we're already authenticated)
+  // Ensure we're on the home page (but don't navigate if we're already authenticated)
   const currentUrl = page.url()
-  if (!currentUrl.includes('/sessions')) {
-    logger.error(`Not on sessions page, current URL: ${currentUrl}`)
-    throw new Error('Expected to be on sessions page after guest login')
+  if (!currentUrl.includes('://localhost') || currentUrl.includes('/login')) {
+    logger.error(`Not on home page, current URL: ${currentUrl}`)
+    throw new Error('Expected to be on home page after guest login')
   }
 
   // Wait for loading to complete

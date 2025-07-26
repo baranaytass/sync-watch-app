@@ -65,8 +65,8 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = guestUser
         localStorage.setItem('user', JSON.stringify(guestUser))
 
-        // Redirect to sessions page after login
-        window.location.href = '/sessions'
+        // Redirect to home page after login
+        window.location.href = '/'
       } else {
         throw new Error('Guest login failed')
       }
