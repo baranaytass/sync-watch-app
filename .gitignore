@@ -174,4 +174,10 @@ dev-notes.md
 project-notes.md
 CODING_RULES.md
 *RULES*.md
-coding-standards.md 
+coding-standards.md
+
+# Documentation directory (keep private)
+docs/
+documentation/
+*.md
+!README.md 
