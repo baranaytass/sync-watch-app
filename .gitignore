@@ -164,4 +164,11 @@ ai-context/
 .ai/
 *.ai-*
 cursor-rules/
-.cursor-settings/ 
+.cursor-settings/
+
+# Development Documentation (keep private)
+development.md
+development-progress.md
+*-progress.md
+dev-notes.md
+project-notes.md 
