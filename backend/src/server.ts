@@ -8,7 +8,9 @@ import websocketRoutes from './routes/websocket';
 import { SessionService } from './services/SessionService';
 
 const server: any = require('fastify')({
-  logger: false,
+  logger: {
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug'
+  },
 });
 
 // Session cleanup job
