@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useVideoSyncStore } from '@/stores/videoSync'
 import { useSessionsStore } from '@/stores/sessions'
+import { useChatStore, type ChatMessage } from '@/stores/chat'
 import type { SessionParticipant } from '@sync-watch-app/shared-types'
 
 interface WebSocketMessage {
@@ -14,6 +15,7 @@ export const useWebSocket = (sessionId: string) => {
   const authStore = useAuthStore()
   const videoSyncStore = useVideoSyncStore()
   const sessionsStore = useSessionsStore()
+  const chatStore = useChatStore()
   const router = useRouter()
   
   // State
@@ -88,6 +90,14 @@ export const useWebSocket = (sessionId: string) => {
         
       case 'session_ended':
         handleSessionEnded(message.data)
+        break
+        
+      case 'chat_message':
+        handleChatMessage(message.data)
+        break
+        
+      case 'chat':
+        handleChatMessage(message.data)
         break
         
       case 'error':
@@ -171,6 +181,19 @@ export const useWebSocket = (sessionId: string) => {
     sessionsStore.leaveSession()
     cleanup()
     router.push('/')
+  }
+
+  const handleChatMessage = (data: any) => {
+    console.log('💬 WebSocket: Received chat message:', data)
+    const chatMessage: ChatMessage = {
+      id: data.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId: data.userId,
+      userName: data.userName,
+      userAvatar: data.userAvatar || '',
+      message: data.message,
+      timestamp: new Date(data.timestamp || Date.now())
+    }
+    chatStore.addMessage(chatMessage)
   }
 
   // Connection management

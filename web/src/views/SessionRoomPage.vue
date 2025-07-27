@@ -46,7 +46,7 @@
                 <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Ayrıl
+                Leave
               </button>
               <div class="ml-4">
                 <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ currentSession.title }}</h1>
@@ -60,7 +60,7 @@
               <button
                 @click="themeStore.toggleTheme()"
                 class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
-                :title="themeStore.isDark() ? 'Açık temaya geç' : 'Koyu temaya geç'"
+                :title="themeStore.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
               >
                 <!-- Light Mode Icon -->
                 <svg v-if="themeStore.isDark()" class="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +81,7 @@
                   ]"
                 ></div>
                 <span class="text-sm text-gray-600 dark:text-gray-400">
-                  {{ websocketConnected ? 'Bağlandı' : 'Bağlantı yok' }}
+                  {{ websocketConnected ? 'Connected' : 'Disconnected' }}
                 </span>
               </div>
               
@@ -143,17 +143,10 @@
           
           <!-- Chat Area -->
           <div class="flex-1 border-t border-border">
-            <div class="h-full flex items-center justify-center p-6">
-              <div class="text-center text-muted-foreground">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mx-auto mb-4">
-                  <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <p class="text-sm font-medium mb-1">{{ $t('chat.title') }}</p>
-                <p class="text-xs">{{ $t('chat.comingSoon') }}</p>
-              </div>
-            </div>
+            <ChatPanel
+              :connected="websocketConnected"
+              @send-message="handleSendChatMessage"
+            />
           </div>
         </div>
       </div>
@@ -172,7 +165,9 @@ import { useThemeStore } from '@/stores/theme'
 import ParticipantsList from '@/components/ParticipantsList.vue'
 import SessionInfo from '@/components/SessionInfo.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import ChatPanel from '@/components/ChatPanel.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { useChatStore } from '@/stores/chat'
 
 interface Props {
   id: string
@@ -185,6 +180,7 @@ const sessionsStore = useSessionsStore()
 const authStore = useAuthStore()
 const videoSyncStore = useVideoSyncStore()
 const themeStore = useThemeStore()
+const chatStore = useChatStore()
 
 // Reactive state
 const loading = ref(true)
@@ -199,6 +195,7 @@ const {
   participants: wsParticipants, 
   connect, 
   sendVideoAction,
+  sendChatMessage,
   leaveSession: leaveSessionWS
 } = useWebSocket(props.id)
 
@@ -281,12 +278,17 @@ const handleVideoError = (error: string) => {
 
 const handleDurationChange = (duration: number) => {
   console.log('Video duration:', duration)
-  // İleride duration'ı store'da saklayabiliriz
+  // Future: We can store duration in store if needed
 }
 
 const handleTimeUpdate = (currentTime: number) => {
-  // İleride real-time time tracking için kullanabiliriz
-  // Sadece log level olarak tutuyoruz şimdilik
+  // Future: We can use this for real-time time tracking
+  // Currently just keeping it for logging purposes
+}
+
+const handleSendChatMessage = (message: string) => {
+  console.log(`💬 SessionRoom: Sending chat message: "${message}"`)
+  sendChatMessage(message)
 }
 
 // Watch for authoritative video sync events and forward them to VideoPlayer
