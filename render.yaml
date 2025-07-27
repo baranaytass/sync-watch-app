@@ -52,4 +52,4 @@ databases:
   - name: videosync
     databaseName: videosync
     user: videosync_user
-    plan: starter
+    plan: free
