@@ -180,4 +180,11 @@ coding-standards.md
 docs/
 documentation/
 *.md
-!README.md 
+!README.md
+
+# Azure deployment files (keep sensitive info private)
+.env.azure
+azure-*.sql
+azure-monitoring-info.txt
+deployment-summary.txt
+*.publishsettings 
