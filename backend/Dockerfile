@@ -18,11 +18,11 @@ RUN npm install --workspaces --include-workspace-root
 # --- Kaynak kodunu kopyala ve derle ---
 COPY . .
 
-# Backend kodunu derle
-RUN npm run build --workspace=backend
+# Shared types ve backend kodunu derle
+RUN npm run build --workspace=packages/shared-types && npm run build --workspace=backend
 
-# Uygulama portu
-EXPOSE 3000
+# Uygulama portu (Render 10000 port kullanır)
+EXPOSE 10000
 
 # Backend server'ını başlat
 CMD ["node", "backend/dist/server.js"] 

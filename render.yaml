@@ -1,0 +1,55 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: sync-watch-postgres
+    env: docker
+    dockerfilePath: ./database/Dockerfile
+    plan: free
+
+  # Backend API Service  
+  - type: web
+    name: sync-watch-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: videosync
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false  
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://sync-watch-frontend.onrender.com
+
+  # Frontend Static Site
+  - type: web
+    name: sync-watch-frontend
+    env: static
+    buildCommand: npm ci && npm run build --workspace=packages/shared-types && npm run build --workspace=web
+    staticPublishPath: ./web/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://sync-watch-backend.onrender.com
+      - key: VITE_ENABLE_GUEST_LOGIN
+        value: true
+      - key: VITE_YOUTUBE_API_KEY
+        sync: false
+
+databases:
+  - name: videosync
+    databaseName: videosync
+    user: videosync_user
+    plan: starter
