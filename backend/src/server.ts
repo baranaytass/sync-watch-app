@@ -9,7 +9,22 @@ import { SessionService } from './services/SessionService';
 
 const server: any = require('fastify')({
   logger: {
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug'
+    level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+    serializers: {
+      req: (req: any) => {
+        // Health check isteklerini loglamayalım
+        if (req.url === '/health') return undefined;
+        return {
+          method: req.method,
+          url: req.url,
+          hostname: req.hostname,
+        };
+      },
+      res: (res: any) => {
+        // Health check response'larını loglamayalım
+        return res.statusCode >= 400 ? { statusCode: res.statusCode } : undefined;
+      },
+    },
   },
 });
 
