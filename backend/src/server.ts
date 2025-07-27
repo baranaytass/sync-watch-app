@@ -78,6 +78,9 @@ async function start(): Promise<void> {
     const db = new DatabaseConfig(server.config);
     await db.testConnection();
     
+    // Run database migrations
+    await db.runMigrations();
+    
     // Purge leftover in-memory session cache tables on each cold start
     try {
       console.log('🧹 Purging existing sessions on startup...')
