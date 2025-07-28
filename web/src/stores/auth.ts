@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import router from '@/router'
 
 export interface User {
   id: string
@@ -66,7 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('user', JSON.stringify(guestUser))
 
         // Redirect to home page after login
-        window.location.href = '/'
+        await router.push('/')
       } else {
         throw new Error('Guest login failed')
       }
@@ -90,6 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null
       localStorage.removeItem('user')
       loading.value = false
+      await router.push('/login')
     }
   }
 
