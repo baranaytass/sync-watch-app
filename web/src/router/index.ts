@@ -33,9 +33,8 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   
-  // Oturum doğrulama: Eğer kullanıcı bilgisi mevcutsa (localStorage),
-  // backend ile tekrar doğrulayarak cookie geçerliliğini kontrol et.
-  if (authStore.isAuthenticated) {
+  // Sadece authentication gerektiren route'larda session doğrula
+  if (to.meta.requiresAuth && authStore.isAuthenticated) {
     await authStore.fetchUser()
   }
 
