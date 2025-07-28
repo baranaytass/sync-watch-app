@@ -171,15 +171,11 @@ const handleGuestLogin = () => {
 
 // Check if user is already authenticated
 onMounted(async () => {
+  // Only redirect if user is already authenticated via localStorage
+  // Don't call fetchUser() to avoid unnecessary 401 errors
   if (authStore.isAuthenticated) {
     router.push('/')
     return
-  }
-  
-  // Try to fetch user from stored session
-  await authStore.fetchUser()
-  if (authStore.isAuthenticated) {
-    router.push('/')
   }
 })
 </script> 
