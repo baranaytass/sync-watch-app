@@ -37,7 +37,7 @@ export class AuthController {
       reply.setCookie('token', jwtToken, {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -106,7 +106,7 @@ export class AuthController {
       reply.setCookie('token', jwtToken, {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 24 * 60 * 60, // 1 day
         path: '/',
       });
