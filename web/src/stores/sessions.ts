@@ -46,12 +46,9 @@ export const useSessionsStore = defineStore('sessions', () => {
 
   // Actions
   const fetchSessions = async (): Promise<void> => {
-    // Debug logging control
+    // Debug logging control - always show in production for debugging
     const isDebugMode = () => {
-      const userAgent = navigator.userAgent
-      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
-        (document.title.includes('advanced') || document.title.includes('Advanced'))
-      return isPlaywrightAdvanced || import.meta.env.DEV
+      return true // Temporary debug mode for production
     }
     
     if (isDebugMode()) {
@@ -126,12 +123,9 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const createSession = async (data: CreateSessionRequest): Promise<Session | null> => {
-    // Debug logging control
+    // Debug logging control - always show in production for debugging
     const isDebugMode = () => {
-      const userAgent = navigator.userAgent
-      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
-        (document.title.includes('advanced') || document.title.includes('Advanced'))
-      return isPlaywrightAdvanced || import.meta.env.DEV
+      return true // Temporary debug mode for production
     }
     
     if (isDebugMode()) {
@@ -180,12 +174,9 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const joinSession = async (sessionId: string): Promise<Session | null> => {
-    // Debug logging control
+    // Debug logging control - always show in production for debugging
     const isDebugMode = () => {
-      const userAgent = navigator.userAgent
-      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
-        (document.title.includes('advanced') || document.title.includes('Advanced'))
-      return isPlaywrightAdvanced || import.meta.env.DEV
+      return true // Temporary debug mode for production
     }
     
     if (isDebugMode()) {

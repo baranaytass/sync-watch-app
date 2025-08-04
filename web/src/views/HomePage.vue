@@ -422,16 +422,20 @@ const toggleTheme = () => {
 
 const createQuickSession = async () => {
   try {
-    const response = await axios.post('/api/sessions', {
+    console.log('🚀 HomePage: Creating quick session...')
+    const session = await sessionsStore.createSession({
       title: 'Quick Session',
       description: 'Created from dashboard'
     })
     
-    if (response.data.success) {
-      router.push(`/session/${response.data.data.id}`)
+    if (session) {
+      console.log('✅ HomePage: Quick session created, redirecting to:', session.id)
+      router.push(`/session/${session.id}`)
+    } else {
+      console.error('❌ HomePage: Failed to create session - no session returned')
     }
   } catch (error) {
-    console.error('Failed to create session:', error)
+    console.error('❌ HomePage: Failed to create session:', error)
   }
 }
 
