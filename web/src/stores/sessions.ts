@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
 import type { Session, SessionParticipant, CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types'
 import { useAuthStore } from './auth'
 
@@ -60,11 +59,16 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/sessions`, {
-        withCredentials: true
+      const response = await fetch(`${API_BASE_URL}/api/sessions`, {
+        method: 'GET',
+        credentials: 'include',
       })
 
-      const result: ApiResponse = response.data
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse = await response.json()
 
       if (result.success && Array.isArray(result.data)) {
         sessions.value = result.data.map(transformDates)
@@ -132,11 +136,20 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/sessions`, data, {
-        withCredentials: true
+      const response = await fetch(`${API_BASE_URL}/api/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
       })
 
-      const result: ApiResponse = response.data
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: ApiResponse = await response.json()
 
       if (result.success && result.data) {
         const newSession = transformDates(result.data)
