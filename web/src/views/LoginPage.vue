@@ -156,7 +156,8 @@ const guestName = ref('')
 
 // Check if guest login is enabled via env
 const isGuestLoginEnabled = computed(() => {
-  return import.meta.env.VITE_ENABLE_GUEST_LOGIN === 'true'
+  // Always enable guest login in production for now - environment variable not working reliably
+  return true || import.meta.env.VITE_ENABLE_GUEST_LOGIN === 'true'
 })
 
 const handleGoogleLogin = () => {
