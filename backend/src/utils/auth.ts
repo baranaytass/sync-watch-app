@@ -11,9 +11,10 @@ export async function authenticateJWT(
   request: any,
   reply: any
 ): Promise<void> {
+  // Try to get token from cookie first
+  let token = request.cookies.token;
+  
   try {
-    // Try to get token from cookie first
-    let token = request.cookies.token;
     
     // If no cookie, try Authorization header
     if (!token) {
@@ -24,6 +25,9 @@ export async function authenticateJWT(
     }
     
     if (!token) {
+      console.log('🔴 Auth middleware: No token found');
+      console.log('🔴 Auth middleware: Cookies available:', Object.keys(request.cookies));
+      console.log('🔴 Auth middleware: Authorization header:', request.headers.authorization);
       return reply.status(401).send({
         error: 'unauthorized',
         message: 'No authentication token provided',
@@ -47,6 +51,10 @@ export async function authenticateJWT(
     };
     
   } catch (error) {
+    console.log('🔴 Auth middleware: JWT verification failed');
+    console.log('🔴 Auth middleware: Error:', error instanceof Error ? error.message : error);
+    console.log('🔴 Auth middleware: Token (first 20 chars):', typeof token === 'string' ? token.substring(0, 20) + '...' : 'undefined');
+    
     if (error instanceof Error) {
       if (error.message.includes('expired')) {
         return reply.status(401).send({

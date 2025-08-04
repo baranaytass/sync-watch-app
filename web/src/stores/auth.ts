@@ -70,6 +70,17 @@ export const useAuthStore = defineStore('auth', () => {
         console.log('🍪 Auth Store: Guest login successful, checking cookies...')
         console.log('🍪 Auth Store: Document cookies:', document.cookie)
         console.log('🍪 Auth Store: Response headers:', response.headers)
+        
+        // Extract JWT token from Set-Cookie header and store in localStorage as backup
+        const setCookieHeader = response.headers['set-cookie']
+        if (setCookieHeader && setCookieHeader.length > 0) {
+          const tokenMatch = setCookieHeader[0].match(/token=([^;]+)/)
+          if (tokenMatch) {
+            const jwtToken = tokenMatch[1]
+            localStorage.setItem('auth_token', jwtToken)
+            console.log('🔑 Auth Store: JWT token stored in localStorage as backup')
+          }
+        }
 
         // Redirect to home page after login
         await router.push('/')

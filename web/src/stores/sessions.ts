@@ -142,10 +142,24 @@ export const useSessionsStore = defineStore('sessions', () => {
       console.log('🍪 Sessions Store: Document cookies:', document.cookie)
       console.log('🍪 Sessions Store: Request data:', data)
       
-      // Use axios for createSession to ensure proper cookie handling
-      const response = await axios.post(`${API_BASE_URL}/api/sessions`, data, {
+      // Get JWT token from localStorage as backup
+      const authToken = localStorage.getItem('auth_token')
+      console.log('🔑 Sessions Store: Auth token from localStorage:', authToken ? 'Found' : 'Not found')
+      
+      // Use axios for createSession with both cookie and Authorization header
+      const requestConfig: any = {
         withCredentials: true
-      })
+      }
+      
+      // Add Authorization header if we have token in localStorage
+      if (authToken) {
+        requestConfig.headers = {
+          'Authorization': `Bearer ${authToken}`
+        }
+        console.log('🔑 Sessions Store: Adding Authorization header')
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}/api/sessions`, data, requestConfig)
 
       const result: ApiResponse = response.data
 
