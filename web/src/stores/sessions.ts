@@ -137,6 +137,11 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
+      // Debug: Check cookies before making request
+      console.log('🍪 Sessions Store: Before createSession request')
+      console.log('🍪 Sessions Store: Document cookies:', document.cookie)
+      console.log('🍪 Sessions Store: Request data:', data)
+      
       // Use axios for createSession to ensure proper cookie handling
       const response = await axios.post(`${API_BASE_URL}/api/sessions`, data, {
         withCredentials: true

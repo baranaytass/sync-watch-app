@@ -66,6 +66,11 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = guestUser
         localStorage.setItem('user', JSON.stringify(guestUser))
 
+        // Debug: Check if cookies are set after guest login
+        console.log('🍪 Auth Store: Guest login successful, checking cookies...')
+        console.log('🍪 Auth Store: Document cookies:', document.cookie)
+        console.log('🍪 Auth Store: Response headers:', response.headers)
+
         // Redirect to home page after login
         await router.push('/')
       } else {

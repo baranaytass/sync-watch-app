@@ -57,4 +57,60 @@ test.describe('Auth – Guest Login/Logout', () => {
     console.log('🧹 Cookie cleared:', cleared)
     expect(cleared).toBeTruthy()
   })
+
+  test('guest can create session after login', async ({ page }) => {
+    console.log('🚀 SESSION CREATE TEST – Starting guest login flow')
+    
+    // Login as guest first
+    await page.goto('/login')
+    const guestNameInput = page.locator('[data-testid="guest-name-input"]')
+    await expect(guestNameInput).toBeVisible()
+    
+    await guestNameInput.fill('Session Creator')
+    const guestButton = page.locator('[data-testid="guest-login-button"]')
+    await guestButton.click()
+    await page.waitForURL(/\/$/)
+    
+    console.log('✅ Guest login completed, now testing session creation')
+    
+    // Verify we're on authenticated home page and create session button is visible
+    const createButton = page.locator('[data-testid="create-session-button"]')
+    await expect(createButton).toBeVisible()
+    
+    console.log('🎬 Clicking create session button')
+    
+    // Listen for console logs to debug cookie issues
+    page.on('console', msg => {
+      if (msg.text().includes('🍪') || msg.text().includes('401') || msg.text().includes('Sessions Store')) {
+        console.log('Browser Console:', msg.text())
+      }
+    })
+    
+    // Click create session and wait for either success or error
+    await createButton.click()
+    
+    // Wait for either successful redirect to session page or error
+    try {
+      // If successful, should redirect to /session/{id}
+      await page.waitForURL(/\/session\/[a-f0-9-]+/, { timeout: 10000 })
+      console.log('✅ Session created successfully, redirected to session page')
+      
+      // Verify we're in a session page
+      expect(page.url()).toMatch(/\/session\/[a-f0-9-]+/)
+      
+    } catch (error) {
+      // If failed, check for error logs
+      console.log('❌ Session creation failed or timeout')
+      
+      // Wait a bit to capture console logs
+      await page.waitForTimeout(2000)
+      
+      // Check if still on home page (failed creation)
+      const currentUrl = page.url()
+      console.log('Current URL after create attempt:', currentUrl)
+      
+      // This test should fail if we can't create session
+      throw new Error('Session creation failed - either 401 error or timeout')
+    }
+  })
 }) 
