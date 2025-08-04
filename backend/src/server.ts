@@ -9,11 +9,27 @@ import { SessionService } from './services/SessionService';
 
 const server: any = require('fastify')({
   logger: {
-    level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     serializers: {
       req: (req: any) => {
         // Health check isteklerini loglamayalım
         if (req.url === '/health') return undefined;
+        
+        // Production'da önemli API endpoint'lerini logla
+        if (process.env.NODE_ENV === 'production') {
+          const isApiEndpoint = req.url.startsWith('/api/');
+          const isWebSocket = req.url.startsWith('/ws/');
+          if (isApiEndpoint || isWebSocket) {
+            return {
+              method: req.method,
+              url: req.url,
+              userAgent: req.headers['user-agent'],
+              origin: req.headers['origin'],
+            };
+          }
+          return undefined;
+        }
+        
         return {
           method: req.method,
           url: req.url,
@@ -22,6 +38,19 @@ const server: any = require('fastify')({
       },
       res: (res: any) => {
         // Health check response'larını loglamayalım
+        if (res.request?.url === '/health') return undefined;
+        
+        // Production'da tüm response'ları logla (başarılı olanlar dahil)
+        if (process.env.NODE_ENV === 'production') {
+          const isApiResponse = res.request?.url?.startsWith('/api/');
+          if (isApiResponse) {
+            return {
+              statusCode: res.statusCode,
+              responseTime: res.responseTime,
+            };
+          }
+        }
+        
         return res.statusCode >= 400 ? { statusCode: res.statusCode } : undefined;
       },
     },
