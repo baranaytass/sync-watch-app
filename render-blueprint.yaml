@@ -32,7 +32,7 @@ services:
   - type: web
     name: sync-watch-frontend
     env: static
-    buildCommand: npm ci && npm run build --workspace=packages/shared-types && npm run build --workspace=web
+    buildCommand: VITE_API_URL=https://sync-watch-backend.onrender.com VITE_ENABLE_GUEST_LOGIN=true npm ci && npm run build --workspace=packages/shared-types && npm run build --workspace=web
     staticPublishPath: ./web/dist
     pullRequestPreviewsEnabled: false
     envVars:
