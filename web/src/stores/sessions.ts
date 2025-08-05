@@ -131,7 +131,7 @@ export const useSessionsStore = defineStore('sessions', () => {
     }
     
     if (isDebugMode()) {
-      console.log('➕ Sessions Store: Creating new session:', data.title)
+      console.log('➕ Sessions Store: Creating new session with auth fix:', data.title)
     }
     
     loading.value = true
