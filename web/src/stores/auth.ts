@@ -13,7 +13,8 @@ export interface User {
   updatedAt: Date
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
 
 // Configure axios defaults
 axios.defaults.withCredentials = true

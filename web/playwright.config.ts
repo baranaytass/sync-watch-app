@@ -11,7 +11,7 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
   globalSetup: './global-setup',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.BASE_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',

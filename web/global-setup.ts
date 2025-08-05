@@ -8,10 +8,10 @@ import { request } from '@playwright/test'
  * with a non-zero code so CI can fail fast.
  */
 export default async function globalSetup() {
-  const backendBaseURL = process.env.BACKEND_BASE_URL ?? 'http://localhost:3000'
+  const backendBaseURL = process.env.BACKEND_BASE_URL ?? (process.env.BASE_URL?.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
   // We purposefully hit the root path – any HTTP response means the server is up.
   // A 404 is acceptable because we only care about reachability, not specific route.
-  const healthURL = backendBaseURL
+  const healthURL = backendBaseURL + (backendBaseURL.includes('onrender.com') ? '/health' : '')
 
   console.log(`🌡️  Backend health check -> ${healthURL}`)
 
@@ -22,7 +22,7 @@ export default async function globalSetup() {
   let healthy = false
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const response = await requestContext.get(healthURL, { timeout: 2000 })
+      const response = await requestContext.get(healthURL, { timeout: 30000 })
       const status = response.status()
       if (status < 500) {
         console.log(`✅ Backend reachable (status: ${status}) on attempt #${attempt}`)
