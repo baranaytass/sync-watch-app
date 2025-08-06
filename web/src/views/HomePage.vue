@@ -428,9 +428,17 @@ const createQuickSession = async () => {
       description: 'Created from dashboard'
     })
     
+    console.log('🔍 HomePage: createSession result:', session)
+    
     if (session) {
       console.log('✅ HomePage: Quick session created, redirecting to:', session.id)
-      router.push(`/session/${session.id}`)
+      
+      try {
+        await router.push(`/session/${session.id}`)
+        console.log('✅ HomePage: Router push successful')
+      } catch (routerError) {
+        console.error('❌ HomePage: Router push failed:', routerError)
+      }
     } else {
       console.error('❌ HomePage: Failed to create session - no session returned')
     }
