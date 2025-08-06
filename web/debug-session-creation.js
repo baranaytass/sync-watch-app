@@ -129,10 +129,52 @@ async function debugSessionCreation() {
     await createButton.waitFor({ timeout: 15000 });
     
     console.log('\n🎬 Clicking create session - monitoring request...');
+    
+    // First, let's try a direct navigation test
+    console.log('\n🧪 Testing direct router navigation...');
+    await page.evaluate(() => {
+      console.log('🧪 Direct Navigation Test: Attempting to navigate to /session/test-123');
+      // Try programmatic navigation
+      if (window.router) {
+        window.router.push('/session/test-123');
+      } else if (window.__VUE_ROUTER__) {
+        window.__VUE_ROUTER__.push('/session/test-123');
+      } else {
+        console.log('🧪 Direct Navigation Test: No router found, using location.href');
+        window.location.href = '/session/test-123';
+      }
+    });
+    
+    await page.waitForTimeout(3000);
+    console.log('🧪 Direct Navigation Test: Current URL after test:', page.url());
+    
+    // Navigate back to home for the actual test
+    await page.goto('https://sync-watch-frontend.onrender.com/', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+    
+    // Now do the actual click test
     await createButton.click();
     
-    // Wait a bit for the click to process
-    await page.waitForTimeout(2000);
+    // Monitor URL changes step by step
+    for (let i = 0; i < 10; i++) {
+      await page.waitForTimeout(1000);
+      const currentUrl = page.url();
+      const authData = await page.evaluate(() => ({
+        hasUser: !!localStorage.getItem('user'),
+        hasToken: !!localStorage.getItem('auth_token'),
+        pathname: window.location.pathname
+      }));
+      console.log(`🕐 Step ${i + 1}: URL = ${currentUrl}, User = ${authData.hasUser}, Token = ${authData.hasToken}`);
+      
+      if (currentUrl.includes('/session/')) {
+        console.log('🎉 SUCCESS! Reached session page at step', i + 1);
+        break;
+      }
+      if (currentUrl.includes('/login')) {
+        console.log('❌ Redirected to login at step', i + 1);
+        break;
+      }
+    }
     
     // Check what happened with auth store after click
     const postClickAuth = await page.evaluate(() => {

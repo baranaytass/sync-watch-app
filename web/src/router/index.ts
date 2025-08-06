@@ -61,10 +61,24 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Authentication gerektiren route'a yetkisiz giriş kontrolü
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log('🛡️ Router Guard: Redirecting to /login - user not authenticated')
+  // Check both auth store and localStorage as fallback for authentication
+  const hasLocalStorageAuth = !!localStorage.getItem('user') && !!localStorage.getItem('auth_token')
+  const isActuallyAuthenticated = authStore.isAuthenticated || hasLocalStorageAuth
+  
+  if (to.meta.requiresAuth && !isActuallyAuthenticated) {
+    console.log('🛡️ Router Guard: Redirecting to /login - user not authenticated', {
+      storeAuth: authStore.isAuthenticated,
+      localStorageAuth: hasLocalStorageAuth,
+      actualAuth: isActuallyAuthenticated
+    })
     next('/login')
     return
+  } else if (to.meta.requiresAuth && isActuallyAuthenticated) {
+    console.log('🛡️ Router Guard: User is authenticated', {
+      storeAuth: authStore.isAuthenticated,
+      localStorageAuth: hasLocalStorageAuth,
+      actualAuth: isActuallyAuthenticated
+    })
   }
   
   // Eğer zaten authenticated ve login sayfasına gidiyorsa ana sayfaya yönlendir
