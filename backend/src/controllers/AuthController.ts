@@ -38,6 +38,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -107,6 +108,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
         maxAge: 24 * 60 * 60, // 1 day
         path: '/',
       });
