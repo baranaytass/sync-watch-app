@@ -81,6 +81,12 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.setItem('auth_token', jwtToken)
             console.log('🔑 Auth Store: JWT token stored in localStorage as backup')
           }
+        } else {
+          // Fallback: Create a temporary token from user data for session creation
+          // This is a workaround until cookie domain is fixed
+          const tempToken = btoa(JSON.stringify({ userId: guestUser.id, email: guestUser.email, timestamp: Date.now() }))
+          localStorage.setItem('auth_token', tempToken)
+          console.log('🔑 Auth Store: Temporary token created for session auth')
         }
 
         // Redirect to home page after login

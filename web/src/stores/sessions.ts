@@ -164,14 +164,14 @@ export const useSessionsStore = defineStore('sessions', () => {
         headers: {}
       }
       
-      // If authenticated via cookie but no localStorage token, rely on cookie auth
-      if (isAuthenticated) {
-        console.log('🔐 Sessions Store: Using cookie-based authentication')
-        // No need for Authorization header, backend will read HttpOnly cookie
-      } else if (authToken) {
-        // Fallback to localStorage token with Authorization header
+      // Priority: localStorage token > cookie auth
+      if (authToken) {
+        // Use localStorage token with Authorization header (more reliable)
         requestConfig.headers['Authorization'] = `Bearer ${authToken}`
         console.log('🔑 Sessions Store: Adding Authorization header from localStorage')
+      } else if (isAuthenticated) {
+        console.log('🔐 Sessions Store: Using cookie-based authentication')
+        // No need for Authorization header, backend will read HttpOnly cookie
       } else {
         console.log('❌ Sessions Store: No authentication method available')
       }
