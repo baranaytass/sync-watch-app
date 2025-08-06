@@ -147,30 +147,33 @@ export const useSessionsStore = defineStore('sessions', () => {
       const authToken = localStorage.getItem('auth_token')
       console.log('🔑 Sessions Store: Auth token from localStorage:', authToken ? 'Found' : 'Not found')
       
-      // Extract JWT token from document.cookie as primary method
-      const cookieToken = document.cookie
+      // Check for authentication status cookie (non-HttpOnly)
+      const authStatus = document.cookie
         .split('; ')
-        .find(row => row.startsWith('token='))
+        .find(row => row.startsWith('auth_status='))
         ?.split('=')[1];
-      console.log('🍪 Sessions Store: JWT token from cookies:', cookieToken ? 'Found' : 'Not found')
+      console.log('🍪 Sessions Store: Auth status cookie:', authStatus)
       
-      // Use axios for createSession with both cookie and Authorization header
+      // HttpOnly token cookie cannot be accessed, but we know user is authenticated
+      const isAuthenticated = authStatus === 'authenticated'
+      console.log('🔐 Sessions Store: User authenticated via cookie:', isAuthenticated)
+      
+      // Use axios for createSession with cookie authentication
       const requestConfig: any = {
         withCredentials: true,
         headers: {}
       }
       
-      // Add Authorization header if we have token (prioritize cookie, fallback to localStorage)
-      const tokenToUse = cookieToken || authToken
-      if (tokenToUse) {
-        requestConfig.headers['Authorization'] = `Bearer ${tokenToUse}`
-        console.log('🔑 Sessions Store: Adding Authorization header with token from:', cookieToken ? 'cookies' : 'localStorage')
-      }
-      
-      // Also manually add Cookie header for cross-origin requests
-      if (cookieToken) {
-        requestConfig.headers['Cookie'] = `token=${cookieToken}`
-        console.log('🍪 Sessions Store: Adding manual Cookie header')
+      // If authenticated via cookie but no localStorage token, rely on cookie auth
+      if (isAuthenticated) {
+        console.log('🔐 Sessions Store: Using cookie-based authentication')
+        // No need for Authorization header, backend will read HttpOnly cookie
+      } else if (authToken) {
+        // Fallback to localStorage token with Authorization header
+        requestConfig.headers['Authorization'] = `Bearer ${authToken}`
+        console.log('🔑 Sessions Store: Adding Authorization header from localStorage')
+      } else {
+        console.log('❌ Sessions Store: No authentication method available')
       }
       
       const response = await axios.post(`${API_BASE_URL}/api/sessions`, data, requestConfig)
@@ -213,20 +216,24 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      // Extract JWT token from cookies for Authorization header
-      const cookieToken = document.cookie
+      // Check authentication status
+      const authStatus = document.cookie
         .split('; ')
-        .find(row => row.startsWith('token='))
+        .find(row => row.startsWith('auth_status='))
         ?.split('=')[1];
       
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       }
       
-      // Add Authorization header if we have token
-      if (cookieToken) {
-        headers['Authorization'] = `Bearer ${cookieToken}`
+      const authToken = localStorage.getItem('auth_token')
+      
+      // Add Authorization header only if no cookie auth available
+      if (authStatus !== 'authenticated' && authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`
         console.log('🔑 Sessions Store: Adding Authorization header to joinSession')
+      } else {
+        console.log('🔐 Sessions Store: Using cookie authentication for joinSession')
       }
       
       const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/join`, {
