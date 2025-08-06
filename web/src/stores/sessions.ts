@@ -178,6 +178,9 @@ export const useSessionsStore = defineStore('sessions', () => {
       
       const response = await axios.post(`${API_BASE_URL}/api/sessions`, data, requestConfig)
 
+      console.log('🔍 Sessions Store: Response status:', response.status)
+      console.log('🔍 Sessions Store: Response data:', response.data)
+
       const result: ApiResponse = response.data
 
       if (result.success && result.data) {
