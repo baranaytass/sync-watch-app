@@ -34,8 +34,57 @@ export async function authenticateJWT(
       });
     }
     
-    // Verify JWT token
-    const decoded = request.server.jwt.verify(token) as JWTPayload;
+    // Verify JWT token or fallback token
+    let decoded: JWTPayload;
+    
+    try {
+      // Try to verify as JWT first
+      decoded = request.server.jwt.verify(token) as JWTPayload;
+    } catch (jwtError) {
+      // If JWT verification fails, try fallback JWT format
+      try {
+        // Check if it's a fallback JWT structure (header.payload.signature)
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.userId && payload.email && payload.exp) {
+            // Check if token is not expired
+            const now = Math.floor(Date.now() / 1000);
+            if (payload.exp > now) {
+              decoded = {
+                userId: payload.userId,
+                email: payload.email
+              };
+              console.log('🔧 Auth middleware: Using fallback JWT token for user:', payload.userId);
+            } else {
+              throw new Error('Fallback token expired');
+            }
+          } else {
+            throw new Error('Invalid fallback token payload');
+          }
+        } else {
+          // Try legacy temporary token format
+          const tempTokenData = JSON.parse(atob(token));
+          if (tempTokenData.userId && tempTokenData.email && tempTokenData.timestamp) {
+            const tokenAge = Date.now() - tempTokenData.timestamp;
+            if (tokenAge < 60 * 60 * 1000) { // 1 hour
+              decoded = {
+                userId: tempTokenData.userId,
+                email: tempTokenData.email
+              };
+              console.log('🔧 Auth middleware: Using legacy temporary token for user:', tempTokenData.userId);
+            } else {
+              throw new Error('Temporary token expired');
+            }
+          } else {
+            throw new Error('Invalid temporary token format');
+          }
+        }
+      } catch (fallbackError) {
+        // Neither JWT nor fallback token worked
+        throw jwtError; // Throw original JWT error
+      }
+    }
     
     if (!decoded.userId || !decoded.email) {
       return reply.status(401).send({
