@@ -46,7 +46,7 @@ async function debugSessionCreation() {
 
   // Monitor console logs
   page.on('console', msg => {
-    if (msg.text().includes('Sessions Store') || msg.text().includes('auth_token') || msg.text().includes('Authorization')) {
+    if (msg.text().includes('Sessions Store') || msg.text().includes('auth_token') || msg.text().includes('Authorization') || msg.text().includes('Router Guard')) {
       console.log(`🖥️  ${msg.text()}`);
     }
   });
@@ -108,8 +108,38 @@ async function debugSessionCreation() {
     console.log('\n🎬 Clicking create session - monitoring request...');
     await createButton.click();
     
-    // Wait for request to complete
-    await page.waitForTimeout(8000);
+    // Wait a bit for the click to process
+    await page.waitForTimeout(2000);
+    
+    // Check what happened with auth store after click
+    const postClickAuth = await page.evaluate(() => {
+      // Access Vue app instance to check auth state
+      const authStore = window.__APP__?.config?.globalProperties?.$authStore || 
+                       window.authStore || 
+                       (window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.apps?.[0]?.config?.globalProperties?.$authStore);
+      
+      return {
+        currentUrl: window.location.href,
+        pathname: window.location.pathname,
+        authStoreExists: !!authStore,
+        isAuthenticated: authStore?.isAuthenticated,
+        user: authStore?.user,
+        hasUserInStorage: !!localStorage.getItem('user'),
+        hasTokenInStorage: !!localStorage.getItem('auth_token')
+      }
+    });
+    
+    console.log('\n🔍 Post-click Auth Check:');
+    console.log('🌐 Current URL:', postClickAuth.currentUrl);
+    console.log('📍 Pathname:', postClickAuth.pathname);
+    console.log('🏪 Auth store exists:', postClickAuth.authStoreExists);
+    console.log('✅ isAuthenticated:', postClickAuth.isAuthenticated);
+    console.log('👤 User in store:', postClickAuth.user ? { id: postClickAuth.user.id, name: postClickAuth.user.name } : null);
+    console.log('💾 User in localStorage:', postClickAuth.hasUserInStorage);
+    console.log('🔑 Token in localStorage:', postClickAuth.hasTokenInStorage);
+    
+    // Wait for navigation to complete
+    await page.waitForTimeout(6000);
     
     const finalUrl = page.url();
     console.log('\n🏁 Final URL:', finalUrl);
