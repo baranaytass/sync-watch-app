@@ -49,21 +49,22 @@ router.beforeEach(async (to, from, next) => {
     hasTokenInStorage: !!localStorage.getItem('auth_token')
   })
   
-  // Sadece authentication gerektiren route'larda session doğrula
-  if (to.meta.requiresAuth && authStore.isAuthenticated) {
-    console.log('🛡️ Router Guard: Fetching user data for authenticated route')
+  // Check both auth store and localStorage as fallback for authentication
+  const hasLocalStorageAuth = !!localStorage.getItem('user') && !!localStorage.getItem('auth_token')
+  const isActuallyAuthenticated = authStore.isAuthenticated || hasLocalStorageAuth
+  
+  // Only call fetchUser if we're using cookie-based auth (not localStorage)
+  if (to.meta.requiresAuth && authStore.isAuthenticated && !hasLocalStorageAuth) {
+    console.log('🛡️ Router Guard: Fetching user data for cookie-based authenticated route')
     try {
       await authStore.fetchUser()
       console.log('🛡️ Router Guard: User fetch completed successfully')
     } catch (error) {
       console.log('🛡️ Router Guard: User fetch failed:', error)
     }
+  } else if (to.meta.requiresAuth && hasLocalStorageAuth) {
+    console.log('🛡️ Router Guard: Skipping fetchUser - using localStorage authentication')
   }
-
-  // Authentication gerektiren route'a yetkisiz giriş kontrolü
-  // Check both auth store and localStorage as fallback for authentication
-  const hasLocalStorageAuth = !!localStorage.getItem('user') && !!localStorage.getItem('auth_token')
-  const isActuallyAuthenticated = authStore.isAuthenticated || hasLocalStorageAuth
   
   if (to.meta.requiresAuth && !isActuallyAuthenticated) {
     console.log('🛡️ Router Guard: Redirecting to /login - user not authenticated', {
