@@ -136,14 +136,53 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await axios.get(`${API_BASE_URL}/api/auth/me`)
+      
+      // Get JWT token from localStorage as backup
+      const authToken = localStorage.getItem('auth_token')
+      console.log('🔍 Auth Store: fetchUser - token available:', !!authToken)
+      
+      // Check for authentication status cookie (non-HttpOnly)
+      const authStatus = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_status='))
+        ?.split('=')[1]
+      
+      const requestConfig: any = {
+        withCredentials: true,
+        headers: {}
+      }
+      
+      // Priority: localStorage token > cookie auth
+      if (authToken) {
+        requestConfig.headers['Authorization'] = `Bearer ${authToken}`
+        console.log('🔑 Auth Store: fetchUser - using Authorization header')
+      } else if (authStatus === 'authenticated') {
+        console.log('🔐 Auth Store: fetchUser - using cookie authentication')
+      } else {
+        console.log('❌ Auth Store: fetchUser - no authentication method available')
+      }
+      
+      const response = await axios.get(`${API_BASE_URL}/api/auth/me`, requestConfig)
+      
       if (response.data.success && response.data.data) {
         user.value = response.data.data
         localStorage.setItem('user', JSON.stringify(response.data.data))
+        console.log('✅ Auth Store: fetchUser successful')
       }
     } catch (err: any) {
-      user.value = null
-      localStorage.removeItem('user')
+      console.log('❌ Auth Store: fetchUser failed:', err.response?.status)
+      
+      // Only clear user data if we don't have a localStorage token
+      // If we have a localStorage token, keep the existing user data
+      const authToken = localStorage.getItem('auth_token')
+      if (!authToken) {
+        user.value = null
+        localStorage.removeItem('user')
+        console.log('🗑️ Auth Store: Cleared user data - no fallback token')
+      } else {
+        console.log('💾 Auth Store: Keeping user data - localStorage token exists')
+      }
+      
       if (err.response?.status !== 401) {
         console.error('Fetch user error:', err)
       }

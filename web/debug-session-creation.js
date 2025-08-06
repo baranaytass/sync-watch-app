@@ -46,7 +46,7 @@ async function debugSessionCreation() {
 
   // Monitor console logs
   page.on('console', msg => {
-    if (msg.text().includes('Sessions Store') || msg.text().includes('auth_token') || msg.text().includes('Authorization') || msg.text().includes('Router Guard')) {
+    if (msg.text().includes('Sessions Store') || msg.text().includes('auth_token') || msg.text().includes('Authorization') || msg.text().includes('Router Guard') || msg.text().includes('HomePage') || msg.text().includes('Auth Store')) {
       console.log(`🖥️  ${msg.text()}`);
     }
   });
@@ -100,6 +100,29 @@ async function debugSessionCreation() {
     console.log('🔑 Token in localStorage:', authState.hasToken);
     console.log('🍪 Document cookies:', authState.cookies);
     console.log('🌐 Current path:', authState.pathname);
+    
+    // Check what's actually on the page before looking for the button
+    const pageContent = await page.evaluate(() => {
+      return {
+        title: document.title,
+        hasAuthenticatedButton: !!document.querySelector('[data-testid="create-session-button"]'),
+        hasLogoutButton: !!document.querySelector('[data-testid="logout-button"]'),
+        bodyText: document.body.innerText.substring(0, 200) + '...',
+        currentUrl: window.location.href,
+        authStatus: {
+          hasUser: !!localStorage.getItem('user'),
+          hasToken: !!localStorage.getItem('auth_token')
+        }
+      }
+    });
+    
+    console.log('\n🔍 Page Analysis:');
+    console.log('📄 Page title:', pageContent.title);
+    console.log('🔲 Has create session button:', pageContent.hasAuthenticatedButton);
+    console.log('🚪 Has logout button:', pageContent.hasLogoutButton);
+    console.log('🌐 Current URL:', pageContent.currentUrl);
+    console.log('🔐 Auth status:', pageContent.authStatus);
+    console.log('📝 Page content preview:', pageContent.bodyText);
     
     // Try session creation
     const createButton = page.locator('[data-testid="create-session-button"]');

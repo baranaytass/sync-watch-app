@@ -51,7 +51,13 @@ router.beforeEach(async (to, from, next) => {
   
   // Sadece authentication gerektiren route'larda session doğrula
   if (to.meta.requiresAuth && authStore.isAuthenticated) {
-    await authStore.fetchUser()
+    console.log('🛡️ Router Guard: Fetching user data for authenticated route')
+    try {
+      await authStore.fetchUser()
+      console.log('🛡️ Router Guard: User fetch completed successfully')
+    } catch (error) {
+      console.log('🛡️ Router Guard: User fetch failed:', error)
+    }
   }
 
   // Authentication gerektiren route'a yetkisiz giriş kontrolü
