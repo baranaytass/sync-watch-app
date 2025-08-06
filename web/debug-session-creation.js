@@ -76,6 +76,31 @@ async function debugSessionCreation() {
     const token = await page.evaluate(() => localStorage.getItem('auth_token'));
     console.log('🔑 Token in localStorage:', token ? 'Present (' + token.length + ' chars)' : 'Missing');
 
+    // Check authentication state before creating session
+    const authState = await page.evaluate(() => {
+      return {
+        hasUserInLocalStorage: !!localStorage.getItem('user'),
+        userString: localStorage.getItem('user'),
+        hasToken: !!localStorage.getItem('auth_token'),
+        cookies: document.cookie,
+        pathname: window.location.pathname
+      }
+    });
+    
+    console.log('\n🔐 Auth State Check:');
+    console.log('📱 User in localStorage:', authState.hasUserInLocalStorage);
+    if (authState.userString) {
+      try {
+        const userData = JSON.parse(authState.userString);
+        console.log('👤 User data:', { id: userData.id, name: userData.name, email: userData.email });
+      } catch (e) {
+        console.log('👤 User data (raw):', authState.userString);
+      }
+    }
+    console.log('🔑 Token in localStorage:', authState.hasToken);
+    console.log('🍪 Document cookies:', authState.cookies);
+    console.log('🌐 Current path:', authState.pathname);
+    
     // Try session creation
     const createButton = page.locator('[data-testid="create-session-button"]');
     await createButton.waitFor({ timeout: 15000 });
