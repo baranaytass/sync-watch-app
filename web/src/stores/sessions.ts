@@ -226,7 +226,7 @@ export const useSessionsStore = defineStore('sessions', () => {
         ?.split('=')[1];
       
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        // No Content-Type needed for join session since no body is sent
       }
       
       const authToken = localStorage.getItem('auth_token')
