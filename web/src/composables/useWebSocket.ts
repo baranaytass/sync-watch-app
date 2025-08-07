@@ -220,6 +220,11 @@ export const useWebSocket = (sessionId: string) => {
         }
         
         console.log('🔌 WebSocket: Connecting to:', wsUrl)
+        console.log('🔐 WebSocket: Token included:', !!token)
+        if (token) {
+          console.log('🔑 WebSocket: Token length:', token.length)
+          console.log('🔑 WebSocket: Token starts with:', token.substring(0, 20) + '...')
+        }
         ws = new WebSocket(wsUrl)
         
         ws.onopen = () => {
