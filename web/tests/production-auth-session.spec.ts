@@ -18,7 +18,8 @@ test('production guest login and create session flow', async ({ page }) => {
     })
     
     console.log('📄 Navigating to production login page')
-    await page.goto('/login', { waitUntil: 'networkidle' })
+    const baseUrl = process.env.BASE_URL || 'https://sync-watch-frontend.onrender.com'
+    await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' })
     
     // Check if page loaded correctly
     await expect(page).toHaveTitle(/Video Sync Chat/)
@@ -44,7 +45,7 @@ test('production guest login and create session flow', async ({ page }) => {
     
     // Wait for authentication to complete and redirect to home
     console.log('⏳ Waiting for redirect to home page...')
-    await page.waitForURL('/', { timeout: 30000 })
+    await page.waitForURL(`${baseUrl}/`, { timeout: 30000 })
     console.log('✅ Successfully redirected to authenticated home page')
     
     // Verify we're authenticated - username should appear in navbar
@@ -86,9 +87,9 @@ test('production guest login and create session flow', async ({ page }) => {
       expect(currentUrl).toMatch(/\/session\/[a-f0-9-]+/)
       console.log('🎯 Session URL:', currentUrl)
       
-      // Additional verification - check session page elements
-      await expect(page.locator('[data-testid="session-title"]')).toBeVisible({ timeout: 10000 })
-      console.log('📋 Session page loaded with title element visible')
+      // Additional verification - check session page elements (use leave button as indicator)
+      await expect(page.locator('[data-testid="leave-session-button"]')).toBeVisible({ timeout: 10000 })
+      console.log('📋 Session page loaded with leave button visible')
       
     } catch (error) {
       console.log('❌ FAILED: Session creation timeout or error')

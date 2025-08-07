@@ -11,7 +11,7 @@ export default async function globalSetup() {
   const backendBaseURL = process.env.BACKEND_BASE_URL ?? (process.env.BASE_URL?.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
   // We purposefully hit the root path – any HTTP response means the server is up.
   // A 404 is acceptable because we only care about reachability, not specific route.
-  const healthURL = backendBaseURL + (backendBaseURL.includes('onrender.com') ? '/health' : '')
+  const healthURL = backendBaseURL + (backendBaseURL.includes('onrender.com') ? '' : '/health')
 
   console.log(`🌡️  Backend health check -> ${healthURL}`)
 

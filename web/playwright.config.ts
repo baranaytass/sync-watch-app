@@ -9,7 +9,7 @@ export default defineConfig({
   maxFailures: 1,
   timeout: 120000, // 2 minutes timeout for all tests
   reporter: [['html', { open: 'never' }]],
-  // globalSetup: './global-setup', // Temporarily disabled
+  globalSetup: './global-setup',
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -28,11 +28,10 @@ export default defineConfig({
     },
   ],
 
-  // webServer disabled for production tests
-  // webServer: {
-  //   command: 'npm run dev',
-  //   url: 'http://localhost:5173',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 120000,
-  // },
+  webServer: process.env.BASE_URL?.includes('onrender.com') ? undefined : {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
 }) 
