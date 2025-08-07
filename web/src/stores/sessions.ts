@@ -231,12 +231,14 @@ export const useSessionsStore = defineStore('sessions', () => {
       
       const authToken = localStorage.getItem('auth_token')
       
-      // Add Authorization header only if no cookie auth available
-      if (authStatus !== 'authenticated' && authToken) {
+      // Priority: localStorage token > cookie auth (same as createSession logic)
+      if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`
         console.log('🔑 Sessions Store: Adding Authorization header to joinSession')
-      } else {
+      } else if (authStatus === 'authenticated') {
         console.log('🔐 Sessions Store: Using cookie authentication for joinSession')
+      } else {
+        console.log('❌ Sessions Store: No authentication method available for joinSession')
       }
       
       const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/join`, {
