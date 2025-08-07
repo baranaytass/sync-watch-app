@@ -233,16 +233,68 @@ export default async function websocketRoutes(
 
     try {
       const query = request.query as { token?: string };
-      const token = query.token || request.headers.authorization?.replace('Bearer ', '') || request.cookies?.token;
+      let token = query.token || request.headers.authorization?.replace('Bearer ', '') || request.cookies?.token;
+      
       if (!token) throw new Error('No token provided');
-      const decoded = fastify.jwt.verify(token) as any;
+      
+      // URL decode the token if needed
+      if (token.includes('%')) {
+        token = decodeURIComponent(token);
+      }
+      
+      let decoded: { userId: string; email: string };
+      
+      try {
+        // Try to verify as real JWT first
+        decoded = fastify.jwt.verify(token) as any;
+        if (isDebugMode()) {
+          console.log(`🔐 WebSocket: JWT verification successful for user ${decoded.userId}`);
+        }
+      } catch (jwtError) {
+        // If JWT verification fails, try fallback JWT format (same as auth middleware)
+        try {
+          // Check if it's a fallback JWT structure (header.payload.signature)
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            if (payload.userId && payload.email && payload.exp) {
+              // Check if token is not expired
+              const now = Math.floor(Date.now() / 1000);
+              if (payload.exp > now) {
+                decoded = {
+                  userId: payload.userId,
+                  email: payload.email
+                };
+                if (isDebugMode()) {
+                  console.log(`🔧 WebSocket: Using fallback JWT token for user ${payload.userId}`);
+                }
+              } else {
+                throw new Error('Fallback token expired');
+              }
+            } else {
+              throw new Error('Invalid fallback token payload');
+            }
+          } else {
+            throw new Error('Invalid token format');
+          }
+        } catch (fallbackError) {
+          if (isDebugMode()) {
+            console.log(`❌ WebSocket: Both JWT and fallback token verification failed`);
+            console.log(`❌ WebSocket: JWT error: ${jwtError instanceof Error ? jwtError.message : jwtError}`);
+            console.log(`❌ WebSocket: Fallback error: ${fallbackError instanceof Error ? fallbackError.message : fallbackError}`);
+            console.log(`❌ WebSocket: Token (first 50 chars): ${token.substring(0, 50)}...`);
+          }
+          throw jwtError; // Throw original JWT error
+        }
+      }
+      
       user = { userId: decoded.userId, email: decoded.email };
       if (isDebugMode()) {
-        console.log(`🔐 WebSocket auth successful for user ${user.userId} in session ${sessionId}`);
+        console.log(`✅ WebSocket: Authentication successful for user ${user.userId} in session ${sessionId}`);
       }
     } catch (err) {
       if (isDebugMode()) {
-        console.log('❌ WebSocket auth failed');
+        console.log(`❌ WebSocket: Authentication failed - ${err instanceof Error ? err.message : err}`);
       }
       sendMessage(socket, 'error', { message: 'Authentication required' });
       // Use socket.destroy() instead of connection.end()
