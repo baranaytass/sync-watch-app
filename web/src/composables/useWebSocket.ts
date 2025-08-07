@@ -203,7 +203,13 @@ export const useWebSocket = (sessionId: string) => {
         error.value = null
         isManualDisconnect = false
         
-        const wsUrl = `ws://localhost:3000/ws/session/${sessionId}`
+        // Use correct WebSocket URL for production
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 
+          (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
+        
+        const wsUrl = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://') + `/ws/session/${sessionId}`
+        
+        console.log('🔌 WebSocket: Connecting to:', wsUrl)
         ws = new WebSocket(wsUrl)
         
         ws.onopen = () => {
