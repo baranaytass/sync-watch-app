@@ -207,7 +207,17 @@ export const useWebSocket = (sessionId: string) => {
         const API_BASE_URL = import.meta.env.VITE_API_URL || 
           (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
         
-        const wsUrl = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://') + `/ws/session/${sessionId}`
+        // Get JWT token for WebSocket authentication
+        let wsUrl = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://') + `/ws/session/${sessionId}`
+        
+        // Add JWT token as query parameter for WebSocket authentication
+        const token = authStore.getToken()
+        if (token) {
+          wsUrl += `?token=${encodeURIComponent(token)}`
+          console.log('🔐 WebSocket: Adding JWT token to connection')
+        } else {
+          console.warn('⚠️ WebSocket: No JWT token found for authentication')
+        }
         
         console.log('🔌 WebSocket: Connecting to:', wsUrl)
         ws = new WebSocket(wsUrl)

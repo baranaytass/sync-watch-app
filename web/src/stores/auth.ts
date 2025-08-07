@@ -200,6 +200,10 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
+  const getToken = (): string | null => {
+    return localStorage.getItem('auth_token')
+  }
+
   // Initialize auth on store creation
   initializeAuth()
 
@@ -217,6 +221,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     setUser,
     clearError,
-    initializeAuth
+    initializeAuth,
+    getToken
   }
 }) 
