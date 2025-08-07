@@ -61,10 +61,31 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/sessions`, {
+      // Get JWT token from localStorage as backup for production
+      const authToken = localStorage.getItem('auth_token')
+      
+      const requestOptions: RequestInit = {
         method: 'GET',
         credentials: 'include',
-      })
+        headers: {} as Record<string, string>
+      }
+      
+      // Add Authorization header if token exists (production compatibility)
+      if (authToken) {
+        requestOptions.headers!['Authorization'] = `Bearer ${authToken}`
+        if (isDebugMode()) {
+          console.log('🔑 Sessions Store: Adding Authorization header for fetchSessions')
+        }
+      }
+      
+      if (isDebugMode()) {
+        console.log('📋 Sessions Store: Request config:', { 
+          hasAuthToken: !!authToken,
+          hasCredentials: requestOptions.credentials 
+        })
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/sessions`, requestOptions)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
