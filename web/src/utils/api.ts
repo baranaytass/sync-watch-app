@@ -65,8 +65,10 @@ export async function apiRequest<T = any>(
     credentials: 'include', // Always include for cookie fallback
   }
   
-  if (body && method !== 'GET') {
-    requestOptions.body = typeof body === 'string' ? body : JSON.stringify(body)
+  if (method !== 'GET') {
+    // Always include body for non-GET requests to satisfy Content-Type: application/json
+    const requestBody = body || {}
+    requestOptions.body = typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody)
   }
   
   try {
