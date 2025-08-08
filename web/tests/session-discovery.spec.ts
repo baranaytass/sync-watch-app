@@ -62,7 +62,8 @@ test.describe('Session Discovery - Multi-User', () => {
         
         // Try to join the session
         console.log('👤 USER 2: Attempting to join session')
-        await sessionInList.first().click()
+        const joinButton = userPage2.locator('button:has-text("Join")').first()
+        await joinButton.click()
         
         // Check if we can navigate to the session
         await userPage2.waitForURL(/\/session\//, { timeout: 10000 })

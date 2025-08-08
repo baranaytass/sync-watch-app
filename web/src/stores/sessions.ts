@@ -1,11 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
 import type { Session, SessionParticipant, CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types'
 import { useAuthStore } from './auth'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
+import { api, logApiCall } from '@/utils/api'
 
 export const useSessionsStore = defineStore('sessions', () => {
   // State
@@ -48,59 +45,22 @@ export const useSessionsStore = defineStore('sessions', () => {
 
   // Actions
   const fetchSessions = async (): Promise<void> => {
-    // Debug logging control - always show in production for debugging
-    const isDebugMode = () => {
-      return true // Temporary debug mode for production
-    }
-    
-    if (isDebugMode()) {
-      console.log('📋 Sessions Store: Fetching sessions')
-    }
-    
+    console.log('📋 Sessions Store: Fetching sessions')
     loading.value = true
     error.value = null
 
     try {
-      // Get JWT token from localStorage as backup for production
       const authToken = localStorage.getItem('auth_token')
+      logApiCall('/api/sessions', 'GET', !!authToken)
       
-      const requestOptions: RequestInit = {
-        method: 'GET',
-        credentials: 'include',
-        headers: {} as Record<string, string>
-      }
-      
-      // Add Authorization header if token exists (production compatibility)
-      if (authToken) {
-        requestOptions.headers!['Authorization'] = `Bearer ${authToken}`
-        if (isDebugMode()) {
-          console.log('🔑 Sessions Store: Adding Authorization header for fetchSessions')
-        }
-      }
-      
-      if (isDebugMode()) {
-        console.log('📋 Sessions Store: Request config:', { 
-          hasAuthToken: !!authToken,
-          hasCredentials: requestOptions.credentials 
-        })
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/sessions`, requestOptions)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const result = await api.get<Session[]>('/api/sessions')
 
       if (result.success && Array.isArray(result.data)) {
         sessions.value = result.data.map(transformDates)
-        if (isDebugMode()) {
-          console.log(`📋 Sessions Store: Loaded ${sessions.value.length} sessions`)
-          sessions.value.forEach(session => {
-            console.log(`📋 Sessions Store: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`)
-          })
-        }
+        console.log(`📋 Sessions Store: Loaded ${sessions.value.length} sessions`)
+        sessions.value.forEach(session => {
+          console.log(`📋 Sessions Store: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`)
+        })
       } else {
         throw new Error(result.error?.message || 'Failed to fetch sessions')
       }
@@ -119,16 +79,10 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}`, {
-        method: 'GET',
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall(`/api/sessions/${sessionId}`, 'GET', !!authToken)
+      
+      const result = await api.get<Session>(`/api/sessions/${sessionId}`)
 
       if (result.success && result.data) {
         currentSession.value = transformDates(result.data)
@@ -146,69 +100,19 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const createSession = async (data: CreateSessionRequest): Promise<Session | null> => {
-    // Debug logging control - always show in production for debugging
-    const isDebugMode = () => {
-      return true // Temporary debug mode for production
-    }
-    
-    if (isDebugMode()) {
-      console.log('➕ Sessions Store: Creating new session with auth fix:', data.title)
-    }
-    
+    console.log('➕ Sessions Store: Creating new session:', data.title)
     loading.value = true
     error.value = null
 
     try {
-      // Debug: Check cookies before making request
-      console.log('🍪 Sessions Store: Before createSession request')
-      console.log('🍪 Sessions Store: Document cookies:', document.cookie)
-      console.log('🍪 Sessions Store: Request data:', data)
-      
-      // Get JWT token from localStorage as backup
       const authToken = localStorage.getItem('auth_token')
-      console.log('🔑 Sessions Store: Auth token from localStorage:', authToken ? 'Found' : 'Not found')
+      logApiCall('/api/sessions', 'POST', !!authToken)
       
-      // Check for authentication status cookie (non-HttpOnly)
-      const authStatus = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth_status='))
-        ?.split('=')[1];
-      console.log('🍪 Sessions Store: Auth status cookie:', authStatus)
-      
-      // HttpOnly token cookie cannot be accessed, but we know user is authenticated
-      const isAuthenticated = authStatus === 'authenticated'
-      console.log('🔐 Sessions Store: User authenticated via cookie:', isAuthenticated)
-      
-      // Use axios for createSession with cookie authentication
-      const requestConfig: any = {
-        withCredentials: true,
-        headers: {}
-      }
-      
-      // Priority: localStorage token > cookie auth
-      if (authToken) {
-        // Use localStorage token with Authorization header (more reliable)
-        requestConfig.headers['Authorization'] = `Bearer ${authToken}`
-        console.log('🔑 Sessions Store: Adding Authorization header from localStorage')
-      } else if (isAuthenticated) {
-        console.log('🔐 Sessions Store: Using cookie-based authentication')
-        // No need for Authorization header, backend will read HttpOnly cookie
-      } else {
-        console.log('❌ Sessions Store: No authentication method available')
-      }
-      
-      const response = await axios.post(`${API_BASE_URL}/api/sessions`, data, requestConfig)
-
-      console.log('🔍 Sessions Store: Response status:', response.status)
-      console.log('🔍 Sessions Store: Response data:', response.data)
-
-      const result: ApiResponse = response.data
+      const result = await api.post<Session>('/api/sessions', data)
 
       if (result.success && result.data) {
         const newSession = transformDates(result.data)
-        if (isDebugMode()) {
-          console.log(`➕ Sessions Store: Created session ${newSession.id}: "${newSession.title}"`)
-        }
+        console.log(`➕ Sessions Store: Created session ${newSession.id}: "${newSession.title}"`)
         
         // Add to sessions list
         sessions.value.unshift(newSession)
@@ -227,58 +131,19 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const joinSession = async (sessionId: string): Promise<Session | null> => {
-    // Debug logging control - always show in production for debugging
-    const isDebugMode = () => {
-      return true // Temporary debug mode for production
-    }
-    
-    if (isDebugMode()) {
-      console.log(`🚪 Sessions Store: Joining session ${sessionId}`)
-    }
-    
+    console.log(`🚪 Sessions Store: Joining session ${sessionId}`)
     loading.value = true
     error.value = null
 
     try {
-      // Check authentication status
-      const authStatus = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth_status='))
-        ?.split('=')[1];
-      
-      const headers: Record<string, string> = {
-        // No Content-Type needed for join session since no body is sent
-      }
-      
       const authToken = localStorage.getItem('auth_token')
+      logApiCall(`/api/sessions/${sessionId}/join`, 'POST', !!authToken)
       
-      // Priority: localStorage token > cookie auth (same as createSession logic)
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`
-        console.log('🔑 Sessions Store: Adding Authorization header to joinSession')
-      } else if (authStatus === 'authenticated') {
-        console.log('🔐 Sessions Store: Using cookie authentication for joinSession')
-      } else {
-        console.log('❌ Sessions Store: No authentication method available for joinSession')
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/join`, {
-        method: 'POST',
-        credentials: 'include',
-        headers
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const result = await api.post<Session>(`/api/sessions/${sessionId}/join`)
 
       if (result.success && result.data) {
         const joinedSession = transformDates(result.data)
-        if (isDebugMode()) {
-          console.log(`🚪 Sessions Store: Joined session ${sessionId} with ${joinedSession.participants.length} participants`)
-        }
+        console.log(`🚪 Sessions Store: Joined session ${sessionId} with ${joinedSession.participants.length} participants`)
         
         // Update current session
         currentSession.value = joinedSession
@@ -303,42 +168,15 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const setSessionVideo = async (sessionId: string, data: SetSessionVideoRequest): Promise<Session | null> => {
-    // Debug logging control
-    function shouldLogCriticalOnly(): boolean {
-      const isPlaywright = typeof window !== 'undefined' && 
-        window.navigator.userAgent.includes('Playwright')
-      
-      if (!isPlaywright) return false
-      
-      const title = document.title || ''
-      const isVideoSyncTest = title.includes('video-sync') || title.includes('Video Sync')
-      return isVideoSyncTest && !title.includes('advanced')
-    }
-    
-    if (shouldLogCriticalOnly()) {
-      console.log(`🎥 Setting video: ${data.videoId}`)
-    } else if (import.meta.env.DEV) {
-      console.log(`🎥 Sessions Store: Setting video for session ${sessionId}:`, data.videoId)
-    }
-    
+    console.log(`🎥 Sessions Store: Setting video for session ${sessionId}:`, data.videoId)
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/video`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall(`/api/sessions/${sessionId}/video`, 'POST', !!authToken)
+      
+      const result = await api.post<Session>(`/api/sessions/${sessionId}/video`, data)
 
       if (result.success && result.data) {
         const updatedSession = transformDates(result.data)
