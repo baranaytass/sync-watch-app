@@ -223,6 +223,9 @@ const loadSession = async () => {
     loading.value = true
     error.value = null
     
+    // Initialize chat for this session (clears previous messages if different session)
+    chatStore.initializeForSession(props.id)
+    
     // Fetch session & establish websocket connection
     await sessionsStore.joinSession(props.id)
     await connect()
@@ -242,6 +245,9 @@ const handleLeaveSession = async () => {
     
     // Clean up store state
     sessionsStore.leaveSession()
+    
+    // Clean up chat state
+    chatStore.cleanup()
     
     // Navigate back to home
     await router.push('/')
@@ -315,5 +321,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   leaveSessionWS()
+  // Clean up chat when component unmounts
+  chatStore.cleanup()
 })
 </script> 
