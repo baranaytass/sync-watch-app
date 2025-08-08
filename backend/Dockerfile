@@ -14,39 +14,32 @@ RUN npm install -g pnpm
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy configuration files first to leverage Docker cache
-COPY .npmrc ./
-COPY pnpm-lock.yaml ./
-COPY package.json ./
-COPY packages/shared-types/package.json ./packages/shared-types/
-COPY backend/package.json ./backend/
-COPY backend/tsconfig.json ./backend/
+# --- Bağımlılıkları yükle ---
+# Monorepo yapısı için root context'den build edilmelidir
 
-# Install all dependencies, including devDependencies, based on lockfile
-RUN pnpm install --frozen-lockfile --dev
+# Kök ve workspace package.json dosyaları kopyala
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY packages/shared-types/package*.json ./packages/shared-types/
 
-# Copy the rest of the source code ONLY AFTER installing dependencies
-COPY . .
+# Build için dev dependencies dahil tüm bağımlılıkları kur
+RUN npm ci --workspaces --include-workspace-root
 
-# Build the backend by calling tsc directly from the root node_modules
-RUN /app/node_modules/.bin/tsc --project backend/tsconfig.json
+# --- Kaynak kodunu kopyala ---
+COPY packages/shared-types ./packages/shared-types
+COPY backend ./backend
 
-# Prune development dependencies for production
-RUN pnpm --filter @sync-watch-app/backend deploy --legacy --prod /prod
+# --- Build işlemi ---
+# Shared types ve backend kodunu derle
+RUN npm run build --workspace=packages/shared-types
+RUN npm run build --workspace=backend
 
-# --- Production Stage ---
-FROM node:18-alpine
+# Build sonrası gereksiz dosyaları temizle ve production dependencies'e geç
+RUN rm -rf packages/shared-types/src backend/src node_modules
+RUN npm ci --workspaces --include-workspace-root --omit=dev
 
-# Set the working directory
-WORKDIR /app
-
-# Copy production dependencies and build output from the build stage
-COPY --from=build /prod/backend/package.json .
-COPY --from=build /prod/node_modules ./node_modules
-COPY --from=build /app/backend/dist ./dist
-
-# Expose the port the app runs on
-EXPOSE 3000
+# Uygulama portu (Render otomatik 10000 kullanır)
+EXPOSE 10000
 
 # Command to run the application
 CMD ["node", "dist/server.js"] 

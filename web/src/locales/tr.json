@@ -28,9 +28,13 @@
     "loggingIn": "Giriş yapılıyor...",
     "loggingOut": "Çıkış yapılıyor...",
     "welcome": "Hoş geldin",
+    "welcomeToNesbat": "WatchSync'e Hoş Geldin",
+    "logoutShort": "Çıkış",
     "loginToAccount": "Hesabınıza giriş yapın",
+    "login": "Giriş Yap",
     "profile": "Profil",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "guestNamePlaceholder": "Misafir adınızı girin..."
   },
   "navigation": {
     "home": "Ana Sayfa",
@@ -38,9 +42,116 @@
     "login": "Giriş Yap",
     "backToSessions": "Oturumlara Dön"
   },
+  "home": {
+    "hero": {
+      "title": "Birlikte İzlemenin Keyfi",
+      "subtitle": "Sevdiklerinizle aynı anda, aynı saniyede video izleyin",
+      "description": "Uzaktaki arkadaşlarınızla sanki aynı odadaymış gibi film gecesi yapın. Senkronize oynatma ile her anı birlikte yaşayın."
+    },
+    "welcomeBack": "Tekrar hoş geldin",
+    "dashboard": {
+      "subtitle": "Yeni bir izleme deneyimi oluşturun veya devam eden bir oturuma katılın",
+      "createSession": "Yeni Oturum Oluştur",
+      "browseSessions": "Oturumları Gözat",
+      "activeSessions": "Aktif Oturumlar",
+      "sessionIdPlaceholder": "Oturum kodunu girin",
+      "joinButton": "Katıl",
+      "noActiveSessions": "Henüz aktif oturum bulunmuyor",
+      "sessionsList": {
+        "title": "Oturum Listesi",
+        "description": "Aktif oturumları görüntüle"
+      },
+      "newSession": {
+        "title": "Yeni Oturum",
+        "description": "Hemen oturum oluştur"
+      },
+      "guide": {
+        "title": "Nasıl Kullanılır?",
+        "description": "Rehber ve ipuçları"
+      },
+      "recentActivity": {
+        "title": "Son Aktiviteler",
+        "noActivity": "Henüz aktivite yok",
+        "createFirst": "İlk oturumunuzu oluşturun!"
+      }
+    },
+    "features": {
+      "sectionTitle": "Neden WatchSync?",
+      "sectionSubtitle": "Uzaktan birlikte izleme deneyimini mükemmelleştiren özellikler",
+      "syncWatch": {
+        "title": "Mükemmel Senkronizasyon",
+        "description": "Milisaniye hassasiyetinde oynatma senkronizasyonu"
+      },
+      "multiUser": {
+        "title": "Sınırsız Katılımcı",
+        "description": "İstediğiniz kadar arkadaşınızla birlikte izleyin"
+      },
+      "secure": {
+        "title": "Güvenli ve Özel",
+        "description": "Kişisel verileriniz korunur, reklamsız deneyim"
+      }
+    },
+    "howItWorks": {
+      "title": "Nasıl Çalışır?",
+      "subtitle": "Üç basit adımda birlikte izleme deneyimi",
+      "step1": {
+        "title": "Oturum Başlat",
+        "description": "İzlemek istediğiniz videoyu seçin ve oturum oluşturun"
+      },
+      "step2": {
+        "title": "Davet Gönderin",
+        "description": "Oturum kodunu arkadaşlarınızla paylaşın"
+      },
+      "step3": {
+        "title": "Birlikte Keyif Alın",
+        "description": "Tüm kontroller senkronize, her an birlikte"
+      }
+    },
+    "buttons": {
+      "features": "Özellikler",
+      "learnMore": "Daha Fazla Bilgi"
+    },
+    "demo": {
+      "title": "Demo Video Oynatıcı"
+    },
+    "cta": {
+      "title": "Hemen Başlayın",
+      "subtitle": "Dakikalar içinde kurulum, sınırsız eğlence",
+      "button": "Ücretsiz Başla"
+    },
+    "howItWorks": {
+      "title": "Nasıl Çalışır?",
+      "subtitle": "Üç basit adımda birlikte izleme deneyimi",
+      "step1": {
+        "title": "Oturum Başlat",
+        "description": "İzlemek istediğiniz videoyu seçin ve oturum oluşturun"
+      },
+      "step2": {
+        "title": "Davet Gönderin",
+        "description": "Oturum kodunu arkadaşlarınızla paylaşın"
+      },
+      "step3": {
+        "title": "Birlikte Keyif Alın",
+        "description": "Tüm kontroller senkronize, her an birlikte"
+      }
+    },
+    "buttons": {
+      "features": "Özellikler",
+      "sessions": "Oturum Listesi",
+      "newSession": "Yeni Oturum",
+      "howToUse": "Nasıl Kullanılır?"
+    },
+    "loginFeatures": {
+      "syncWatch": "Senkronize İzleme",
+      "multiUser": "Çoklu Kullanıcı",
+      "secure": "Güvenli"
+    }
+  },
   "app": {
-    "title": "Video Sync Chat",
-    "description": "Videoları arkadaşlarınla senkronize izle ve sohbet et"
+    "title": "WatchSync",
+    "brandTitle": "WatchSync",
+    "description": "Sevdiklerinizle senkronize video izleme platformu",
+    "tagline": "Uzaklık, yakınlığa engel olamaz"
   },
   "session": {
     "createNew": "Yeni Oturum Oluştur",
@@ -51,6 +162,7 @@
     "creating": "Oluşturuluyor...",
     "create": "Oturum Oluştur",
     "join": "Katıl",
+    "joining": "Katılınıyor...",
     "leave": "Ayrıl",
     "details": "Oturum Bilgileri",
     "participants": "Katılımcılar",
@@ -68,9 +180,12 @@
     "info": {
       "allUsersCanSet": "Tüm kullanıcılar ayarlayabilir",
       "lastAction": "Son eylem",
-      "noVideoSelected": "Henüz video seçilmedi",
+      "noVideoSelected": "Henüz video seçilmedi", 
       "videoNotSelectedDesc": "Host tarafından video seçilmesi bekleniyor"
     },
+    "leave": "Ayrıl",
+    "connected": "Bağlandı",
+    "disconnected": "Bağlantı yok",
     "errors": {
       "titleRequired": "Oturum başlığı gerekli",
       "titleMinLength": "Oturum başlığı en az 3 karakter olmalı",
@@ -118,12 +233,17 @@
     "unknownTime": "Bilinmeyen zaman",
     "justJoined": "Az önce katıldı",
     "minutesAgoJoined": "{minutes} dakika önce katıldı",
-    "hoursAgoJoined": "{hours} saat önce katıldı"
+    "hoursAgoJoined": "{hours} saat önce katıldı",
+    "justCreated": "Az önce oluşturuldu",
+    "hoursAgo": "{hours} saat önce",
+    "daysAgo": "{days} gün önce"
   },
   "theme": {
     "light": "Açık Tema",
     "dark": "Koyu Tema",
-    "toggle": "Tema Değiştir"
+    "toggle": "Tema Değiştir",
+    "switchToLight": "Açık temaya geç",
+    "switchToDark": "Koyu temaya geç"
   },
   "language": {
     "turkish": "Türkçe",

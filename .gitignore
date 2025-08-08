@@ -49,6 +49,7 @@ jspm_packages/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.deploy
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -152,4 +153,39 @@ playwright-report/
 *-debug.png
 *-debug.jpg
 debug-*.png
-debug-*.jpg 
+debug-*.jpg
+
+# AI Documentation and Tools (keep private)
+.cursor/
+*.cursor-rules
+*.md.cursor
+ai-docs/
+ai-prompts/
+ai-context/
+.ai/
+*.ai-*
+cursor-rules/
+.cursor-settings/
+
+# Development Documentation (keep private)
+development.md
+development-progress.md
+*-progress.md
+dev-notes.md
+project-notes.md
+CODING_RULES.md
+*RULES*.md
+coding-standards.md
+
+# Documentation directory (keep private)
+docs/
+documentation/
+*.md
+!README.md
+
+# Azure deployment files (keep sensitive info private)
+.env.azure
+azure-*.sql
+azure-monitoring-info.txt
+deployment-summary.txt
+*.publishsettings 

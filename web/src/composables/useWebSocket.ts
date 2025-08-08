@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useVideoSyncStore } from '@/stores/videoSync'
 import { useSessionsStore } from '@/stores/sessions'
+import { useChatStore, type ChatMessage } from '@/stores/chat'
 import type { SessionParticipant } from '@sync-watch-app/shared-types'
 
 interface WebSocketMessage {
@@ -14,6 +15,7 @@ export const useWebSocket = (sessionId: string) => {
   const authStore = useAuthStore()
   const videoSyncStore = useVideoSyncStore()
   const sessionsStore = useSessionsStore()
+  const chatStore = useChatStore()
   const router = useRouter()
   
   // State
@@ -87,6 +89,14 @@ export const useWebSocket = (sessionId: string) => {
         
       case 'session_ended':
         handleSessionEnded(message.data)
+        break
+        
+      case 'chat_message':
+        handleChatMessage(message.data)
+        break
+        
+      case 'chat':
+        handleChatMessage(message.data)
         break
         
       case 'error':
@@ -165,7 +175,20 @@ export const useWebSocket = (sessionId: string) => {
     error.value = data.message || 'Session ended'
     sessionsStore.leaveSession()
     cleanup()
-    router.push('/sessions')
+    router.push('/')
+  }
+
+  const handleChatMessage = (data: any) => {
+    console.log('💬 WebSocket: Received chat message:', data)
+    const chatMessage: ChatMessage = {
+      id: data.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId: data.userId,
+      userName: data.userName,
+      userAvatar: data.userAvatar || '',
+      message: data.message,
+      timestamp: new Date(data.timestamp || Date.now())
+    }
+    chatStore.addMessage(chatMessage)
   }
 
   // Connection management
@@ -175,15 +198,28 @@ export const useWebSocket = (sessionId: string) => {
         error.value = null
         isManualDisconnect = false
         
-        console.log(`🔌 WebSocket: Connecting to session ${sessionId}`)
+        // Use correct WebSocket URL for production
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 
+          (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
         
-        // Get token from localStorage for authentication
-        const token = localStorage.getItem('auth_token')
-        const wsUrl = token 
-          ? `ws://localhost:3000/ws/session/${sessionId}?token=${encodeURIComponent(token)}`
-          : `ws://localhost:3000/ws/session/${sessionId}`
+        // Get JWT token for WebSocket authentication
+        let wsUrl = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://') + `/ws/session/${sessionId}`
         
-        console.log(`🔐 WebSocket: Using token: ${token ? 'YES' : 'NO'}`)
+        // Add JWT token as query parameter for WebSocket authentication
+        const token = authStore.getToken()
+        if (token) {
+          wsUrl += `?token=${encodeURIComponent(token)}`
+          console.log('🔐 WebSocket: Adding JWT token to connection')
+        } else {
+          console.warn('⚠️ WebSocket: No JWT token found for authentication')
+        }
+        
+        console.log('🔌 WebSocket: Connecting to:', wsUrl)
+        console.log('🔐 WebSocket: Token included:', !!token)
+        if (token) {
+          console.log('🔑 WebSocket: Token length:', token.length)
+          console.log('🔑 WebSocket: Token starts with:', token.substring(0, 20) + '...')
+        }
         ws = new WebSocket(wsUrl)
         
         ws.onopen = () => {

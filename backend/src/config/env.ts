@@ -14,6 +14,7 @@ const EnvSchema = Type.Object({
   GOOGLE_CLIENT_SECRET: Type.String(),
   YOUTUBE_API_KEY: Type.String(),
   FRONTEND_URL: Type.String({ default: 'http://localhost:5173' }),
+  BACKEND_URL: Type.String({ default: 'http://localhost:3000' }),
 });
 
 export type EnvConfig = Static<typeof EnvSchema>;

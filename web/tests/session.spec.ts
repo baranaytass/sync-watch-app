@@ -1,65 +1,94 @@
 import { test, expect } from '@playwright/test'
 
 const createSession = async (page: any, title: string): Promise<string> => {
-  // Sessions list page
-  await page.goto('/sessions')
+  // Home page (authenticated user dashboard)
+  await page.goto('/')
   await page.waitForLoadState('networkidle')
 
-  // Loading state'in bitmesini bekle
-  await page.waitForFunction(() => {
-    const loadingElements = document.querySelectorAll('div, p')
-    for (const el of loadingElements) {
-      if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
-        return false // Hâlâ loading
-      }
-    }
-    return true // Loading bitti
-  }, { timeout: 10000 })
-
-  // Oturum oluştur butonunu bul (ya "Yeni Oturum" ya da "İlk Oturumu Oluştur")
-  const newSessionBtn = page.locator('[data-testid="create-session-button"]')
-  const firstSessionBtn = page.locator('[data-testid="create-first-session-button"]')
+  // Find "Create New Session" button on authenticated homepage
+  const createSessionBtn = page.locator('[data-testid="create-session-button"]')
   
-  // Hangisi görünürse onu kullan
-  const btn = await newSessionBtn.isVisible({ timeout: 5000 }).catch(() => false) 
-    ? newSessionBtn 
-    : firstSessionBtn
+  await expect(createSessionBtn).toBeVisible({ timeout: 8000 })
   
-  await expect(btn).toBeVisible({ timeout: 8000 })
-  await btn.click()
+  // Click button - directly creates quick session and redirects
+  await createSessionBtn.click()
 
-  // Modal içindeki başlık inputu doldur
-  await page.locator('input#title').fill(title)
-  await page.locator('button[type="submit"]').click()
-
-  // Yönlendirme
+  // Wait for redirect to session page
   await page.waitForURL(/\/session\//)
   return page.url()
 }
 
 test.describe('Session – create & join', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/login')
+    
+    const guestNameInput = page.locator('[data-testid="guest-name-input"]')
     const guestBtn = page.locator('[data-testid="guest-login-button"]')
-    if (await guestBtn.isVisible()) {
+    
+    if (await guestNameInput.isVisible() && await guestBtn.isVisible()) {
+      await guestNameInput.fill('Session Test User')
+      await expect(guestBtn).toBeEnabled()
       await guestBtn.click()
-      await page.waitForURL(/\/sessions$/)
+      await page.waitForURL(/\/$/)
     }
-    console.log('🎬 SESSION TEST – Misafir login')
+    console.log('🎬 SESSION TEST – Guest login completed')
   })
 
   test('user can create and join a session', async ({ page }) => {
-    console.log('🏗️  Oturum oluşturma başlıyor')
-    const url = await createSession(page, 'Playwright Test Session')
-    console.log('✅ Oturum oluşturuldu:', url)
+    console.log('🏗️ Starting session creation')
+    const url = await createSession(page, 'Quick Session') // title no longer used but kept for compatibility
+    console.log('✅ Session created:', url)
 
-    // Session room yüklendi mi
+    // Check if session room loaded
     await expect(page).toHaveURL(url)
-    console.log('👥 Katılımcı kontrol ediliyor')
+    console.log('👥 Checking participants')
     await expect(page.locator('[data-testid="participant-item"]')).toHaveCount(1, { timeout: 10000 })
 
-    // katılımcı listesinde kendimiz var mı
-    console.log('🔎 Katılımcı listesinde kendimizi görüyoruz')
-    await expect(page.locator('text=Misafir')).toBeVisible()
+    // Check if we see ourselves in participant list
+    console.log('🔎 We can see ourselves in participant list')
+    await expect(page.locator('text=Session Test User')).toBeVisible()
+  })
+
+  test('sessions are listed correctly in dashboard', async ({ page }) => {
+    console.log('📋 Starting session listing test')
+    
+    // Create first session
+    const url1 = await createSession(page, 'Test Session 1')
+    console.log('✅ First session created:', url1)
+    
+    // Return to home
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    
+    // Open sessions panel
+    const browseSessions = page.locator('text=Browse Sessions')
+    await expect(browseSessions).toBeVisible()
+    await browseSessions.click()
+    
+    // Wait for loading spinner to pass
+    await page.waitForTimeout(2000)
+    
+    // Our created session should appear in the list
+    await expect(page.locator('text=Quick Session').first()).toBeVisible({ timeout: 10000 })
+    console.log('✅ Session appears in list')
+    
+    // Create second session
+    const createBtn = page.locator('[data-testid="create-session-button"]')
+    await createBtn.click()
+    await page.waitForURL(/\/session\//)
+    
+    // Return to home again
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    
+    // Open sessions panel again
+    await browseSessions.click()
+    await page.waitForTimeout(2000)
+    
+    // Both sessions should be visible (we expect at least 2)
+    const sessionItems = page.locator('text=Quick Session')
+    const count = await sessionItems.count()
+    expect(count).toBeGreaterThanOrEqual(2)
+    console.log(`✅ Sessions appear in list (found ${count} sessions)`)
   })
 }) 

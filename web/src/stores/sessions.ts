@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Session, SessionParticipant, CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types'
 import { useAuthStore } from './auth'
+import { api, logApiCall } from '@/utils/api'
 
 export const useSessionsStore = defineStore('sessions', () => {
   // State
@@ -59,42 +60,22 @@ export const useSessionsStore = defineStore('sessions', () => {
 
   // Actions
   const fetchSessions = async (): Promise<void> => {
-    // Debug logging control
-    const isDebugMode = () => {
-      const userAgent = navigator.userAgent
-      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
-        (document.title.includes('advanced') || document.title.includes('Advanced'))
-      return isPlaywrightAdvanced || import.meta.env.DEV
-    }
-    
-    if (isDebugMode()) {
-      console.log('📋 Sessions Store: Fetching sessions')
-    }
-    
+    console.log('📋 Sessions Store: Fetching sessions')
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch('/api/sessions', {
-        method: 'GET',
-        headers: createAuthHeaders(),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall('/api/sessions', 'GET', !!authToken)
+      
+      const result = await api.get<Session[]>('/api/sessions')
 
       if (result.success && Array.isArray(result.data)) {
         sessions.value = result.data.map(transformDates)
-        if (isDebugMode()) {
-          console.log(`📋 Sessions Store: Loaded ${sessions.value.length} sessions`)
-          sessions.value.forEach(session => {
-            console.log(`📋 Sessions Store: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`)
-          })
-        }
+        console.log(`📋 Sessions Store: Loaded ${sessions.value.length} sessions`)
+        sessions.value.forEach(session => {
+          console.log(`📋 Sessions Store: - Session ${session.id}: "${session.title}" (${session.participants.length} participants)`)
+        })
       } else {
         throw new Error(result.error?.message || 'Failed to fetch sessions')
       }
@@ -113,17 +94,10 @@ export const useSessionsStore = defineStore('sessions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: 'GET',
-        headers: createAuthHeaders(),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall(`/api/sessions/${sessionId}`, 'GET', !!authToken)
+      
+      const result = await api.get<Session>(`/api/sessions/${sessionId}`)
 
       if (result.success && result.data) {
         currentSession.value = transformDates(result.data)
@@ -141,40 +115,19 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const createSession = async (data: CreateSessionRequest): Promise<Session | null> => {
-    // Debug logging control
-    const isDebugMode = () => {
-      const userAgent = navigator.userAgent
-      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
-        (document.title.includes('advanced') || document.title.includes('Advanced'))
-      return isPlaywrightAdvanced || import.meta.env.DEV
-    }
-    
-    if (isDebugMode()) {
-      console.log('➕ Sessions Store: Creating new session:', data.title)
-    }
-    
+    console.log('➕ Sessions Store: Creating new session:', data.title)
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: createAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall('/api/sessions', 'POST', !!authToken)
+      
+      const result = await api.post<Session>('/api/sessions', data)
 
       if (result.success && result.data) {
         const newSession = transformDates(result.data)
-        if (isDebugMode()) {
-          console.log(`➕ Sessions Store: Created session ${newSession.id}: "${newSession.title}"`)
-        }
+        console.log(`➕ Sessions Store: Created session ${newSession.id}: "${newSession.title}"`)
         
         // Add to sessions list
         sessions.value.unshift(newSession)
@@ -193,39 +146,19 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const joinSession = async (sessionId: string): Promise<Session | null> => {
-    // Debug logging control
-    const isDebugMode = () => {
-      const userAgent = navigator.userAgent
-      const isPlaywrightAdvanced = userAgent.includes('Playwright') && 
-        (document.title.includes('advanced') || document.title.includes('Advanced'))
-      return isPlaywrightAdvanced || import.meta.env.DEV
-    }
-    
-    if (isDebugMode()) {
-      console.log(`🚪 Sessions Store: Joining session ${sessionId}`)
-    }
-    
+    console.log(`🚪 Sessions Store: Joining session ${sessionId}`)
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/join`, {
-        method: 'POST',
-        headers: createAuthHeaders(),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall(`/api/sessions/${sessionId}/join`, 'POST', !!authToken)
+      
+      const result = await api.post<Session>(`/api/sessions/${sessionId}/join`)
 
       if (result.success && result.data) {
         const joinedSession = transformDates(result.data)
-        if (isDebugMode()) {
-          console.log(`🚪 Sessions Store: Joined session ${sessionId} with ${joinedSession.participants.length} participants`)
-        }
+        console.log(`🚪 Sessions Store: Joined session ${sessionId} with ${joinedSession.participants.length} participants`)
         
         // Update current session
         currentSession.value = joinedSession
@@ -250,40 +183,15 @@ export const useSessionsStore = defineStore('sessions', () => {
   }
 
   const setSessionVideo = async (sessionId: string, data: SetSessionVideoRequest): Promise<Session | null> => {
-    // Debug logging control
-    function shouldLogCriticalOnly(): boolean {
-      const isPlaywright = typeof window !== 'undefined' && 
-        window.navigator.userAgent.includes('Playwright')
-      
-      if (!isPlaywright) return false
-      
-      const title = document.title || ''
-      const isVideoSyncTest = title.includes('video-sync') || title.includes('Video Sync')
-      return isVideoSyncTest && !title.includes('advanced')
-    }
-    
-    if (shouldLogCriticalOnly()) {
-      console.log(`🎥 Setting video: ${data.videoId}`)
-    } else if (import.meta.env.DEV) {
-      console.log(`🎥 Sessions Store: Setting video for session ${sessionId}:`, data.videoId)
-    }
-    
+    console.log(`🎥 Sessions Store: Setting video for session ${sessionId}:`, data.videoId)
     loading.value = true
     error.value = null
 
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/video`, {
-        method: 'POST',
-        headers: createAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: ApiResponse = await response.json()
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall(`/api/sessions/${sessionId}/video`, 'POST', !!authToken)
+      
+      const result = await api.post<Session>(`/api/sessions/${sessionId}/video`, data)
 
       if (result.success && result.data) {
         const updatedSession = transformDates(result.data)

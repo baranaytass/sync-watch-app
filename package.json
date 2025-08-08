@@ -24,7 +24,8 @@
     "docker:db:down": "docker-compose down",
     "docker:stack:up": "docker-compose up -d backend postgres",
     "docker:stack:down": "docker-compose down",
-    "docker:db:logs": "docker-compose logs -f postgres"
+    "docker:db:logs": "docker-compose logs -f postgres",
+    "clean:db": "node scripts/clean-db.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
@@ -42,6 +43,7 @@
   "license": "MIT",
   "dependencies": {
     "node-fetch": "^3.3.2",
+    "playwright": "^1.54.2",
     "ws": "^8.18.2"
   },
   "keywords": []

@@ -28,9 +28,13 @@
     "loggingIn": "Signing in...",
     "loggingOut": "Signing out...",
     "welcome": "Welcome",
+    "welcomeToNesbat": "Welcome to WatchSync",
+    "logoutShort": "Sign Out",
     "loginToAccount": "Sign in to your account",
+    "login": "Sign In",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "guestNamePlaceholder": "Enter your guest name..."
   },
   "navigation": {
     "home": "Home",
@@ -38,9 +42,96 @@
     "login": "Sign In",
     "backToSessions": "Back to Sessions"
   },
+  "home": {
+    "hero": {
+      "title": "Watch Together, Stay Connected",
+      "subtitle": "Experience movies and shows with loved ones, perfectly synchronized",
+      "description": "Create virtual movie nights with friends anywhere in the world. Every moment, every laugh, perfectly in sync."
+    },
+    "welcomeBack": "Welcome back",
+    "dashboard": {
+      "subtitle": "Start a new viewing experience or join an ongoing session",
+      "createSession": "Create New Session",
+      "browseSessions": "Browse Sessions",
+      "activeSessions": "Active Sessions",
+      "sessionIdPlaceholder": "Enter session code",
+      "joinButton": "Join",
+      "noActiveSessions": "No active sessions yet",
+      "sessionsList": {
+        "title": "Sessions List",
+        "description": "View active sessions"
+      },
+      "newSession": {
+        "title": "New Session",
+        "description": "Create session now"
+      },
+      "guide": {
+        "title": "How to Use?",
+        "description": "Guide and tips"
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "noActivity": "No activity yet",
+        "createFirst": "Create your first session!"
+      }
+    },
+    "features": {
+      "sectionTitle": "Why WatchSync?",
+      "sectionSubtitle": "Features that perfect the remote watch-together experience",
+      "syncWatch": {
+        "title": "Perfect Synchronization",
+        "description": "Millisecond-precise playback synchronization"
+      },
+      "multiUser": {
+        "title": "Unlimited Participants",
+        "description": "Watch together with as many friends as you want"
+      },
+      "secure": {
+        "title": "Secure and Private",
+        "description": "Your personal data is protected, ad-free experience"
+      }
+    },
+    "demo": {
+      "title": "Demo Video Player"
+    },
+    "cta": {
+      "title": "Get Started Now",
+      "subtitle": "Setup in minutes, unlimited fun",
+      "button": "Start Free"
+    },
+    "howItWorks": {
+      "title": "How Does It Work?",
+      "subtitle": "Three simple steps to watch together experience",
+      "step1": {
+        "title": "Start Session",
+        "description": "Choose the video you want to watch and create a session"
+      },
+      "step2": {
+        "title": "Send Invites",
+        "description": "Share the session code with your friends"
+      },
+      "step3": {
+        "title": "Enjoy Together",
+        "description": "All controls synchronized, every moment together"
+      }
+    },
+    "buttons": {
+      "features": "Features",
+      "sessions": "Sessions List",
+      "newSession": "New Session",
+      "howToUse": "How to Use?"
+    },
+    "loginFeatures": {
+      "syncWatch": "Synchronized Watching",
+      "multiUser": "Multi-User",
+      "secure": "Secure"
+    }
+  },
   "app": {
-    "title": "Video Sync Chat",
-    "description": "Watch videos synchronized with your friends and chat"
+    "title": "WatchSync",
+    "brandTitle": "WatchSync",
+    "description": "Synchronized video watching platform for loved ones",
+    "tagline": "Distance can't stop connection"
   },
   "session": {
     "createNew": "Create New Session",
@@ -51,6 +142,7 @@
     "creating": "Creating...",
     "create": "Create Session",
     "join": "Join",
+    "joining": "Joining...",
     "leave": "Leave",
     "details": "Session Details",
     "participants": "Participants",
@@ -67,10 +159,13 @@
     "noActiveYet": "No active sessions available yet.",
     "info": {
       "allUsersCanSet": "All users can set",
-      "lastAction": "Last action",
+      "lastAction": "Last action", 
       "noVideoSelected": "No video selected yet",
       "videoNotSelectedDesc": "Waiting for host to select a video"
     },
+    "leave": "Leave",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
     "errors": {
       "titleRequired": "Session title is required",
       "titleMinLength": "Session title must be at least 3 characters",
@@ -108,7 +203,7 @@
   },
   "chat": {
     "title": "Chat",
-    "comingSoon": "Chat feature coming soon",
+    "comingSoon": "Coming soon",
     "typeMessage": "Type a message...",
     "send": "Send"
   },
@@ -118,12 +213,17 @@
     "unknownTime": "Unknown time",
     "justJoined": "Just joined",
     "minutesAgoJoined": "Joined {minutes} minutes ago",
-    "hoursAgoJoined": "Joined {hours} hours ago"
+    "hoursAgoJoined": "Joined {hours} hours ago",
+    "justCreated": "Just created",
+    "hoursAgo": "{hours} hours ago",
+    "daysAgo": "{days} days ago"
   },
   "theme": {
     "light": "Light Theme",
     "dark": "Dark Theme",
-    "toggle": "Toggle Theme"
+    "toggle": "Toggle Theme",
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme"
   },
   "language": {
     "turkish": "Türkçe",

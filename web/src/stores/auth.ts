@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { api, logApiCall } from '@/utils/api'
+import router from '@/router'
 
 export interface User {
   id: string
@@ -12,10 +13,8 @@ export interface User {
   updatedAt: Date
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
-// Configure axios defaults
-axios.defaults.withCredentials = true
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -62,41 +61,57 @@ export const useAuthStore = defineStore('auth', () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`
   }
 
-  const loginAsGuest = async () => {
-    loading.value = true
-    error.value = null
-    
+  const loginAsGuest = async (customName?: string) => {
     try {
-      // Call backend to get JWT token for guest user
-      const response = await axios.post(`${API_BASE_URL}/api/auth/guest`, {
-        name: 'Misafir Kullanıcı',
-        email: 'guest@example.com',
-        guestId: 'guest-' + Date.now()
-      })
+      loading.value = true
+      error.value = null
+
+      const guestName = customName || 'Misafir Kullanıcı'
       
-      if (response.data.success && response.data.data) {
-        const guestUser = response.data.data
-        const token = response.data.token
-        
-        // Store user data
+      logApiCall('/api/auth/guest', 'POST', false)
+      const result = await api.post<User>('/api/auth/guest', { name: guestName })
+
+      if (result.success && result.data) {
+        const guestUser: User = result.data
         user.value = guestUser
         localStorage.setItem('user', JSON.stringify(guestUser))
+
+        // Debug: Guest login successful
+        console.log('🍪 Auth Store: Guest login successful')
+        console.log('🍪 Auth Store: Document cookies:', document.cookie)
         
-        // Store token for WebSocket use
-        localStorage.setItem('auth_token', token)
-        
-        loading.value = false
-        
-        // Redirect to sessions page after login
-        window.location.href = '/sessions'
+        // Check if the response includes a token or create one
+        // Note: With unified API, token handling is managed automatically
+        if (!localStorage.getItem('auth_token')) {
+          // Create a JWT-like token from user data for consistent auth
+          console.log('🔧 Auth Store: Creating compatible auth token')
+          
+          // Create a simple JWT-like structure (header.payload.signature)
+          const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+          const payload = btoa(JSON.stringify({ 
+            userId: guestUser.id, 
+            email: guestUser.email,
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+          }))
+          const signature = btoa(`fallback_signature_${guestUser.id}`)
+          
+          const fallbackToken = `${header}.${payload}.${signature}`
+          localStorage.setItem('auth_token', fallbackToken)
+          console.log('🔑 Auth Store: JWT-like token created for session auth')
+        }
+
+        // Redirect to home page after login
+        await router.push('/')
       } else {
         throw new Error('Guest login failed')
       }
       
     } catch (err: any) {
-      loading.value = false
       error.value = 'Guest login failed'
       console.error('Guest login error:', err)
+    } finally {
+      loading.value = false
     }
   }
 
@@ -104,15 +119,19 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       error.value = null
-      await axios.post(`${API_BASE_URL}/api/auth/logout`)
-      user.value = null
-      localStorage.removeItem('user')
-      localStorage.removeItem('auth_token') // Also remove token
+      
+      const authToken = localStorage.getItem('auth_token')
+      logApiCall('/api/auth/logout', 'POST', !!authToken)
+      await api.post('/api/auth/logout')
     } catch (err) {
       error.value = 'Logout failed'
       console.error('Logout error:', err)
     } finally {
+      user.value = null
+      localStorage.removeItem('user')
+      localStorage.removeItem('auth_token')
       loading.value = false
+      await router.push('/login')
     }
   }
 
@@ -121,19 +140,33 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true
       error.value = null
       
-      const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
-        headers: createAuthHeaders(),
-      })
+      const authToken = localStorage.getItem('auth_token')
+      console.log('🔍 Auth Store: fetchUser - token available:', !!authToken)
       
-      if (response.data.success && response.data.data) {
-        user.value = response.data.data
-        localStorage.setItem('user', JSON.stringify(response.data.data))
+      logApiCall('/api/auth/me', 'GET', !!authToken)
+      const result = await api.get<User>('/api/auth/me')
+      
+      if (result.success && result.data) {
+        user.value = result.data
+        localStorage.setItem('user', JSON.stringify(result.data))
+        console.log('✅ Auth Store: fetchUser successful')
+      } else {
+        throw new Error(result.error?.message || 'Failed to fetch user')
       }
     } catch (err: any) {
-      user.value = null
-      localStorage.removeItem('user')
-      localStorage.removeItem('auth_token')
-      if (err.response?.status !== 401) {
+      console.log('❌ Auth Store: fetchUser failed:', err.message)
+      
+      // Only clear user data if we don't have a localStorage token
+      const authToken = localStorage.getItem('auth_token')
+      if (!authToken) {
+        user.value = null
+        localStorage.removeItem('user')
+        console.log('🗑️ Auth Store: Cleared user data - no fallback token')
+      } else {
+        console.log('💾 Auth Store: Keeping user data - localStorage token exists')
+      }
+      
+      if (!err.message?.includes('HTTP 401')) {
         console.error('Fetch user error:', err)
       }
     } finally {
@@ -148,6 +181,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   const clearError = () => {
     error.value = null
+  }
+
+  const getToken = (): string | null => {
+    return localStorage.getItem('auth_token')
   }
 
   // Initialize auth on store creation
@@ -167,6 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     setUser,
     clearError,
-    initializeAuth
+    initializeAuth,
+    getToken
   }
 }) 

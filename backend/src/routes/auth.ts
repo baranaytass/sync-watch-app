@@ -24,7 +24,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     startRedirectPath: '/google',
-    callbackUri: 'http://localhost:3000/api/auth/google/callback',
+    callbackUri: `${fastify.config.BACKEND_URL}/api/auth/google/callback`,
   });
 
   // Google OAuth callback route - this is where OAuth2 plugin redirects after auth

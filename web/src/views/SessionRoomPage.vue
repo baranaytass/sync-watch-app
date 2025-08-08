@@ -45,7 +45,7 @@
                 <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Ayrıl
+                Leave
               </button>
               <div class="ml-4">
                 <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ currentSession.title }}</h1>
@@ -59,7 +59,7 @@
               <button
                 @click="themeStore.toggleTheme()"
                 class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
-                :title="themeStore.isDark() ? 'Açık temaya geç' : 'Koyu temaya geç'"
+                :title="themeStore.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
               >
                 <!-- Light Mode Icon -->
                 <svg v-if="themeStore.isDark()" class="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@
                   ]"
                 ></div>
                 <span class="text-sm text-gray-600 dark:text-gray-400">
-                  {{ websocketConnected ? 'Bağlandı' : 'Bağlantı yok' }}
+                  {{ websocketConnected ? 'Connected' : 'Disconnected' }}
                 </span>
               </div>
               
@@ -97,7 +97,7 @@
       </div>
 
       <!-- Main Content Area -->
-      <div class="flex flex-1 overflow-hidden">
+      <div class="flex flex-1 overflow-hidden flex-col lg:flex-row">
         <!-- Video Section -->
         <div class="flex-1 flex flex-col">
           <!-- Video Player -->
@@ -134,7 +134,7 @@
         </div>
 
         <!-- Sidebar -->
-        <div class="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col transition-colors duration-300">
+        <div class="w-full lg:w-80 bg-background border-t lg:border-t-0 lg:border-l border-border flex flex-col">
           <!-- Participants -->
           <ParticipantsList 
             :participants="participants" 
@@ -142,15 +142,11 @@
           />
           
           <!-- Chat Area -->
-          <div class="flex-1 border-t border-gray-200 dark:border-gray-700">
-            <div class="h-full flex items-center justify-center">
-              <div class="text-center text-gray-500 dark:text-gray-400">
-                <svg class="h-8 w-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <p class="text-sm">Chat özelliği yakında</p>
-              </div>
-            </div>
+          <div class="flex-1 border-t border-border">
+            <ChatPanel
+              :connected="websocketConnected"
+              @send-message="handleSendChatMessage"
+            />
           </div>
         </div>
       </div>
@@ -168,7 +164,9 @@ import { useThemeStore } from '@/stores/theme'
 import ParticipantsList from '@/components/ParticipantsList.vue'
 import SessionInfo from '@/components/SessionInfo.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import ChatPanel from '@/components/ChatPanel.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
+import { useChatStore } from '@/stores/chat'
 
 interface Props {
   id: string
@@ -180,6 +178,7 @@ const sessionsStore = useSessionsStore()
 const authStore = useAuthStore()
 const videoSyncStore = useVideoSyncStore()
 const themeStore = useThemeStore()
+const chatStore = useChatStore()
 
 // Reactive state
 const loading = ref(true)
@@ -191,6 +190,7 @@ const {
   participants: wsParticipants, 
   connect, 
   sendVideoAction,
+  sendChatMessage,
   leaveSession: leaveSessionWS
 } = useWebSocket(props.id)
 
@@ -207,15 +207,15 @@ const loadSession = async () => {
   loading.value = true
   error.value = null
   try {
-    // The getSessionById will fetch all necessary session data.
-    // The join operation is now implicitly handled by the backend
-    // when a user with a valid token accesses a session.
-    const session = await sessionsStore.getSessionById(props.id)
-    if (session) {
-      if (session.videoId && session.videoProvider === 'youtube') {
-        videoUrl.value = `https://www.youtube.com/embed/${session.videoId}`
-      }
-    }
+    loading.value = true
+    error.value = null
+    
+    // Initialize chat for this session (clears previous messages if different session)
+    chatStore.initializeForSession(props.id)
+    
+    // Fetch session & establish websocket connection
+    await sessionsStore.joinSession(props.id)
+    await connect()
   } catch (err: any) {
     console.error('❌ SessionRoom: Failed to load session:', err)
     error.value = err.response?.data?.message || 'Oturum yüklenemedi'
@@ -234,10 +234,11 @@ const handleLeaveSession = async () => {
     // Clean up store state
     sessionsStore.leaveSession()
     
-    // Navigate back to sessions
-    await router.push('/sessions')
+    // Clean up chat state
+    chatStore.cleanup()
     
-    console.log(`✅ SessionRoom: Left session ${props.id}`)
+    // Navigate back to home
+    await router.push('/')
   } catch (err) {
     console.error('❌ SessionRoom: Error leaving session:', err)
   }
@@ -277,12 +278,17 @@ const handleVideoError = (error: string) => {
 
 const handleDurationChange = (duration: number) => {
   console.log('Video duration:', duration)
-  // İleride duration'ı store'da saklayabiliriz
+  // Future: We can store duration in store if needed
 }
 
 const handleTimeUpdate = (currentTime: number) => {
-  // İleride real-time time tracking için kullanabiliriz
-  // Sadece log level olarak tutuyoruz şimdilik
+  // Future: We can use this for real-time time tracking
+  // Currently just keeping it for logging purposes
+}
+
+const handleSendChatMessage = (message: string) => {
+  console.log(`💬 SessionRoom: Sending chat message: "${message}"`)
+  sendChatMessage(message)
 }
 
 // Lifecycle
@@ -292,5 +298,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   leaveSessionWS()
+  // Clean up chat when component unmounts
+  chatStore.cleanup()
 })
 </script> 

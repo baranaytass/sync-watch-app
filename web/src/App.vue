@@ -13,10 +13,7 @@ const authStore = useAuthStore()
 // Initialize auth when app mounts
 onMounted(() => {
   // Auth store is already initialized with localStorage data
-  // Try to refresh user data from server if we have a stored user
-  if (authStore.user) {
-    authStore.fetchUser()
-  }
+  // Router guard will handle authentication verification
 })
 </script>
 

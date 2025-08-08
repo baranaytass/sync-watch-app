@@ -8,7 +8,13 @@ import websocketRoutes from './routes/websocket';
 import { SessionService } from './services/SessionService';
 
 const server: any = require('fastify')({
-  logger: false,
+  logger: {
+    level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+    serializers: {
+      req: () => undefined, // Disable automatic request logging to reduce noise
+      res: () => undefined, // Disable automatic response logging to reduce noise
+    },
+  },
 });
 
 // Session cleanup job
@@ -81,6 +87,9 @@ async function start(): Promise<void> {
     const db = new DatabaseConfig(server.config);
     await db.testConnection();
     
+    // Run database migrations
+    await db.runMigrations();
+    
     // Purge leftover in-memory session cache tables on each cold start
     try {
       console.log('🧹 Purging existing sessions on startup...')
@@ -107,6 +116,10 @@ async function start(): Promise<void> {
     await server.register(require('@fastify/cors'), {
       origin: server.config.FRONTEND_URL,
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
     });
     console.log('🔧 CORS plugin registered')
 

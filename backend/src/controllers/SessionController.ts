@@ -49,7 +49,10 @@ export class SessionController {
     try {
       const body = request.body as CreateSessionRequest;
       
+      console.log(`📋 SessionController: User ${request.user.userId} creating session: "${body.title}"`);
+      
       if (!body.title || body.title.trim().length === 0) {
+        console.log(`❌ SessionController: Session creation failed - empty title`);
         const response: ApiResponse = {
           success: false,
           error: {
@@ -76,6 +79,8 @@ export class SessionController {
 
       const session = await this.sessionService.createSession(sessionData);
       
+      console.log(`✅ SessionController: Session created successfully - ID: ${session.id}, Title: "${session.title}"`);
+      
       const response: ApiResponse = {
         success: true,
         data: session
@@ -83,7 +88,7 @@ export class SessionController {
 
       reply.code(201).send(response);
     } catch (error) {
-      console.error('📋 SessionController: Error creating session:', error);
+      console.error('❌ SessionController: Error creating session:', error);
       const response: ApiResponse = {
         success: false,
         error: {
@@ -160,7 +165,10 @@ export class SessionController {
     try {
       const { id } = request.params as { id: string };
       
+      console.log(`📋 SessionController: User ${request.user.userId} joining session ${id}`);
+      
       if (!id) {
+        console.log(`❌ SessionController: Session join failed - no session ID provided`);
         const response: ApiResponse = {
           success: false,
           error: {
@@ -174,6 +182,8 @@ export class SessionController {
 
       const session = await this.sessionService.joinSession(id, request.user.userId);
       
+      console.log(`✅ SessionController: User successfully joined session ${id} - "${session.title}"`);
+      
       const response: ApiResponse = {
         success: true,
         data: session
@@ -181,7 +191,7 @@ export class SessionController {
 
       reply.code(200).send(response);
     } catch (error) {
-      console.error('📋 SessionController: Error joining session:', error);
+      console.error(`❌ SessionController: Error joining session ${request.params?.id}:`, error);
       let statusCode = 500;
       let errorCode = 'session_join_error';
 

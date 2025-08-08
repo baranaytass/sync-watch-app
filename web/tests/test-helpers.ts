@@ -120,7 +120,7 @@ export class TestErrorTracker {
             'Session not found',
             'Video sync failed',
             'Player initialization failed',
-            'Sync çağrıldı ama player hazır değil',
+            'Sync called but player not ready',
             'YouTube Player API not loaded',
             'Cannot read properties of null',
             'Cannot read properties of undefined',
@@ -232,39 +232,46 @@ export class TestErrorTracker {
 }
 
 // Helper function to perform guest login
-export async function guestLogin(page: Page): Promise<void> {
+export async function guestLogin(page: Page, guestName: string = 'Test User'): Promise<void> {
   const logger = TestLogger.getInstance()
   
   // Always start from login page
   await page.goto('/login')
   await page.waitForLoadState('networkidle')
   
+  const guestNameInput = page.locator('[data-testid="guest-name-input"]')
   const guestBtn = page.locator('[data-testid="guest-login-button"]')
   
-  // Check if guest button is visible
-  if (await guestBtn.isVisible()) {
+  // Check if guest name input and button are visible
+  if (await guestNameInput.isVisible() && await guestBtn.isVisible()) {
     logger.step('Performing guest login')
+    
+    // Fill guest name input
+    await guestNameInput.fill(guestName)
+    
+    // Wait for button to become enabled
+    await expect(guestBtn).toBeEnabled({ timeout: 5000 })
     
     // Click guest login button
     await guestBtn.click()
     
-    // Wait for navigation to sessions page
-    await page.waitForURL(/\/sessions$/, { timeout: 10000 })
+    // Wait for navigation to home page
+    await page.waitForURL(/\/$/, { timeout: 10000 })
     
     // Wait for page to fully load
     await page.waitForLoadState('networkidle')
     
-    // Verify we're actually on sessions page and authenticated
+    // Verify we're actually on home page and authenticated
     const currentUrl = page.url()
-    if (!currentUrl.includes('/sessions')) {
-      throw new Error(`Expected to be on sessions page, but got: ${currentUrl}`)
+    if (!currentUrl.includes('://localhost') || currentUrl.includes('/login')) {
+      throw new Error(`Expected to be on home page, but got: ${currentUrl}`)
     }
     
-    // Wait for session list to load (check for loading spinner to disappear)
+    // Wait for page to load completely
     await page.waitForFunction(() => {
       const loadingElements = document.querySelectorAll('div, p')
       for (const el of loadingElements) {
-        if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
+        if (el.textContent && (el.textContent.includes('Loading') || el.textContent.includes('Yükleniyor'))) {
           return false
         }
       }
@@ -273,7 +280,7 @@ export async function guestLogin(page: Page): Promise<void> {
     
     logger.success('Guest login completed successfully')
   } else {
-    throw new Error('Guest login button not found')
+    throw new Error('Guest login input or button not found')
   }
 }
 
@@ -281,11 +288,11 @@ export async function guestLogin(page: Page): Promise<void> {
 export async function findCreateSessionButton(page: Page): Promise<any> {
   const logger = TestLogger.getInstance()
   
-  // Ensure we're on the sessions page (but don't navigate if we're already authenticated)
+  // Ensure we're on the home page (but don't navigate if we're already authenticated)
   const currentUrl = page.url()
-  if (!currentUrl.includes('/sessions')) {
-    logger.error(`Not on sessions page, current URL: ${currentUrl}`)
-    throw new Error('Expected to be on sessions page after guest login')
+  if (!currentUrl.includes('://localhost') || currentUrl.includes('/login')) {
+    logger.error(`Not on home page, current URL: ${currentUrl}`)
+    throw new Error('Expected to be on home page after guest login')
   }
 
   // Wait for loading to complete
@@ -295,7 +302,7 @@ export async function findCreateSessionButton(page: Page): Promise<any> {
   await page.waitForFunction(() => {
     const loadingElements = document.querySelectorAll('div, p')
     for (const el of loadingElements) {
-      if (el.textContent && el.textContent.includes('Oturumlar yükleniyor...')) {
+      if (el.textContent && (el.textContent.includes('Loading') || el.textContent.includes('Yükleniyor'))) {
         return false
       }
     }
@@ -307,11 +314,12 @@ export async function findCreateSessionButton(page: Page): Promise<any> {
   logger.info('Page URL: ' + page.url())
 
   const createBtnSelectors = [
+    page.getByRole('button', { name: /Create.*Session/i }).first(),
+    page.getByRole('button', { name: /New.*Session/i }).first(),
     page.getByRole('button', { name: /Yeni Oturum/i }).first(),
     page.getByRole('button', { name: /İlk Oturumu Oluştur/i }).first(),
     page.getByRole('button', { name: /Oturum Oluştur/i }).first(),
-    page.getByRole('button', { name: /Create Session/i }).first(),
-    page.locator('button').filter({ hasText: /Oturum/i }).first(),
+    page.locator('button').filter({ hasText: /Session|Oturum/i }).first(),
     page.locator('[data-testid="create-session-button"]').first(),
     page.locator('[data-testid="create-first-session-button"]').first()
   ]
