@@ -400,7 +400,6 @@ import { useSessionsStore } from '@/stores/sessions'
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from '@/composables/useI18n'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 
 const authStore = useAuthStore()
 const sessionsStore = useSessionsStore()
