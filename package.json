@@ -23,7 +23,8 @@
     "docker:db:down": "docker-compose down",
     "docker:stack:up": "docker-compose up -d backend postgres",
     "docker:stack:down": "docker-compose down",
-    "docker:db:logs": "docker-compose logs -f postgres"
+    "docker:db:logs": "docker-compose logs -f postgres",
+    "clean:db": "node scripts/clean-db.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
