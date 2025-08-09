@@ -1,13 +1,15 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+// import { FastifyRequest, FastifyReply } from 'fastify';
 import { SessionService } from '../services/SessionService';
 import { YouTubeService } from '../services/YouTubeService';
 import { CreateSessionRequest, SetSessionVideoRequest, ApiResponse } from '@sync-watch-app/shared-types';
 
-interface AuthenticatedRequest extends FastifyRequest {
+interface AuthenticatedRequest {
   user: {
     userId: string;
     email: string;
   };
+  body: any;
+  params: any;
 }
 
 export class SessionController {
@@ -20,7 +22,7 @@ export class SessionController {
   }
 
   // GET /api/sessions - Get active sessions (public listing, no auth required)
-  async getSessions(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async getSessions(_request: any, reply: any): Promise<void> {
     try {
       const sessions = await this.sessionService.getAllActiveSessions();
       
@@ -45,7 +47,7 @@ export class SessionController {
   }
 
   // POST /api/sessions - Create new session
-  async createSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async createSession(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const body = request.body as CreateSessionRequest;
       
@@ -102,7 +104,7 @@ export class SessionController {
   }
 
   // GET /api/sessions/:id - Get specific session
-  async getSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async getSession(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       
@@ -161,7 +163,7 @@ export class SessionController {
   }
 
   // POST /api/sessions/:id/join - Join session
-  async joinSession(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async joinSession(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       
@@ -218,7 +220,7 @@ export class SessionController {
   }
 
   // POST /api/sessions/:id/video - Set session video
-  async setSessionVideo(request: AuthenticatedRequest, reply: FastifyReply): Promise<void> {
+  async setSessionVideo(request: AuthenticatedRequest, reply: any): Promise<void> {
     try {
       const { id } = request.params as { id: string };
       const body = request.body as SetSessionVideoRequest;

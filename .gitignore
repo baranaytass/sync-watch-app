@@ -46,6 +46,7 @@ jspm_packages/
 # Environment variables
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -149,6 +150,21 @@ Thumbs.db
 test-results/
 playwright-report/
 
+# Screenshots and development artifacts
+web/screenshots/
+screenshots/
+**/screenshots/
+*.png
+*.jpg
+*.jpeg
+*.gif
+!src/assets/*.png
+!src/assets/*.jpg
+!src/assets/*.svg
+!public/*.png
+!public/*.jpg
+!public/*.ico
+
 # Debug files  
 *-debug.png
 *-debug.jpg
@@ -182,6 +198,10 @@ docs/
 documentation/
 *.md
 !README.md
+
+# Project Context (keep local-only)
+CLAUDE.md
+claude.md
 
 # Azure deployment files (keep sensitive info private)
 .env.azure
