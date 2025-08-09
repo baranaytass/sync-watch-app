@@ -203,6 +203,24 @@ documentation/
 CLAUDE.md
 claude.md
 
+# Tests and test configuration (keep local-only)
+tests/
+web/tests/
+**/tests/
+playwright.config.*.ts
+global-setup.ts
+*.spec.ts
+*.test.ts
+
+# Deployment files (keep local-only)
+RENDER_DEPLOYMENT.md
+render-blueprint.yaml
+render.yaml
+*.publishsettings
+deployment-*.md
+*-deployment.md
+.env.*.template
+
 # Azure deployment files (keep sensitive info private)
 .env.azure
 azure-*.sql
