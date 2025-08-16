@@ -1,4 +1,0 @@
-packages:
-  - 'backend'
-  - 'web'
-  - 'packages/*' 
