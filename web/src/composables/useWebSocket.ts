@@ -200,7 +200,9 @@ export const useWebSocket = (sessionId: string) => {
         
         // Use correct WebSocket URL for production
         const API_BASE_URL = import.meta.env.VITE_API_URL || 
-          (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
+          (window.location.hostname.includes('onrender.com') || window.location.hostname === 'staysync.eu' 
+            ? 'https://sync-watch-backend.onrender.com' 
+            : 'http://localhost:3000')
         
         // Get JWT token for WebSocket authentication
         let wsUrl = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://') + `/ws/session/${sessionId}`
