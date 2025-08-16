@@ -114,7 +114,11 @@ async function start(): Promise<void> {
     // Register plugins
     console.log('🔧 Registering CORS plugin...')
     await server.register(require('@fastify/cors'), {
-      origin: server.config.FRONTEND_URL,
+      origin: [
+        server.config.FRONTEND_URL,
+        'https://staysync.baranaytas.com',
+        'https://sync-watch-frontend.onrender.com'
+      ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
