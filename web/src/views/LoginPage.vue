@@ -4,11 +4,7 @@
     <div class="hidden lg:flex lg:w-1/2 bg-primary items-center justify-center p-8">
       <div class="text-center text-primary-foreground">
         <div class="mb-8 flex justify-center">
-          <div class="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary-foreground/10 backdrop-blur-sm">
-            <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </div>
+          <StaySyncLogo :show-text="false" :show-tagline="false" size="lg" variant="dark" />
         </div>
         <h1 class="text-4xl font-bold mb-4">{{ $t('app.brandTitle') }}</h1>
         <p class="text-xl opacity-90 mb-8 max-w-md">{{ $t('home.hero.subtitle') }}</p>
@@ -49,11 +45,7 @@
         <!-- Mobile logo -->
         <div class="lg:hidden text-center mb-8">
           <div class="mb-4 flex justify-center">
-            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </div>
+            <StaySyncLogo :show-text="false" :show-tagline="false" size="md" />
           </div>
           <h1 class="heading-3 mb-2">{{ $t('auth.welcomeToNesbat') }}</h1>
         </div>
@@ -149,6 +141,7 @@
 import { onMounted, computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import StaySyncLogo from '@/components/StaySyncLogo.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()

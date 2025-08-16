@@ -5,12 +5,7 @@
     <nav class="nav sticky top-0 z-50">
       <div class="container flex h-16 items-center justify-between">
         <!-- Logo -->
-        <div class="flex items-center gap-2">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-            W
-          </div>
-          <span class="text-xl font-semibold">{{ $t('app.brandTitle') }}</span>
-        </div>
+        <StaySyncLogo :show-text="true" :show-tagline="false" size="sm" />
         
         <!-- Language + Theme Toggle -->
         <div class="flex items-center gap-2 sm:gap-3">
@@ -38,11 +33,7 @@
       <div class="container text-center">
         <!-- Logo/Icon -->
         <div class="mb-8 flex justify-center">
-          <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </div>
+          <StaySyncLogo :show-text="false" :show-tagline="false" size="xl" />
         </div>
         
         <!-- Main Heading -->
@@ -182,21 +173,43 @@
     
     <!-- Footer -->
     <footer class="border-t border-border bg-muted/30">
-      <div class="container py-8">
+      <div class="container py-12">
         <div class="text-center">
-          <div class="flex items-center justify-center gap-2 mb-4">
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-              W
+          <!-- Vertical Logo Layout -->
+          <div class="mb-8">
+            <div class="flex justify-center mb-4">
+              <StaySyncLogo :show-text="false" :show-tagline="false" size="lg" />
             </div>
-            <span class="text-xl font-semibold">{{ $t('app.brandTitle') }}</span>
+            <div class="space-y-2">
+              <h3 class="text-2xl font-bold brand-font tracking-wide text-foreground">STAY SYNC</h3>
+              <p class="text-base text-muted-foreground font-medium">{{ $t('app.tagline') }}</p>
+            </div>
           </div>
-          <p class="text-muted-foreground mb-4">{{ $t('app.description') }}</p>
-          <div class="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <router-link to="/login" class="hover:text-foreground transition-colors">
-              {{ $t('auth.loginToAccount') }}
-            </router-link>
-            <span class="opacity-50">•</span>
-            <span class="opacity-75">{{ $t('app.tagline') }}</span>
+          
+          <!-- Description -->
+          <p class="text-muted-foreground mb-8 max-w-md mx-auto">{{ $t('app.description') }}</p>
+          
+          <!-- Footer Links -->
+          <div class="flex flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
+            <div class="flex items-center gap-6">
+              <router-link to="/login" class="hover:text-foreground transition-colors">
+                {{ $t('auth.loginToAccount') }}
+              </router-link>
+              <span class="opacity-50">•</span>
+              <span class="opacity-75">{{ $t('home.hero.subtitle') }}</span>
+            </div>
+            <div class="text-center">
+              <p class="opacity-75 mb-2">{{ $t('app.developer.contact') }}</p>
+              <a 
+                href="https://baranaytas.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="text-primary hover:text-primary/80 transition-colors font-medium"
+              >
+                {{ $t('app.developer.website') }}
+              </a>
+              <p class="opacity-75 mt-1">{{ $t('app.developer.cta') }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -209,12 +222,7 @@
     <nav class="nav">
       <div class="container flex h-16 items-center justify-between">
         <!-- Logo -->
-        <div class="flex items-center gap-2">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-            W
-          </div>
-          <span class="text-xl font-semibold">{{ $t('app.brandTitle') }}</span>
-        </div>
+        <StaySyncLogo :show-text="true" :show-tagline="false" size="sm" />
         
         <!-- User Menu -->
         <div class="flex items-center gap-2 sm:gap-3">
@@ -242,11 +250,7 @@
     <section class="section gradient-bg">
       <div class="container text-center">
         <div class="mb-8 flex justify-center">
-          <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          </div>
+          <StaySyncLogo :show-text="false" :show-tagline="false" size="xl" />
         </div>
         
         <h1 class="heading-1 mb-6">
@@ -373,19 +377,41 @@
     
     <!-- Footer -->
     <footer class="border-t border-border bg-muted/30">
-      <div class="container py-8">
+      <div class="container py-12">
         <div class="text-center">
-          <div class="flex items-center justify-center gap-2 mb-4">
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-              W
+          <!-- Vertical Logo Layout -->
+          <div class="mb-8">
+            <div class="flex justify-center mb-4">
+              <StaySyncLogo :show-text="false" :show-tagline="false" size="lg" />
             </div>
-            <span class="text-xl font-semibold">{{ $t('app.brandTitle') }}</span>
+            <div class="space-y-2">
+              <h3 class="text-2xl font-bold brand-font tracking-wide text-foreground">STAY SYNC</h3>
+              <p class="text-base text-muted-foreground font-medium">{{ $t('app.tagline') }}</p>
+            </div>
           </div>
-          <p class="text-muted-foreground mb-4">{{ $t('app.description') }}</p>
-          <div class="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <span class="opacity-75">{{ $t('auth.welcome') }}, {{ authStore.user?.name }}</span>
-            <span class="opacity-50">•</span>
-            <span class="opacity-75">{{ $t('app.tagline') }}</span>
+          
+          <!-- Description -->
+          <p class="text-muted-foreground mb-8 max-w-md mx-auto">{{ $t('app.description') }}</p>
+          
+          <!-- Footer Links -->
+          <div class="flex flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
+            <div class="flex items-center gap-6">
+              <span class="opacity-75">{{ $t('auth.welcome') }}, {{ authStore.user?.name }}</span>
+              <span class="opacity-50">•</span>
+              <span class="opacity-75">{{ $t('home.hero.subtitle') }}</span>
+            </div>
+            <div class="text-center">
+              <p class="opacity-75 mb-2">{{ $t('app.developer.contact') }}</p>
+              <a 
+                href="https://baranaytas.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="text-primary hover:text-primary/80 transition-colors font-medium"
+              >
+                {{ $t('app.developer.website') }}
+              </a>
+              <p class="opacity-75 mt-1">{{ $t('app.developer.cta') }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -400,6 +426,7 @@ import { useSessionsStore } from '@/stores/sessions'
 import { useThemeStore } from '@/stores/theme'
 import { useI18n } from '@/composables/useI18n'
 import { useRouter } from 'vue-router'
+import StaySyncLogo from '@/components/StaySyncLogo.vue'
 
 const authStore = useAuthStore()
 const sessionsStore = useSessionsStore()

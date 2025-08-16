@@ -151,7 +151,12 @@
     "title": "WatchSync",
     "brandTitle": "WatchSync",
     "description": "Sevdiklerinizle senkronize video izleme platformu",
-    "tagline": "Uzaklık, yakınlığa engel olamaz"
+    "tagline": "Uzaklık, yakınlığa engel olamaz",
+    "developer": {
+      "contact": "Böyle bir projeye mi ihtiyacın var?",
+      "website": "baranaytas.com",
+      "cta": "Hadi bağlanalım ve gerçekleştirelim"
+    }
   },
   "session": {
     "createNew": "Yeni Oturum Oluştur",
