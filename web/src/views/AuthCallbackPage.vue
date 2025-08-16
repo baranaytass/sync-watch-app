@@ -71,6 +71,12 @@ onMounted(async () => {
 
     console.log('✅ OAuth authentication successful')
 
+    // Store token in localStorage if provided
+    if (result.data?.token) {
+      localStorage.setItem('auth_token', result.data.token)
+      console.log('🔐 Token stored in localStorage')
+    }
+
     // Fetch user data to update auth store
     await authStore.fetchUser()
 

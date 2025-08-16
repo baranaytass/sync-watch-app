@@ -38,7 +38,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -48,7 +48,7 @@ export class AuthController {
         httpOnly: false,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -127,7 +127,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -137,7 +137,7 @@ export class AuthController {
         httpOnly: false,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -145,7 +145,8 @@ export class AuthController {
       console.log('✅ Frontend OAuth exchange successful');
       return reply.send({
         success: true,
-        message: 'Authentication successful'
+        message: 'Authentication successful',
+        token: jwtToken // Frontend için token döndür
       });
       
     } catch (error) {
@@ -208,7 +209,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 24 * 60 * 60, // 1 day
         path: '/',
       });
@@ -218,7 +219,7 @@ export class AuthController {
         httpOnly: false,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 24 * 60 * 60, // 1 day
         path: '/',
       });
