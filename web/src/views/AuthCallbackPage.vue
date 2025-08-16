@@ -61,27 +61,12 @@ onMounted(async () => {
 
     console.log('🔵 Processing OAuth callback with code:', code?.substring(0, 10) + '...')
 
-    // Exchange code for tokens via backend
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 
-      (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
-
-    const response = await fetch(`${API_BASE_URL}/api/auth/google/exchange`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ code, state }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Authentication failed: ${response.statusText}`)
-    }
-
-    const result = await response.json()
+    // Exchange code for tokens via backend using unified API utility
+    const { api } = await import('@/utils/api')
+    const result = await api.post('/api/auth/google/exchange', { code })
     
     if (!result.success) {
-      throw new Error(result.message || 'Authentication failed')
+      throw new Error(result.error?.message || 'Authentication failed')
     }
 
     console.log('✅ OAuth authentication successful')
