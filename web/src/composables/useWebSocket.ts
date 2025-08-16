@@ -200,7 +200,7 @@ export const useWebSocket = (sessionId: string) => {
         
         // Use correct WebSocket URL for production
         const API_BASE_URL = import.meta.env.VITE_API_URL || 
-          (window.location.hostname.includes('onrender.com') || window.location.hostname === 'staysync.eu' 
+          (window.location.hostname.includes('onrender.com') || window.location.hostname === 'staysync.baranaytas.com' 
             ? 'https://sync-watch-backend.onrender.com' 
             : 'http://localhost:3000')
         
