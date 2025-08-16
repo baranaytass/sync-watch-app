@@ -164,6 +164,8 @@ screenshots/
 !public/*.png
 !public/*.jpg
 !public/*.ico
+!web/src/assets/*.png
+!web/src/assets/*.svg
 
 # Debug files  
 *-debug.png

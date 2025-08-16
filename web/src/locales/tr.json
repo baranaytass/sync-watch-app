@@ -34,7 +34,11 @@
     "login": "Giriş Yap",
     "profile": "Profil",
     "settings": "Ayarlar",
-    "guestNamePlaceholder": "Misafir adınızı girin..."
+    "guestNamePlaceholder": "Misafir adınızı girin...",
+    "processing": "Kimlik doğrulanıyor",
+    "redirecting": "Giriş işleminiz tamamlanıyor, lütfen bekleyin...",
+    "error": "Kimlik Doğrulama Hatası",
+    "backToLogin": "Giriş Sayfasına Dön"
   },
   "navigation": {
     "home": "Ana Sayfa",

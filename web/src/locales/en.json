@@ -34,7 +34,11 @@
     "login": "Sign In",
     "profile": "Profile",
     "settings": "Settings",
-    "guestNamePlaceholder": "Enter your guest name..."
+    "guestNamePlaceholder": "Enter your guest name...",
+    "processing": "Processing authentication",
+    "redirecting": "Please wait while we sign you in...",
+    "error": "Authentication Error",
+    "backToLogin": "Back to Login"
   },
   "navigation": {
     "home": "Home",

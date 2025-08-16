@@ -68,6 +68,95 @@ export class AuthController {
     }
   }
 
+  async exchangeGoogleCode(request: any, reply: any): Promise<void> {
+    try {
+      console.log('🔵 Starting frontend OAuth code exchange...');
+      
+      const { code } = request.body as { code: string; state?: string };
+      
+      if (!code) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Authorization code is required'
+        });
+      }
+
+      // Exchange code for tokens using our OAuth client
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: this.fastify.config.GOOGLE_CLIENT_ID,
+          client_secret: this.fastify.config.GOOGLE_CLIENT_SECRET,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: `${this.fastify.config.FRONTEND_URL}/auth/callback`,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Token exchange failed: ${tokenResponse.statusText}`);
+      }
+
+      const tokens = await tokenResponse.json();
+      console.log('🔵 Got access token:', tokens.access_token ? 'SUCCESS' : 'FAILED');
+      
+      // Get user info from Google
+      console.log('🔵 Fetching Google user info...');
+      const googleUserInfo = await this.authService.getGoogleUserInfo(tokens.access_token);
+      console.log('🔵 Google user info:', googleUserInfo);
+      
+      // Find or create user in our database
+      console.log('🔵 Finding or creating user in database...');
+      const user = await this.authService.findOrCreateUser(googleUserInfo);
+      console.log('🔵 User in database:', user);
+      
+      // Generate JWT token
+      console.log('🔵 Generating JWT token...');
+      const jwtToken = this.fastify.jwt.sign(
+        { userId: user.id, email: user.email },
+        { expiresIn: '7d' }
+      );
+      console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
+      
+      // Set HTTP-only cookie
+      console.log('🔵 Setting authentication cookies...');
+      reply.setCookie('token', jwtToken, {
+        httpOnly: true,
+        secure: this.fastify.config.NODE_ENV === 'production',
+        sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        path: '/',
+      });
+
+      // Set additional non-HttpOnly cookie for frontend access detection
+      reply.setCookie('auth_status', 'authenticated', {
+        httpOnly: false,
+        secure: this.fastify.config.NODE_ENV === 'production',
+        sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        path: '/',
+      });
+      
+      console.log('✅ Frontend OAuth exchange successful');
+      return reply.send({
+        success: true,
+        message: 'Authentication successful'
+      });
+      
+    } catch (error) {
+      console.error('🔴 Frontend OAuth exchange error:', error);
+      return reply.status(500).send({
+        success: false,
+        message: error instanceof Error ? error.message : 'Authentication failed'
+      });
+    }
+  }
+
   async logout(_request: any, reply: any): Promise<void> {
     console.log('🔵 Logging out user...');
     
