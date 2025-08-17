@@ -27,7 +27,7 @@ export class AuthController {
       // Generate JWT token
       console.log('🔵 Generating JWT token...');
       const jwtToken = this.fastify.jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, isGuest: false },
         { expiresIn: '7d' }
       );
       console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
@@ -116,7 +116,7 @@ export class AuthController {
       // Generate JWT token
       console.log('🔵 Generating JWT token...');
       const jwtToken = this.fastify.jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, isGuest: false },
         { expiresIn: '7d' }
       );
       console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
@@ -239,15 +239,15 @@ export class AuthController {
         return reply.status(401).send({ error: 'unauthorized', message: 'No token provided' });
       }
 
-      const decoded = this.fastify.jwt.verify(token) as { userId: string; email: string; isGuest?: boolean };
+      const decoded = this.fastify.jwt.verify(token) as { userId: string; email: string; isGuest: boolean };
 
-      // Handle guest users
-      if (decoded.isGuest) {
+      // Handle guest users - explicit check for true value
+      if (decoded.isGuest === true) {
         // For guests, we can construct the user object directly from the token
         const guestUser = {
           id: decoded.userId,
           email: decoded.email,
-          name: 'Misafir Kullanıcı', // This could be enhanced in the future
+          name: 'Misafir Kullanıcı',
           avatar: '',
           isGuest: true,
         };

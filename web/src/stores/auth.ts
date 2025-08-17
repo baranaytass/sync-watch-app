@@ -13,9 +13,6 @@ export interface User {
   updatedAt: Date
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
-
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
@@ -58,7 +55,11 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     // Redirect to backend Google OAuth
-    window.location.href = `${API_BASE_URL}/api/auth/google`
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 
+      (window.location.hostname === 'staysync.baranaytas.com' 
+        ? 'https://staysync-api.baranaytas.com' 
+        : 'http://localhost:3000')
+    window.location.href = `${apiBaseUrl}/api/auth/google`
   }
 
   const loginAsGuest = async (customName?: string) => {
@@ -83,23 +84,10 @@ export const useAuthStore = defineStore('auth', () => {
         // Store token in localStorage if provided by backend
         if (result.data?.token) {
           localStorage.setItem('auth_token', result.data.token)
-          console.log('🔐 Auth Store: Real JWT token stored from backend')
-        } else if (!localStorage.getItem('auth_token')) {
-          // Fallback: Create a JWT-like token from user data for consistent auth
-          console.log('🔧 Auth Store: Creating compatible auth token')
-          
-          const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-          const payload = btoa(JSON.stringify({ 
-            userId: guestUser.id, 
-            email: guestUser.email,
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
-          }))
-          const signature = btoa(`fallback_signature_${guestUser.id}`)
-          
-          const fallbackToken = `${header}.${payload}.${signature}`
-          localStorage.setItem('auth_token', fallbackToken)
-          console.log('🔑 Auth Store: JWT-like token created for session auth')
+          console.log('🔐 Auth Store: JWT token stored from backend')
+        } else {
+          console.error('❌ No token received from backend for guest user')
+          throw new Error('Authentication failed: No token received')
         }
 
         // Redirect to home page after login
