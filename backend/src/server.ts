@@ -59,8 +59,8 @@ function stopSessionCleanupJob(): void {
   }
 }
 
-// Guest user cleanup function
-async function cleanupGuestUsers(): Promise<number> {
+// Guest user cleanup function (temporarily disabled due to missing is_guest column)
+/* async function cleanupGuestUsers(): Promise<number> {
   try {
     const deleteQuery = `
       DELETE FROM users 
@@ -74,7 +74,7 @@ async function cleanupGuestUsers(): Promise<number> {
     console.error('❌ Guest user cleanup failed:', error);
     return 0;
   }
-}
+} */
 
 async function start(): Promise<void> {
   try {
