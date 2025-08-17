@@ -82,8 +82,8 @@ export const useAuthStore = defineStore('auth', () => {
         console.log('🍪 Auth Store: Document cookies:', document.cookie)
         
         // Store token in localStorage if provided by backend
-        if (result.data?.token) {
-          localStorage.setItem('auth_token', result.data.token)
+        if (result.token) {
+          localStorage.setItem('auth_token', result.token)
           console.log('🔐 Auth Store: JWT token stored from backend')
         } else {
           console.error('❌ No token received from backend for guest user')

@@ -18,6 +18,7 @@ interface ApiRequestOptions {
 interface ApiResponse<T = any> {
   success: boolean
   data?: T
+  token?: string
   error?: {
     error: string
     message: string
