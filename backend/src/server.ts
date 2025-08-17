@@ -31,8 +31,9 @@ function startSessionCleanupJob(sessionService: SessionService): void {
       // Clean up sessions inactive for more than 30 minutes
       const inactiveSessionsDeleted = await sessionService.cleanupInactiveSessions(30);
       
-      // Clean up guest users older than 24 hours
-      const guestUsersDeleted = await cleanupGuestUsers();
+      // Clean up guest users older than 24 hours (temporarily disabled due to missing column)
+      // const guestUsersDeleted = await cleanupGuestUsers();
+      const guestUsersDeleted = 0;
       
       const totalDeleted = emptySessionsDeleted + inactiveSessionsDeleted;
       if (totalDeleted > 0 || guestUsersDeleted > 0) {

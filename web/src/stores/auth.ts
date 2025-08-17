@@ -80,13 +80,14 @@ export const useAuthStore = defineStore('auth', () => {
         console.log('🍪 Auth Store: Guest login successful')
         console.log('🍪 Auth Store: Document cookies:', document.cookie)
         
-        // Check if the response includes a token or create one
-        // Note: With unified API, token handling is managed automatically
-        if (!localStorage.getItem('auth_token')) {
-          // Create a JWT-like token from user data for consistent auth
+        // Store token in localStorage if provided by backend
+        if (result.data?.token) {
+          localStorage.setItem('auth_token', result.data.token)
+          console.log('🔐 Auth Store: Real JWT token stored from backend')
+        } else if (!localStorage.getItem('auth_token')) {
+          // Fallback: Create a JWT-like token from user data for consistent auth
           console.log('🔧 Auth Store: Creating compatible auth token')
           
-          // Create a simple JWT-like structure (header.payload.signature)
           const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
           const payload = btoa(JSON.stringify({ 
             userId: guestUser.id, 
