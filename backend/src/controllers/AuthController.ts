@@ -161,27 +161,32 @@ export class AuthController {
   async logout(_request: any, reply: any): Promise<void> {
     console.log('🔵 Logging out user...');
     
-    // Fastify clearCookie sometimes fails if attributes mismatch; therefore we
-    // first overwrite the cookie with an empty value and immediate expiry, then
-    // call clearCookie as fallback.
-
-    reply.setCookie('token', '', {
+    // Use the same cookie options as when they were set, but with maxAge: 0 and empty value
+    const cookieOptions = {
       path: '/',
       httpOnly: true,
       secure: this.fastify.config.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0,
-    })
+      sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+      domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
+    } as const;
 
-    // Additional clear (safety net)
-    reply.clearCookie('token', {
+    const authStatusOptions = {
       path: '/',
-      httpOnly: true,
+      httpOnly: false,
       secure: this.fastify.config.NODE_ENV === 'production',
-      sameSite: 'lax',
-    })
+      sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+      domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
+    } as const;
+    
+    // Strategy 1: Set cookies to empty with immediate expiry (matching original options exactly)
+    reply.setCookie('token', '', { ...cookieOptions, maxAge: 0 });
+    reply.setCookie('auth_status', '', { ...authStatusOptions, maxAge: 0 });
 
-    console.log('🔵 Cookie cleared, logout successful');
+    // Strategy 2: Use clearCookie with same options (without maxAge)
+    reply.clearCookie('token', cookieOptions);
+    reply.clearCookie('auth_status', authStatusOptions);
+
+    console.log('🔵 Cookies cleared using same options as when set, logout successful');
     return reply.send({ success: true, message: 'Logged out successfully' });
   }
 
