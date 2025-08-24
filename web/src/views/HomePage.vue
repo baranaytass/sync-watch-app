@@ -448,20 +448,14 @@ const toggleTheme = () => {
 
 const createQuickSession = async () => {
   try {
-    console.log('🚀 HomePage: Creating quick session...')
     const session = await sessionsStore.createSession({
       title: 'Quick Session',
       description: 'Created from dashboard'
     })
     
-    console.log('🔍 HomePage: createSession result:', session)
-    
     if (session) {
-      console.log('✅ HomePage: Quick session created, redirecting to:', session.id)
-      
       try {
         await router.push(`/session/${session.id}`)
-        console.log('✅ HomePage: Router push successful')
       } catch (routerError) {
         console.error('❌ HomePage: Router push failed:', routerError)
       }

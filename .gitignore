@@ -201,18 +201,10 @@ documentation/
 *.md
 !README.md
 
-# Project Context (keep local-only)
-CLAUDE.md
-claude.md
+# Project Context files are kept in repository for team collaboration
 
-# Tests and test configuration (keep local-only)
-tests/
-web/tests/
-**/tests/
-playwright.config.*.ts
-global-setup.ts
-*.spec.ts
-*.test.ts
+# Test results only (test source files should be in git)
+# Test configuration and source files are kept in repository
 
 # Deployment files (keep local-only)
 RENDER_DEPLOYMENT.md

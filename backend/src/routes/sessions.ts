@@ -9,7 +9,7 @@ export default async function sessionRoutes(
   // Initialize services
   const sessionService = new SessionService(fastify.pg);
   const youtubeService = new YouTubeService(process.env.YOUTUBE_API_KEY!);
-  const sessionController = new SessionController(sessionService, youtubeService);
+  const sessionController = new SessionController(sessionService, youtubeService, fastify);
 
   // GET /api/sessions - Get all active sessions (public listing)
   fastify.get('/', {

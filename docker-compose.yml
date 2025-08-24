@@ -31,7 +31,7 @@ services:
       JWT_SECRET: "development-secret-key-change-in-production"
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
       GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
-      YOUTUBE_API_KEY: "${YOUTUBE_API_KEY:-}"
+      YOUTUBE_API_KEY: "AIzaSyBGaoo7O9ABniAuWcm62T8ZKcH9D3mN8M4"
       FRONTEND_URL: "http://localhost:5173"
     ports:
       - "3000:3000"

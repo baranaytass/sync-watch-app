@@ -66,20 +66,22 @@ export class YouTubeService {
       throw new Error('Invalid YouTube video ID format');
     }
 
-    // DEVELOPMENT / TEST SHORT-CIRCUIT -----------------------------
-    // Yerel geliştirme veya CI ortamlarında gerçek Google API anahtarı bulunmayabilir.
-    // API anahtarı tanımsız ya da placeholder ise doğrudan sahte (mock) metadata döndür.
-    if (!this.apiKey || this.apiKey === 'your-youtube-api-key') {
+    // Only test environment gets mock data - NEVER production/development
+    if (process.env.NODE_ENV === 'test') {
       return {
         id: videoId,
-        title: `Mock Video – ${videoId}`,
-        duration: 600, // 10 dk
+        title: `Test Video – ${videoId}`,
+        duration: 600, // 10 minutes
         thumbnail: '',
-        channelTitle: 'Mock Channel',
+        channelTitle: 'Test Channel',
         publishedAt: new Date().toISOString(),
       };
     }
-    // --------------------------------------------------------------
+
+    // Production/development requires real API key
+    if (!this.apiKey || this.apiKey === 'your-youtube-api-key') {
+      throw new Error('YouTube API key is required. Please configure YOUTUBE_API_KEY environment variable.');
+    }
 
     const url = `${this.baseUrl}/videos?part=snippet,contentDetails&id=${videoId}&key=${this.apiKey}`;
 

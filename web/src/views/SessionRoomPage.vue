@@ -200,7 +200,12 @@ const isHost = computed(() => sessionsStore.isHost)
 const participants = computed(() => sessionsStore.participants || [])
 
 // Generate video URL from session data
-const videoUrl = ref('')
+const videoUrl = computed(() => {
+  if (currentSession.value?.videoProvider === 'youtube' && currentSession.value?.videoId) {
+    return `https://www.youtube.com/watch?v=${currentSession.value.videoId}`
+  }
+  return ''
+})
 
 // Methods
 const loadSession = async () => {

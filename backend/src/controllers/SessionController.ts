@@ -15,10 +15,12 @@ interface AuthenticatedRequest {
 export class SessionController {
   private sessionService: SessionService;
   private youtubeService: YouTubeService;
+  private fastify: any;
 
-  constructor(sessionService: SessionService, youtubeService: YouTubeService) {
+  constructor(sessionService: SessionService, youtubeService: YouTubeService, fastify?: any) {
     this.sessionService = sessionService;
     this.youtubeService = youtubeService;
+    this.fastify = fastify;
   }
 
   // GET /api/sessions - Get active sessions (public listing, no auth required)
@@ -290,6 +292,19 @@ export class SessionController {
       const session = await this.sessionService.setSessionVideo(id, request.user.userId, videoData);
       
       console.log(`📋 SessionController: Video set successfully for session ${id}: "${videoMetadata.title}"`);
+      
+      // Broadcast video update to all participants via WebSocket
+      if (this.fastify.broadcastToSession) {
+        console.log(`📺 SessionController: Broadcasting video update to session ${id}`);
+        this.fastify.broadcastToSession(id, 'video_update', {
+          videoProvider: 'youtube',
+          videoId: videoMetadata.id,
+          videoTitle: videoMetadata.title,
+          videoDuration: videoMetadata.duration,
+        });
+      } else {
+        console.warn('⚠️ SessionController: broadcastToSession not available');
+      }
       
       const response: ApiResponse = {
         success: true,
