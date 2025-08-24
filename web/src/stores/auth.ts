@@ -13,6 +13,7 @@ export interface User {
   updatedAt: Date
 }
 
+
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
@@ -81,7 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
         console.log('🍪 Auth Store: Guest login successful')
         console.log('🍪 Auth Store: Document cookies:', document.cookie)
         
-        // Store token in localStorage if provided by backend
+        // Store token from backend response
         if (result.token) {
           localStorage.setItem('auth_token', result.token)
           console.log('🔐 Auth Store: JWT token stored from backend')
