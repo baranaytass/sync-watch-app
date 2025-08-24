@@ -24,10 +24,10 @@ export class AuthController {
       const user = await this.authService.findOrCreateUser(googleUserInfo);
       console.log('🔵 User in database:', user);
       
-      // Generate JWT token
+      // Generate JWT token with explicit isGuest flag
       console.log('🔵 Generating JWT token...');
       const jwtToken = this.fastify.jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, isGuest: false },
         { expiresIn: '7d' }
       );
       console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
@@ -113,10 +113,10 @@ export class AuthController {
       const user = await this.authService.findOrCreateUser(googleUserInfo);
       console.log('🔵 User in database:', user);
       
-      // Generate JWT token
+      // Generate JWT token with explicit isGuest flag
       console.log('🔵 Generating JWT token...');
       const jwtToken = this.fastify.jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, isGuest: false },
         { expiresIn: '7d' }
       );
       console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
@@ -198,9 +198,9 @@ export class AuthController {
       console.log('🟢 Guest user created:', guestUser.id);
       console.log('🍪 Setting cookies with domain:', this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : 'localhost');
 
-      // Generate JWT token
+      // Generate JWT token with explicit isGuest flag
       const jwtToken = this.fastify.jwt.sign(
-        { userId: guestUser.id, email: guestUser.email },
+        { userId: guestUser.id, email: guestUser.email, isGuest: true },
         { expiresIn: '1d' } // shorter expiry for guest accounts
       );
 
@@ -224,7 +224,11 @@ export class AuthController {
         path: '/',
       });
 
-      return reply.send({ success: true, data: guestUser });
+      return reply.send({ 
+        success: true, 
+        data: guestUser, 
+        token: jwtToken // Frontend için token dahil et
+      });
     } catch (error) {
       console.error('🔴 Guest auth error:', error);
       return reply.status(500).send({ error: 'guest_auth_error', message: 'Failed to create guest user' });
@@ -241,8 +245,8 @@ export class AuthController {
 
       const decoded = this.fastify.jwt.verify(token) as { userId: string; email: string; isGuest?: boolean };
 
-      // Handle guest users
-      if (decoded.isGuest) {
+      // Handle guest users - strict boolean check
+      if (decoded.isGuest === true) {
         // For guests, we can construct the user object directly from the token
         const guestUser = {
           id: decoded.userId,
