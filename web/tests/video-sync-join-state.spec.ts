@@ -36,7 +36,7 @@ test('video sync join state bug detection', async ({ browser }) => {
     await videoInput.fill(TEST_VIDEO_URL)
     await user1Page.locator('[data-testid="set-video-button"]').click()
     
-    const { iframe: iframe1 } = await waitForVideoToLoad(user1Page)
+    await waitForVideoToLoad(user1Page)
     
     // 3. Start video playback
     logger.step('Starting video playback')
@@ -49,7 +49,7 @@ test('video sync join state bug detection', async ({ browser }) => {
     await user2Page.goto(`/session/${sessionId}`)
     await user2Page.waitForLoadState('networkidle')
     
-    const { iframe: iframe2 } = await waitForVideoToLoad(user2Page)
+    await waitForVideoToLoad(user2Page)
     
     // 5. Critical bug detection: Check for player ready state issues
     logger.step('Checking for sync issues')

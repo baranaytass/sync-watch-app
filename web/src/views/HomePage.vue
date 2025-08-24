@@ -339,6 +339,46 @@
       </div>
     </section>
     
+    <!-- Create Session Modal -->
+    <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="modal bg-card rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="heading-3">{{ $t('session.createNew') }}</h3>
+          <button @click="showCreateModal = false" class="btn-ghost p-2">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <form @submit.prevent="createSession" class="space-y-4">
+          <div>
+            <label for="title" class="block text-sm font-medium mb-2">
+              {{ $t('session.title') }}
+            </label>
+            <input 
+              id="title"
+              v-model="sessionForm.title" 
+              name="title"
+              type="text" 
+              required
+              class="input w-full"
+              :placeholder="$t('session.titlePlaceholder')"
+            />
+          </div>
+          
+          <div class="flex gap-3 pt-4">
+            <button type="button" @click="showCreateModal = false" class="btn-secondary flex-1">
+              {{ $t('common.cancel') }}
+            </button>
+            <button type="submit" :disabled="!sessionForm.title.trim()" class="btn-primary flex-1">
+              {{ $t('session.create') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
     <!-- How to Use Section -->
     <section class="section bg-muted/30">
       <div class="container">
@@ -436,6 +476,10 @@ const router = useRouter()
 
 const joinSessionId = ref('')
 const showSessionsPanel = ref(false)
+const showCreateModal = ref(false)
+const sessionForm = ref({
+  title: ''
+})
 const currentLocale = getCurrentLocale()
 
 const toggleLanguage = () => {
@@ -446,14 +490,22 @@ const toggleTheme = () => {
   theme.toggleTheme()
 }
 
-const createQuickSession = async () => {
+const createQuickSession = () => {
+  showCreateModal.value = true
+  sessionForm.value.title = ''
+}
+
+const createSession = async () => {
   try {
     const session = await sessionsStore.createSession({
-      title: 'Quick Session',
+      title: sessionForm.value.title.trim(),
       description: 'Created from dashboard'
     })
     
     if (session) {
+      showCreateModal.value = false
+      sessionForm.value.title = ''
+      
       try {
         await router.push(`/session/${session.id}`)
       } catch (routerError) {

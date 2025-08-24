@@ -104,8 +104,8 @@ test.describe('Auth – Guest Login/Logout', () => {
     const titleInput = page.locator('input[name="title"]')
     await titleInput.fill('Test Session')
 
-    // Submit
-    const submitButton = modal.getByRole('button', { name: /oluştur/i })
+    // Submit - try both Turkish and English button text
+    const submitButton = modal.getByRole('button', { name: /(oluştur|create)/i })
     await submitButton.click()
 
     // Should redirect to session page

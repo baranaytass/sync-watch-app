@@ -2,27 +2,62 @@
   <div class="min-h-screen flex items-center justify-center bg-background">
     <div class="text-center">
       <!-- Loading State -->
-      <div v-if="loading" class="space-y-4">
-        <StaySyncLogo :show-text="false" :show-tagline="false" size="lg" />
+      <div
+        v-if="loading"
+        class="space-y-4"
+      >
+        <StaySyncLogo
+          :show-text="false"
+          :show-tagline="false"
+          size="lg"
+        />
         <div class="space-y-2">
-          <div class="animate-spin h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <h2 class="text-xl font-semibold text-foreground">{{ $t('auth.processing') }}</h2>
-          <p class="text-muted-foreground">{{ $t('auth.redirecting') }}</p>
+          <div class="animate-spin h-8 w-8 border-b-2 border-primary mx-auto" />
+          <h2 class="text-xl font-semibold text-foreground">
+            {{ $t('auth.processing') }}
+          </h2>
+          <p class="text-muted-foreground">
+            {{ $t('auth.redirecting') }}
+          </p>
         </div>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="error" class="space-y-4">
-        <StaySyncLogo :show-text="false" :show-tagline="false" size="lg" />
+      <div
+        v-else-if="error"
+        class="space-y-4"
+      >
+        <StaySyncLogo
+          :show-text="false"
+          :show-tagline="false"
+          size="lg"
+        />
         <div class="space-y-4">
           <div class="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
-            <svg class="h-6 w-6 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              class="h-6 w-6 text-destructive"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
-          <h2 class="text-xl font-semibold text-foreground">{{ $t('auth.error') }}</h2>
-          <p class="text-muted-foreground">{{ error }}</p>
-          <router-link to="/login" class="btn btn-primary">
+          <h2 class="text-xl font-semibold text-foreground">
+            {{ $t('auth.error') }}
+          </h2>
+          <p class="text-muted-foreground">
+            {{ error }}
+          </p>
+          <router-link
+            to="/login"
+            class="btn btn-primary"
+          >
             {{ $t('auth.backToLogin') }}
           </router-link>
         </div>
@@ -59,7 +94,7 @@ onMounted(async () => {
       throw new Error('No authorization code received')
     }
 
-    console.log('🔵 Processing OAuth callback with code:', code?.substring(0, 10) + '...')
+    console.log('🔵 Processing OAuth callback with code:', `${code?.substring(0, 10)  }...`)
 
     // Exchange code for tokens via backend using unified API utility
     const { api } = await import('@/utils/api')
