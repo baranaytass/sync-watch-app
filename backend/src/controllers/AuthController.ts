@@ -24,10 +24,10 @@ export class AuthController {
       const user = await this.authService.findOrCreateUser(googleUserInfo);
       console.log('🔵 User in database:', user);
       
-      // Generate JWT token
+      // Generate JWT token with explicit isGuest flag
       console.log('🔵 Generating JWT token...');
       const jwtToken = this.fastify.jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, email: user.email, isGuest: false },
         { expiresIn: '7d' }
       );
       console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
@@ -38,7 +38,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -48,7 +48,7 @@ export class AuthController {
         httpOnly: false,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
         path: '/',
       });
@@ -68,30 +68,125 @@ export class AuthController {
     }
   }
 
+  async exchangeGoogleCode(request: any, reply: any): Promise<void> {
+    try {
+      console.log('🔵 Starting frontend OAuth code exchange...');
+      
+      const { code } = request.body as { code: string; state?: string };
+      
+      if (!code) {
+        return reply.status(400).send({
+          success: false,
+          message: 'Authorization code is required'
+        });
+      }
+
+      // Exchange code for tokens using our OAuth client
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: this.fastify.config.GOOGLE_CLIENT_ID,
+          client_secret: this.fastify.config.GOOGLE_CLIENT_SECRET,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: `${this.fastify.config.FRONTEND_URL}/auth/callback`,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Token exchange failed: ${tokenResponse.statusText}`);
+      }
+
+      const tokens = await tokenResponse.json();
+      console.log('🔵 Got access token:', tokens.access_token ? 'SUCCESS' : 'FAILED');
+      
+      // Get user info from Google
+      console.log('🔵 Fetching Google user info...');
+      const googleUserInfo = await this.authService.getGoogleUserInfo(tokens.access_token);
+      console.log('🔵 Google user info:', googleUserInfo);
+      
+      // Find or create user in our database
+      console.log('🔵 Finding or creating user in database...');
+      const user = await this.authService.findOrCreateUser(googleUserInfo);
+      console.log('🔵 User in database:', user);
+      
+      // Generate JWT token with explicit isGuest flag
+      console.log('🔵 Generating JWT token...');
+      const jwtToken = this.fastify.jwt.sign(
+        { userId: user.id, email: user.email, isGuest: false },
+        { expiresIn: '7d' }
+      );
+      console.log('🔵 JWT token generated:', jwtToken ? 'SUCCESS' : 'FAILED');
+      
+      // Set HTTP-only cookie
+      console.log('🔵 Setting authentication cookies...');
+      reply.setCookie('token', jwtToken, {
+        httpOnly: true,
+        secure: this.fastify.config.NODE_ENV === 'production',
+        sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        path: '/',
+      });
+
+      // Set additional non-HttpOnly cookie for frontend access detection
+      reply.setCookie('auth_status', 'authenticated', {
+        httpOnly: false,
+        secure: this.fastify.config.NODE_ENV === 'production',
+        sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
+        maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+        path: '/',
+      });
+      
+      console.log('✅ Frontend OAuth exchange successful');
+      return reply.send({
+        success: true,
+        message: 'Authentication successful',
+        token: jwtToken // Frontend için token döndür
+      });
+      
+    } catch (error) {
+      console.error('🔴 Frontend OAuth exchange error:', error);
+      return reply.status(500).send({
+        success: false,
+        message: error instanceof Error ? error.message : 'Authentication failed'
+      });
+    }
+  }
+
   async logout(_request: any, reply: any): Promise<void> {
     console.log('🔵 Logging out user...');
     
-    // Fastify clearCookie sometimes fails if attributes mismatch; therefore we
-    // first overwrite the cookie with an empty value and immediate expiry, then
-    // call clearCookie as fallback.
-
-    reply.setCookie('token', '', {
+    // Use the same cookie options as when they were set, but with maxAge: 0 and empty value
+    const cookieOptions = {
       path: '/',
       httpOnly: true,
       secure: this.fastify.config.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0,
-    })
+      sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+      domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
+    } as const;
 
-    // Additional clear (safety net)
-    reply.clearCookie('token', {
+    const authStatusOptions = {
       path: '/',
-      httpOnly: true,
+      httpOnly: false,
       secure: this.fastify.config.NODE_ENV === 'production',
-      sameSite: 'lax',
-    })
+      sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
+      domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
+    } as const;
+    
+    // Strategy 1: Set cookies to empty with immediate expiry (matching original options exactly)
+    reply.setCookie('token', '', { ...cookieOptions, maxAge: 0 });
+    reply.setCookie('auth_status', '', { ...authStatusOptions, maxAge: 0 });
 
-    console.log('🔵 Cookie cleared, logout successful');
+    // Strategy 2: Use clearCookie with same options (without maxAge)
+    reply.clearCookie('token', cookieOptions);
+    reply.clearCookie('auth_status', authStatusOptions);
+
+    console.log('🔵 Cookies cleared using same options as when set, logout successful');
     return reply.send({ success: true, message: 'Logged out successfully' });
   }
 
@@ -108,9 +203,9 @@ export class AuthController {
       console.log('🟢 Guest user created:', guestUser.id);
       console.log('🍪 Setting cookies with domain:', this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : 'localhost');
 
-      // Generate JWT token
+      // Generate JWT token with explicit isGuest flag
       const jwtToken = this.fastify.jwt.sign(
-        { userId: guestUser.id, email: guestUser.email },
+        { userId: guestUser.id, email: guestUser.email, isGuest: true },
         { expiresIn: '1d' } // shorter expiry for guest accounts
       );
 
@@ -119,7 +214,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 24 * 60 * 60, // 1 day
         path: '/',
       });
@@ -129,12 +224,16 @@ export class AuthController {
         httpOnly: false,
         secure: this.fastify.config.NODE_ENV === 'production',
         sameSite: this.fastify.config.NODE_ENV === 'production' ? 'none' : 'lax',
-        domain: this.fastify.config.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+        domain: this.fastify.config.NODE_ENV === 'production' ? '.baranaytas.com' : undefined,
         maxAge: 24 * 60 * 60, // 1 day
         path: '/',
       });
 
-      return reply.send({ success: true, data: guestUser });
+      return reply.send({ 
+        success: true, 
+        data: guestUser, 
+        token: jwtToken // Frontend için token dahil et
+      });
     } catch (error) {
       console.error('🔴 Guest auth error:', error);
       return reply.status(500).send({ error: 'guest_auth_error', message: 'Failed to create guest user' });
@@ -151,8 +250,8 @@ export class AuthController {
 
       const decoded = this.fastify.jwt.verify(token) as { userId: string; email: string; isGuest?: boolean };
 
-      // Handle guest users
-      if (decoded.isGuest) {
+      // Handle guest users - strict boolean check
+      if (decoded.isGuest === true) {
         // For guests, we can construct the user object directly from the token
         const guestUser = {
           id: decoded.userId,

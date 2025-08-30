@@ -24,12 +24,17 @@ export default async function authRoutes(fastify: any): Promise<void> {
       },
     },
     startRedirectPath: '/google',
-    callbackUri: `${fastify.config.BACKEND_URL}/api/auth/google/callback`,
+    callbackUri: `${fastify.config.FRONTEND_URL}/auth/callback`,
   });
 
   // Google OAuth callback route - this is where OAuth2 plugin redirects after auth
   fastify.get('/google/callback', async (request, reply) => 
     authController.googleAuth(request, reply)
+  );
+
+  // Frontend OAuth code exchange endpoint
+  fastify.post('/google/exchange', async (request, reply) => 
+    authController.exchangeGoogleCode(request, reply)
   );
 
   // Auth routes
@@ -43,9 +48,12 @@ export default async function authRoutes(fastify: any): Promise<void> {
   );
 
   // Guest user login - create JWT token for guest users
-  fastify.post('/guest', async (_request, reply) => {
+  fastify.post('/guest', async (request, reply) => {
     try {
-      const guestUser = await authService.findOrCreateGuestUser();
+      const { name } = request.body as { name?: string };
+      const guestName = name?.trim() || 'Misafir Kullanıcı';
+      
+      const guestUser = await authService.createGuestUser(guestName);
 
       // Generate JWT token for guest user
       const token = fastify.jwt.sign({
@@ -65,7 +73,7 @@ export default async function authRoutes(fastify: any): Promise<void> {
       return reply.send({
         success: true,
         data: guestUser,
-        token, // Also return token for WebSocket use
+        token, // Return token for localStorage usage
       });
     } catch (error) {
       console.error('Guest auth error:', error);

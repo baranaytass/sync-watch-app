@@ -4,7 +4,9 @@
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
+  (window.location.hostname.includes('onrender.com') || window.location.hostname === 'staysync.baranaytas.com' 
+    ? 'https://staysync-api.baranaytas.com' 
+    : 'http://localhost:3000')
 
 interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -16,6 +18,7 @@ interface ApiRequestOptions {
 interface ApiResponse<T = any> {
   success: boolean
   data?: T
+  token?: string
   error?: {
     error: string
     message: string

@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image
-FROM node:18-alpine as build
+FROM node:18-alpine AS build
 
 # Set up environment
 ENV PNPM_HOME="/pnpm"
@@ -23,7 +23,7 @@ COPY backend/package*.json ./backend/
 COPY packages/shared-types/package*.json ./packages/shared-types/
 
 # Build için dev dependencies dahil tüm bağımlılıkları kur
-RUN npm ci --workspaces --include-workspace-root
+RUN npm install --workspaces --include-workspace-root
 
 # --- Kaynak kodunu kopyala ---
 COPY packages/shared-types ./packages/shared-types
@@ -36,10 +36,13 @@ RUN npm run build --workspace=backend
 
 # Build sonrası gereksiz dosyaları temizle ve production dependencies'e geç
 RUN rm -rf packages/shared-types/src backend/src node_modules
-RUN npm ci --workspaces --include-workspace-root --omit=dev
+RUN npm install --workspaces --include-workspace-root --omit=dev
 
 # Uygulama portu (Render otomatik 10000 kullanır)
 EXPOSE 10000
+
+# Set working directory for backend
+WORKDIR /app/backend
 
 # Command to run the application
 CMD ["node", "dist/server.js"] 

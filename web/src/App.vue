@@ -1,5 +1,8 @@
 <template>
-  <div id="app" class="min-h-screen bg-background">
+  <div
+    id="app"
+    class="min-h-screen bg-background"
+  >
     <router-view />
   </div>
 </template>
@@ -8,11 +11,10 @@
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore()
-
 // Initialize auth when app mounts
 onMounted(() => {
-  // Auth store is already initialized with localStorage data
+  // Initialize auth store - it will load from localStorage
+  const authStore = useAuthStore()
   // Router guard will handle authentication verification
 })
 </script>

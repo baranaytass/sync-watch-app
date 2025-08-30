@@ -1,7 +1,7 @@
 import { ref, onUnmounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useVideoSyncStore } from '@/stores/videoSync'
+import { useVideoSyncHandlers } from './useVideoSync'
 import { useSessionsStore } from '@/stores/sessions'
 import { useChatStore, type ChatMessage } from '@/stores/chat'
 import type { SessionParticipant } from '@sync-watch-app/shared-types'
@@ -13,7 +13,7 @@ interface WebSocketMessage {
 
 export const useWebSocket = (sessionId: string) => {
   const authStore = useAuthStore()
-  const videoSyncStore = useVideoSyncStore()
+  const { handleVideoSync, handleVideoSyncAuthoritative } = useVideoSyncHandlers()
   const sessionsStore = useSessionsStore()
   const chatStore = useChatStore()
   const router = useRouter()
@@ -83,6 +83,10 @@ export const useWebSocket = (sessionId: string) => {
         handleVideoSync(message.data)
         break
         
+      case 'video_sync_authoritative':
+        handleVideoSyncAuthoritative(message.data)
+        break
+        
       case 'video_update':
         handleVideoUpdate(message.data)
         break
@@ -149,14 +153,6 @@ export const useWebSocket = (sessionId: string) => {
     console.log(`👤 WebSocket: User left: ${userId}`)
   }
 
-  const handleVideoSync = (data: any) => {
-    console.log(`🎥 WebSocket: Video sync - ${data.action} at ${data.time}s`)
-    videoSyncStore.syncVideo({
-      action: data.action,
-      time: data.time,
-      timestamp: new Date(data.timestamp)
-    })
-  }
 
   const handleVideoUpdate = (data: any) => {
     console.log(`🎥 WebSocket: Video updated: ${data.videoTitle}`)
@@ -167,6 +163,22 @@ export const useWebSocket = (sessionId: string) => {
         videoTitle: data.videoTitle,
         videoDuration: data.videoDuration
       })
+    } else {
+      console.warn(`⚠️ WebSocket: Cannot update video - currentSession is null`)
+      // Try to find session in sessions list and set as current
+      const sessionFromList = sessionsStore.sessions.find(s => s.id === sessionId)
+      if (sessionFromList) {
+        console.log(`🔧 WebSocket: Setting session from list as current`)
+        sessionsStore.setCurrentSession(sessionFromList)
+        sessionsStore.updateCurrentSession({
+          videoProvider: data.videoProvider,
+          videoId: data.videoId,
+          videoTitle: data.videoTitle,
+          videoDuration: data.videoDuration
+        })
+      } else {
+        console.error(`❌ WebSocket: Session ${sessionId} not found in sessions list`)
+      }
     }
   }
 
@@ -200,7 +212,9 @@ export const useWebSocket = (sessionId: string) => {
         
         // Use correct WebSocket URL for production
         const API_BASE_URL = import.meta.env.VITE_API_URL || 
-          (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
+          (window.location.hostname.includes('onrender.com') || window.location.hostname === 'staysync.baranaytas.com' 
+            ? 'https://staysync-api.baranaytas.com' 
+            : 'http://localhost:3000')
         
         // Get JWT token for WebSocket authentication
         let wsUrl = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://') + `/ws/session/${sessionId}`
@@ -209,16 +223,8 @@ export const useWebSocket = (sessionId: string) => {
         const token = authStore.getToken()
         if (token) {
           wsUrl += `?token=${encodeURIComponent(token)}`
-          console.log('🔐 WebSocket: Adding JWT token to connection')
         } else {
           console.warn('⚠️ WebSocket: No JWT token found for authentication')
-        }
-        
-        console.log('🔌 WebSocket: Connecting to:', wsUrl)
-        console.log('🔐 WebSocket: Token included:', !!token)
-        if (token) {
-          console.log('🔑 WebSocket: Token length:', token.length)
-          console.log('🔑 WebSocket: Token starts with:', token.substring(0, 20) + '...')
         }
         ws = new WebSocket(wsUrl)
         
@@ -226,6 +232,24 @@ export const useWebSocket = (sessionId: string) => {
           console.log(`✅ WebSocket: Connected to session ${sessionId}`)
           connected.value = true
           reconnectAttempts = 0
+          
+          // Expose WebSocket for testing purposes
+          if (import.meta.env.DEV || (window as any).playwright) {
+            (window as any).testWebSocket = ws;
+            (window as any).sendVideoActionTest = (action: string, time: number) => {
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = {
+                  type: 'video_action',
+                  data: { action, time }
+                }
+                ws.send(JSON.stringify(message))
+                console.log(`🎯 TEST: Sent ${action} action via WebSocket`)
+              } else {
+                console.log(`🎯 TEST: WebSocket not ready for action ${action}`)
+              }
+            }
+          }
+          
           resolve()
         }
         

@@ -13,8 +13,6 @@ export interface User {
   updatedAt: Date
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname.includes('onrender.com') ? 'https://sync-watch-backend.onrender.com' : 'http://localhost:3000')
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -58,7 +56,11 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     // Redirect to backend Google OAuth
-    window.location.href = `${API_BASE_URL}/api/auth/google`
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 
+      (window.location.hostname === 'staysync.baranaytas.com' 
+        ? 'https://staysync-api.baranaytas.com' 
+        : 'http://localhost:3000')
+    window.location.href = `${apiBaseUrl}/api/auth/google`
   }
 
   const loginAsGuest = async (customName?: string) => {
@@ -76,29 +78,13 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = guestUser
         localStorage.setItem('user', JSON.stringify(guestUser))
 
-        // Debug: Guest login successful
-        console.log('🍪 Auth Store: Guest login successful')
-        console.log('🍪 Auth Store: Document cookies:', document.cookie)
         
-        // Check if the response includes a token or create one
-        // Note: With unified API, token handling is managed automatically
-        if (!localStorage.getItem('auth_token')) {
-          // Create a JWT-like token from user data for consistent auth
-          console.log('🔧 Auth Store: Creating compatible auth token')
-          
-          // Create a simple JWT-like structure (header.payload.signature)
-          const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-          const payload = btoa(JSON.stringify({ 
-            userId: guestUser.id, 
-            email: guestUser.email,
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
-          }))
-          const signature = btoa(`fallback_signature_${guestUser.id}`)
-          
-          const fallbackToken = `${header}.${payload}.${signature}`
-          localStorage.setItem('auth_token', fallbackToken)
-          console.log('🔑 Auth Store: JWT-like token created for session auth')
+        // Store token from backend response
+        if (result.token) {
+          localStorage.setItem('auth_token', result.token)
+        } else {
+          console.error('❌ No token received from backend for guest user')
+          throw new Error('Authentication failed: No token received')
         }
 
         // Redirect to home page after login
@@ -141,7 +127,6 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = null
       
       const authToken = localStorage.getItem('auth_token')
-      console.log('🔍 Auth Store: fetchUser - token available:', !!authToken)
       
       logApiCall('/api/auth/me', 'GET', !!authToken)
       const result = await api.get<User>('/api/auth/me')
@@ -149,21 +134,17 @@ export const useAuthStore = defineStore('auth', () => {
       if (result.success && result.data) {
         user.value = result.data
         localStorage.setItem('user', JSON.stringify(result.data))
-        console.log('✅ Auth Store: fetchUser successful')
       } else {
         throw new Error(result.error?.message || 'Failed to fetch user')
       }
     } catch (err: any) {
-      console.log('❌ Auth Store: fetchUser failed:', err.message)
       
       // Only clear user data if we don't have a localStorage token
       const authToken = localStorage.getItem('auth_token')
       if (!authToken) {
         user.value = null
         localStorage.removeItem('user')
-        console.log('🗑️ Auth Store: Cleared user data - no fallback token')
       } else {
-        console.log('💾 Auth Store: Keeping user data - localStorage token exists')
       }
       
       if (!err.message?.includes('HTTP 401')) {

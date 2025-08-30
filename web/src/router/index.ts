@@ -16,6 +16,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/auth/callback',
+    name: 'AuthCallback',
+    component: () => import('@/views/AuthCallbackPage.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/session/:id',
     name: 'SessionRoom',
     component: () => import('@/views/SessionRoomPage.vue'),

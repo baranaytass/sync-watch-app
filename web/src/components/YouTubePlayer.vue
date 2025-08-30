@@ -43,8 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, watchEffect } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import { useVideoSyncStore } from '@/stores/videoSync'
 
 // YouTube Player API TypeScript tanımları
 declare global {
@@ -82,6 +83,9 @@ const emit = defineEmits<{
 
 // i18n setup
 const { t } = useI18n()
+
+// Video sync store
+const videoSyncStore = useVideoSyncStore()
 
 // State
 const loading = ref(true)
@@ -212,24 +216,23 @@ const onPlayerStateChange = (event: any) => {
   const stateChangeTime = Date.now()
   const stateName = getStateName(event.data)
   
-  // Enhanced cleanup: Clear programmatic flags on FINAL states (PLAYING/PAUSED)
-  // These are final user-visible states, so any programmatic operations should be done
+  // CRITICAL FIX: More conservative cleanup to prevent echo loops
+  // Only clear flags if significant time has passed since programmatic operation
   if ((event.data === window.YT.PlayerState.PLAYING || event.data === window.YT.PlayerState.PAUSED) && programmaticOperationId) {
-    // Check if this could be the end of a programmatic operation
     const timeSinceOpStart = stateChangeTime - (parseInt(programmaticOperationId.split('_')[0]) || 0)
     
-    if (timeSinceOpStart > 500) { // If more than 500ms passed since operation start
+    if (timeSinceOpStart > 1000) { // 1 second delay for cleanup
       programmaticOperationId = null
       programmaticActionCount = 0
     }
   }
   
   // Server-Authoritative Pattern: Check if this is a programmatic action
-  // FIXED: More strict detection - both ID and counter must be clear
+  // FIXED: Use both ID and counter for better detection
   const isProgrammaticAction = programmaticOperationId !== null || programmaticActionCount > 0
   
   if (isProgrammaticAction) {
-    // More aggressive cleanup: decrement counter AND clear ID if counter reaches 0
+    // Decrement counter and clear ID when counter reaches 0
     if (programmaticActionCount > 0) {
       programmaticActionCount = Math.max(0, programmaticActionCount - 1)
       
@@ -380,6 +383,55 @@ watch(() => props.videoId, (newVideoId, oldVideoId) => {
     initializePlayer()
   }
 }, { immediate: true })
+
+// Watch for video sync state changes and apply them
+// FIXED APPROACH: Use message-driven sync instead of store watching
+// Register this player instance for direct video sync messages
+let lastProcessedMessageId: string | null = null
+
+// Listen to the custom video sync events instead of the global store
+const handleDirectVideoSync = (event: CustomEvent) => {
+  const { action, time, messageId, timestamp, sourceUserId, isInitialSync } = event.detail
+  
+  // Prevent duplicate processing
+  if (messageId && messageId === lastProcessedMessageId) {
+    return
+  }
+  
+  // CRITICAL FIX: If this is an initial sync (new user joining), only apply if this player is newly mounted
+  if (isInitialSync) {
+    console.log(`🚨 YouTubePlayer: Received INITIAL SYNC - ${action} at ${time}s (ignoring for existing players)`)
+    // Don't apply initial sync to existing players - this prevents video restart!
+    lastProcessedMessageId = messageId // Still mark as processed
+    return
+  }
+  
+  console.log(`🎬 YouTubePlayer: Applying sync state - ${action} at ${time}s (from user: ${sourceUserId || 'server'})`)
+  
+  // Apply the sync action
+  syncVideo(action, time)
+  
+  // Track processed message
+  lastProcessedMessageId = messageId
+}
+
+// Register event listener on mount
+onMounted(() => {
+  console.log('🔄 YouTubePlayer: Component MOUNTED for video:', props.videoId)
+  window.addEventListener('video-sync-direct', handleDirectVideoSync)
+})
+
+// Clean up on unmount
+onUnmounted(() => {
+  console.log('🔄 YouTubePlayer: Component UNMOUNTED for video:', props.videoId)
+  window.removeEventListener('video-sync-direct', handleDirectVideoSync)
+  if (loadTimeout) {
+    clearTimeout(loadTimeout)
+  }
+  if (player) {
+    player.destroy?.()
+  }
+})
 
 // Sync queue for pending operations
 const syncQueue = ref<{ action: 'play' | 'pause' | 'seek', time: number }[]>([])
@@ -555,15 +607,7 @@ const getDuration = (): number => {
   return 180
 }
 
-// Cleanup
-onUnmounted(() => {
-  if (loadTimeout) {
-    clearTimeout(loadTimeout)
-  }
-  if (player) {
-    player.destroy?.()
-  }
-})
+// Cleanup (handled above in main onUnmounted hook)
 
 defineExpose({
   syncVideo,

@@ -200,7 +200,12 @@ const isHost = computed(() => sessionsStore.isHost)
 const participants = computed(() => sessionsStore.participants || [])
 
 // Generate video URL from session data
-const videoUrl = ref('')
+const videoUrl = computed(() => {
+  if (currentSession.value?.videoProvider === 'youtube' && currentSession.value?.videoId) {
+    return `https://www.youtube.com/watch?v=${currentSession.value.videoId}`
+  }
+  return ''
+})
 
 // Methods
 const loadSession = async () => {
@@ -258,14 +263,12 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
 }
 
 const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
-  if (isHost.value) {
-    // Host'un video action'ları WebSocket üzerinden diğer kullanıcılara gönderilir
-    sendVideoAction(action, time)
-    
-    // Video sync store'u güncelle
-    videoSyncStore.setAction(action)
-    videoSyncStore.setCurrentTime(time)
-  }
+  // All users can control video - no host restriction
+  sendVideoAction(action, time)
+  
+  // Video sync store'u güncelle
+  videoSyncStore.setAction(action)
+  videoSyncStore.setCurrentTime(time)
 }
 
 const handleVideoReady = () => {

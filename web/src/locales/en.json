@@ -34,7 +34,11 @@
     "login": "Sign In",
     "profile": "Profile",
     "settings": "Settings",
-    "guestNamePlaceholder": "Enter your guest name..."
+    "guestNamePlaceholder": "Enter your guest name...",
+    "processing": "Processing authentication",
+    "redirecting": "Please wait while we sign you in...",
+    "error": "Authentication Error",
+    "backToLogin": "Back to Login"
   },
   "navigation": {
     "home": "Home",
@@ -131,7 +135,12 @@
     "title": "WatchSync",
     "brandTitle": "WatchSync",
     "description": "Synchronized video watching platform for loved ones",
-    "tagline": "Distance can't stop connection"
+    "tagline": "Distance can't stop connection",
+    "developer": {
+      "contact": "Need a project like this built?",
+      "website": "baranaytas.com",
+      "cta": "Let's connect and make it happen"
+    }
   },
   "session": {
     "createNew": "Create New Session",

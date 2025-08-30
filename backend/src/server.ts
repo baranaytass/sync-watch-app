@@ -31,8 +31,9 @@ function startSessionCleanupJob(sessionService: SessionService): void {
       // Clean up sessions inactive for more than 30 minutes
       const inactiveSessionsDeleted = await sessionService.cleanupInactiveSessions(30);
       
-      // Clean up guest users older than 24 hours
-      const guestUsersDeleted = await cleanupGuestUsers();
+      // Clean up guest users older than 24 hours (temporarily disabled due to missing column)
+      // const guestUsersDeleted = await cleanupGuestUsers();
+      const guestUsersDeleted = 0;
       
       const totalDeleted = emptySessionsDeleted + inactiveSessionsDeleted;
       if (totalDeleted > 0 || guestUsersDeleted > 0) {
@@ -58,8 +59,8 @@ function stopSessionCleanupJob(): void {
   }
 }
 
-// Guest user cleanup function
-async function cleanupGuestUsers(): Promise<number> {
+// Guest user cleanup function (temporarily disabled due to missing is_guest column)
+/* async function cleanupGuestUsers(): Promise<number> {
   try {
     const deleteQuery = `
       DELETE FROM users 
@@ -73,7 +74,7 @@ async function cleanupGuestUsers(): Promise<number> {
     console.error('❌ Guest user cleanup failed:', error);
     return 0;
   }
-}
+} */
 
 async function start(): Promise<void> {
   try {
@@ -114,7 +115,11 @@ async function start(): Promise<void> {
     // Register plugins
     console.log('🔧 Registering CORS plugin...')
     await server.register(require('@fastify/cors'), {
-      origin: server.config.FRONTEND_URL,
+      origin: [
+        server.config.FRONTEND_URL,
+        'https://staysync.baranaytas.com',
+        'https://sync-watch-frontend.onrender.com'
+      ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
