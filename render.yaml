@@ -7,9 +7,13 @@ services:
     region: frankfurt
     branch: main
     repo: https://github.com/baranaytass/sync-watch-app
+    rootDir: .
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     autoDeploy: true
+    domains:
+      - staysync-api.baranaytas.com
     envVars:
       - key: NODE_ENV
         value: production
@@ -36,10 +40,13 @@ services:
     runtime: static
     branch: main
     repo: https://github.com/baranaytass/sync-watch-app
+    rootDir: .
     buildCommand: npm ci && npm run build --workspace=packages/shared-types && npm run build --workspace=web
     staticPublishPath: ./web/dist
     autoDeploy: true
     pullRequestPreviewsEnabled: false
+    domains:
+      - staysync.baranaytas.com
     envVars:
       - key: VITE_API_URL
         value: https://staysync-api.baranaytas.com
