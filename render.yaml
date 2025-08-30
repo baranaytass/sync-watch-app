@@ -10,7 +10,7 @@ services:
     rootDir: .
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     autoDeploy: true
     domains:
       - staysync-api.baranaytas.com
