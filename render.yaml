@@ -1,17 +1,15 @@
 services:
-
-  # Backend API Service  
+  # StaySync Backend API Service
   - type: web
-    name: sync-watch-backend
+    name: staysync-backend
     env: docker
     dockerfilePath: ./backend/Dockerfile
     plan: free
-    region: frankfurt  # Move to Frankfurt region
+    region: frankfurt
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DEBUG_WEBSOCKET
-        value: true
       - key: PORT
         value: 10000
       - key: HOST
@@ -23,32 +21,29 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
-        sync: false  
+        sync: false
       - key: YOUTUBE_API_KEY
         value: AIzaSyBGaoo7O9ABniAuWcm62T8ZKcH9D3mN8M4
       - key: FRONTEND_URL
         value: https://staysync.baranaytas.com
 
-  # Frontend Static Site
+  # StaySync Frontend Static Site
   - type: web
-    name: sync-watch-frontend
+    name: staysync-frontend
     env: static
-    buildCommand: npm ci && npm run build --workspace=packages/shared-types && npm run build --workspace=web
+    buildCommand: VITE_API_URL=https://staysync-api.baranaytas.com VITE_ENABLE_GUEST_LOGIN=true npm ci && npm run build --workspace=packages/shared-types && npm run build --workspace=web
     staticPublishPath: ./web/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    pullRequestPreviewsEnabled: false
     envVars:
       - key: VITE_API_URL
         value: https://staysync-api.baranaytas.com
       - key: VITE_ENABLE_GUEST_LOGIN
         value: true
       - key: VITE_YOUTUBE_API_KEY
-        sync: false
+        value: AIzaSyBGaoo7O9ABniAuWcm62T8ZKcH9D3mN8M4
 
 databases:
-  - name: stay-sync
+  - name: staysync-database
     databaseName: stay_sync
     user: stay_sync_user
     plan: free
