@@ -34,7 +34,6 @@ services:
   - type: web
     name: staysync-frontend
     runtime: static
-    plan: free
     branch: main
     repo: https://github.com/baranaytass/sync-watch-app
     buildCommand: npm ci && npm run build --workspace=packages/shared-types && npm run build --workspace=web
