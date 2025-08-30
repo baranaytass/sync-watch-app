@@ -10,8 +10,22 @@ const createSession = async (page: any, title: string): Promise<string> => {
   
   await expect(createSessionBtn).toBeVisible({ timeout: 8000 })
   
-  // Click button - directly creates quick session and redirects
+  // Click button to open modal
   await createSessionBtn.click()
+
+  // Modal should be visible
+  const modal = page.locator('.modal')
+  await expect(modal).toBeVisible()
+
+  // Fill session title if provided
+  if (title) {
+    const titleInput = page.locator('input[name="title"]')
+    await titleInput.fill(title)
+  }
+
+  // Submit session creation
+  const submitButton = modal.getByRole('button', { name: /(oluştur|create)/i })
+  await submitButton.click()
 
   // Wait for redirect to session page
   await page.waitForURL(/\/session\//)
@@ -31,30 +45,25 @@ test.describe('Session – create & join', () => {
       await guestBtn.click()
       await page.waitForURL(/\/$/)
     }
-    console.log('🎬 SESSION TEST – Guest login completed')
   })
 
   test('user can create and join a session', async ({ page }) => {
-    console.log('🏗️ Starting session creation')
-    const url = await createSession(page, 'Quick Session') // title no longer used but kept for compatibility
-    console.log('✅ Session created:', url)
+    const url = await createSession(page, 'Quick Session')
 
     // Check if session room loaded
     await expect(page).toHaveURL(url)
-    console.log('👥 Checking participants')
-    await expect(page.locator('[data-testid="participant-item"]')).toHaveCount(1, { timeout: 10000 })
+    
+    // Wait for participants to load
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('.participant-item')).toHaveCount(1, { timeout: 10000 })
 
     // Check if we see ourselves in participant list
-    console.log('🔎 We can see ourselves in participant list')
     await expect(page.locator('text=Session Test User')).toBeVisible()
   })
 
   test('sessions are listed correctly in dashboard', async ({ page }) => {
-    console.log('📋 Starting session listing test')
-    
     // Create first session
     const url1 = await createSession(page, 'Test Session 1')
-    console.log('✅ First session created:', url1)
     
     // Return to home
     await page.goto('/')
@@ -69,13 +78,10 @@ test.describe('Session – create & join', () => {
     await page.waitForTimeout(2000)
     
     // Our created session should appear in the list
-    await expect(page.locator('text=Quick Session').first()).toBeVisible({ timeout: 10000 })
-    console.log('✅ Session appears in list')
+    await expect(page.locator('text=Test Session 1').first()).toBeVisible({ timeout: 10000 })
     
     // Create second session
-    const createBtn = page.locator('[data-testid="create-session-button"]')
-    await createBtn.click()
-    await page.waitForURL(/\/session\//)
+    const url2 = await createSession(page, 'Test Session 2')
     
     // Return to home again
     await page.goto('/')
@@ -86,9 +92,8 @@ test.describe('Session – create & join', () => {
     await page.waitForTimeout(2000)
     
     // Both sessions should be visible (we expect at least 2)
-    const sessionItems = page.locator('text=Quick Session')
+    const sessionItems = page.locator('text=Test Session')
     const count = await sessionItems.count()
     expect(count).toBeGreaterThanOrEqual(2)
-    console.log(`✅ Sessions appear in list (found ${count} sessions)`)
   })
 }) 

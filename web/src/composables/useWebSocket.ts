@@ -232,6 +232,24 @@ export const useWebSocket = (sessionId: string) => {
           console.log(`✅ WebSocket: Connected to session ${sessionId}`)
           connected.value = true
           reconnectAttempts = 0
+          
+          // Expose WebSocket for testing purposes
+          if (import.meta.env.DEV || (window as any).playwright) {
+            (window as any).testWebSocket = ws;
+            (window as any).sendVideoActionTest = (action: string, time: number) => {
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = {
+                  type: 'video_action',
+                  data: { action, time }
+                }
+                ws.send(JSON.stringify(message))
+                console.log(`🎯 TEST: Sent ${action} action via WebSocket`)
+              } else {
+                console.log(`🎯 TEST: WebSocket not ready for action ${action}`)
+              }
+            }
+          }
+          
           resolve()
         }
         

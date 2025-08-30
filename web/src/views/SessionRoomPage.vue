@@ -263,14 +263,12 @@ const handleSetVideo = async (videoData: { videoId: string }) => {
 }
 
 const handleVideoAction = (action: 'play' | 'pause' | 'seek', time: number) => {
-  if (isHost.value) {
-    // Host'un video action'ları WebSocket üzerinden diğer kullanıcılara gönderilir
-    sendVideoAction(action, time)
-    
-    // Video sync store'u güncelle
-    videoSyncStore.setAction(action)
-    videoSyncStore.setCurrentTime(time)
-  }
+  // All users can control video - no host restriction
+  sendVideoAction(action, time)
+  
+  // Video sync store'u güncelle
+  videoSyncStore.setAction(action)
+  videoSyncStore.setCurrentTime(time)
 }
 
 const handleVideoReady = () => {
