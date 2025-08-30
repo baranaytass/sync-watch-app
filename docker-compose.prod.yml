@@ -1,0 +1,30 @@
+# Production-like local development using production database
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0
+      # PRODUCTION DATABASE CONNECTION - Use with caution!
+      DATABASE_URL: "postgresql://stay_sync_user:AFMgTRk9pSla15phS7T4vUUCfeX5UbgL@dpg-d2peglndiees73bt5lv0-a.frankfurt-postgres.render.com/stay_sync"
+      JWT_SECRET: "development-secret-key-change-in-production"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+      YOUTUBE_API_KEY: "AIzaSyBGaoo7O9ABniAuWcm62T8ZKcH9D3mN8M4"
+      FRONTEND_URL: "http://localhost:5173"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+# Note: This configuration connects to PRODUCTION database
+# Use only for testing production data compatibility
+# For regular development, use: docker-compose up
+# For production testing, use: docker-compose -f docker-compose.prod.yml up
